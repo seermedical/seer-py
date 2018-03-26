@@ -1,0 +1,6 @@
+gql
+requests
+matplotlib
+numpy
+pandas
+H5py

@@ -1,6 +1,9 @@
 # seer-py
 Python wrapper for seer-api, with the purpose of authenticating a user, downloading filtered data, and uploading labels. 
 
+## Install
+To install, simply clone or download this repository, then type 'pip install .' which will install all dependencies, and the Seer python API.
+
 ## Requirements
 This library currently requires python 3, and it if you don't currently have a python 3 installation, we recommend you use the Anaconda distribution for its simplicity, support, stability and extensibility. It can be downloaded here: https://www.anaconda.com/download
 

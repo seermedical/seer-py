@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from pandas.io.json import json_normalize
-from datetime import datetime
+from datetime import datetime, timedelta
 # import h5py
 from scipy.io import savemat
 import sys
@@ -25,7 +25,11 @@ if __name__ == '__main__':
         allData, channelGroups, segments, channels, dataChunks, labelGroups, labels = client.createMetaData(study)
         
         ## filter the amount of data returned by date
-#        allData = allData[allData.loc[:,'segments.startTime']<datetime(2010,1,1,1,50).timestamp()*1000]
+        segmentMin = 1195
+        segmentMax = 1197
+        dtMin = (datetime(2010,1,1,0,0) + timedelta(hours=segmentMin)).timestamp()*1000
+        dtMax = (datetime(2010,1,1,0,0) + timedelta(hours=segmentMax)).timestamp()*1000
+        allData = allData[(allData.loc[:,'segments.startTime']>=dtMin) & (allData.loc[:,'segments.startTime']<=dtMax)]
         print('Metadata retieved...\n')
         
 #        startTimes = allData.loc[:,'segments.startTime']
@@ -45,7 +49,7 @@ if __name__ == '__main__':
 #            print(round(time.time()-t, 1))
             
             startTime = datetime.fromtimestamp(chunk/1000)
-            hour = startTime.hour
+            hour = (startTime - datetime(2010,1,1,0,0)).total_seconds()/3600
             minute = startTime.minute
             if minute == 30:
                 preictal = 1
@@ -66,8 +70,8 @@ if __name__ == '__main__':
             #data.to_hdf(filename + '.hdf5', key='data', format='table')
             
             ##for matlab files
-#            savemat(filename + '.mat', {'data':np.asarray(data.iloc[:,-16:], dtype=np.float32)},
-#                                        appendmat=False, do_compression=True)
+            savemat(filename + '.mat', {'data':np.asarray(data.iloc[:,-16:], dtype=np.float32)},
+                                        appendmat=False, do_compression=True)
             
             b = ('Downloaded: ' + filename + ''*200)
             sys.stdout.write('\r'+b)

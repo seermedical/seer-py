@@ -31,7 +31,7 @@ class SeerConnect:
         -------
 
         """
-        apiUrl = 'https://api.seermedical.com'
+        apiUrl = 'https://da9ef2fg-api.seermedical.com'
         cookie = SeerAuth(apiUrl).cookie
         header = {'Cookie': list(cookie.keys())[0] + '=' + cookie['seer.sid']}
         self.graphqlClient = GQLClient(
@@ -310,8 +310,8 @@ class SeerConnect:
                     numChannels = len(metaData['channels.id'].copy().drop_duplicates().tolist())
                     channelNames = metaData['channels.name'].copy().drop_duplicates().tolist()
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
-                    metaData = metaData[['dataChunks.url', 'dataChunks.time', 'channelGroups.bytesPerSample', 'channelGroups.sampleRate',
-                                         'channelGroups.chunkPeriod', 'channelGroups.signalMin', 'channelGroups.signalMax']]
+                    metaData = metaData[['dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding', 'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',
+                                         'channelGroups.recordsPerChunk', 'channelGroups.signalMin', 'channelGroups.signalMax']]
                     metaData = metaData.drop_duplicates()
                     metaData = metaData.dropna(axis=0, how='any', subset=['dataChunks.url'])
                     for r in range(metaData.shape[0]):

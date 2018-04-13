@@ -12,8 +12,11 @@ def studyWithDataQueryString(studyId):
                     id
                     name
                     sampleRate
+                    samplesPerRecord
+                    recordLength
                     chunkPeriod
-                    bytesPerSample
+                    recordsPerChunk
+                    sampleEncoding
                     signalMin
                     signalMax
                     units

@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='seer',
+    name='seerpy',
     version='0.1.0',
-    description='Seer Platform api for Python',
+    description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',
     author='Shannon Clarke',
@@ -23,7 +23,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
     ],
     keywords='api seer eeg ecg client',
-    packages=find_packages(include=["seer*"]),
+    packages=find_packages(include=["seerpy*"]),
     install_requires=[
         'gql',
         'requests',

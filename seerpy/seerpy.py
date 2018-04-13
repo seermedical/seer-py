@@ -31,7 +31,7 @@ class SeerConnect:
         -------
 
         """
-        apiUrl = 'https://da9ef2fg-api.seermedical.com'
+        apiUrl = 'https://api.seermedical.com'
         cookie = SeerAuth(apiUrl).cookie
         header = {'Cookie': list(cookie.keys())[0] + '=' + cookie['seer.sid']}
         self.graphqlClient = GQLClient(

@@ -77,18 +77,6 @@ def channelGroupsQueryString(studyId):
         }
     ''' % (studyId)
 
-def labelTypesQueryString():
-    return '''
-        query {
-            labelTypes {
-                id
-                name
-                category
-                description
-            }
-        }
-    '''
-
 def studyListQueryString():
     return '''
         query {

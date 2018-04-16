@@ -130,35 +130,6 @@ class SeerConnect:
         queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone)
         response = self.graphqlClient.execute(gql(queryString))
 
-    def getLabelTypes(self):
-        """Get label types
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        labelTypeID : string
-                ID of label type
-        name : string
-                label type name
-        category : string
-                label type category
-        description : string
-                label type description
-
-        Notes
-        -----
-
-        Example
-        -------
-        labelTypes = pd.io.json_normalize(getLabelTypes()['labelTypes'])
-
-        """
-        queryString = graphql.labelTypesQueryString()
-        labelTypes = json_normalize(self.graphqlClient.execute(gql(queryString))['labelTypes'])
-        return labelTypes
-
     def getStudies(self):
         queryString = graphql.studyListQueryString()
         response = self.graphqlClient.execute(gql(queryString))

@@ -1,5 +1,5 @@
 # seer-py
-Python wrapper for seer-api, with the purpose of authenticating a user, downloading filtered data, and uploading labels. 
+Python wrapper for seer-api, with the purpose of authenticating a user, downloading filtered data, and uploading labels.
 
 ## Install
 To install, simply clone or download this repository, then type 'pip install .' which will install all dependencies, and the Seer python API.
@@ -15,7 +15,6 @@ https://scipy.org/install.html
 https://matplotlib.org/users/installing.html
 https://pandas.pydata.org/pandas-docs/stable/install.html
 
-
 To run the jupyter notebook example (optional, included in Anaconda):
 `pip install notebook`
 
@@ -24,4 +23,3 @@ To run the jupyter notebook example (optional, included in Anaconda):
 Check out the [Example](Example.ipynb) for a step-by-step example of how to use the API
 
 To start jupyter notebooks, run `jupyter notebook` in a command/bash window. Further instructions on Jupyter can be found here: https://github.com/jupyter/notebook
-

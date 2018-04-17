@@ -188,7 +188,7 @@ class SeerConnect:
             t = time.time()
             queryString = graphql.studyWithDataQueryString(sdy)
             result.append(self.graphqlClient.execute(gql(queryString))['study'])
-            print('study query time: ',round(time.time()-t,2))
+            # print('study query time: ', round(time.time()-t,2))
 
         return {'studies' : result}
 

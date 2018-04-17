@@ -40,5 +40,5 @@ class SeerAuth:
         return r.status_code
 
     def loginDetails(self):
-        self.email = input('Email Adddress: ')
+        self.email = input('Email Address: ')
         self.password = getpass.getpass('Password: ')

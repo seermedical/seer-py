@@ -7,10 +7,12 @@ from pandas.io.json import json_normalize
 from .auth import SeerAuth
 from .utils import downloadLink
 from . import graphql
+import os
 
-from multiprocessing import Process, Queue
-from multiprocessing import Manager
+from multiprocessing import Pool
 import time
+
+
 
 class SeerConnect:
 
@@ -266,13 +268,7 @@ class SeerConnect:
         data = getLinks(allData.copy())
 
         """
-        manager = Manager()
-
-        dataList = manager.list([])
-        dataQ = Queue(15)
-        procs = [Process(target=downloadLink, args=(dataQ, dataList)) for i in range(threads)]
-        for p in procs: p.start()
-
+        dataQ = []
 #        uniqueUrls = allData['dataChunks.url'].copy().drop_duplicates()
         for studyID in allData['id'].copy().drop_duplicates().tolist():
             for channelGroupsID in allData['channelGroups.id'].copy().drop_duplicates().tolist():
@@ -286,12 +282,13 @@ class SeerConnect:
                     metaData = metaData.drop_duplicates()
                     metaData = metaData.dropna(axis=0, how='any', subset=['dataChunks.url'])
                     for r in range(metaData.shape[0]):
-                        dataQ.put([metaData.iloc[r, :], studyID, channelGroupsID, segmentsID, actualChannelNames])
+                        dataQ.append([metaData.iloc[r, :], studyID, channelGroupsID, segmentsID, actualChannelNames])
 
-                    for t in range(threads):
-                        dataQ.put(None)
-                    for p in procs: p.join()
-
+        if threads > 1 and os.name != 'nt':
+            pool = Pool(processes=threads)      
+            dataList = list(pool.map(downloadLink, dataQ))
+        else:
+            dataList = list(map(downloadLink, dataQ))
         if len(dataList)>0:
             data = pd.concat(dataList)
             data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0, ascending=True,

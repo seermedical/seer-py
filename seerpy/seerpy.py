@@ -246,7 +246,7 @@ class SeerConnect:
 
         return [allData, channelGroups, segments, channels, dataChunks, labelGroups, labels]
 
-    def getLinks(self, allData, threads=5):
+    def getLinks(self, allData, threads=None):
         """Download data chunks and stich them together in one dataframe
 
         Parameters
@@ -254,6 +254,9 @@ class SeerConnect:
         allData : pandas DataFrame
                 Dataframe containing metadata required for downloading and
                 processing raw data
+                
+        threads : number of threads to use. If > 1 then will use multiprocessing
+                    if None (default), it will use 1 on Windows and 5 on Linux/MacOS
 
         Returns
         -------
@@ -268,6 +271,13 @@ class SeerConnect:
         data = getLinks(allData.copy())
 
         """
+        if threads is None:
+            if os.name != 'nt':
+                threads = 1
+            else:
+                threads = 5
+        
+        
         dataQ = []
 #        uniqueUrls = allData['dataChunks.url'].copy().drop_duplicates()
         for studyID in allData['id'].copy().drop_duplicates().tolist():
@@ -284,7 +294,7 @@ class SeerConnect:
                     for r in range(metaData.shape[0]):
                         dataQ.append([metaData.iloc[r, :], studyID, channelGroupsID, segmentsID, actualChannelNames])
 
-        if threads > 1 and os.name != 'nt':
+        if threads > 1:
             pool = Pool(processes=threads)      
             dataList = list(pool.map(downloadLink, dataQ))
         else:

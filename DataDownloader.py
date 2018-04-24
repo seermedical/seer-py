@@ -73,7 +73,9 @@ if __name__ == '__main__':
             sys.stdout.write('\r'+b)
             sys.stdout.flush()
 
-            data = client.getLinks(allData[allData['segments.startTime']==chunk].copy(), threads=5)
+            ## Using threads>1 may speed up your downloads, but may also cause issues
+            ## on Windows systems. Use Carefully.
+            data = client.getLinks(allData[allData['segments.startTime']==chunk].copy(), threads=None)
 
             ######################
             # Change this section for different file formats

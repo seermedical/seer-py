@@ -297,6 +297,8 @@ class SeerConnect:
         if threads > 1:
             pool = Pool(processes=threads)      
             dataList = list(pool.map(downloadLink, dataQ))
+            pool.close()
+            pool.join()
         else:
             dataList = list(map(downloadLink, dataQ))
         if len(dataList)>0:

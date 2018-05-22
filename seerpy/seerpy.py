@@ -130,7 +130,7 @@ class SeerConnect:
 
         """
         queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone)
-        response = self.graphqlClient.execute(gql(queryString))
+        return self.graphqlClient.execute(gql(queryString))
 
     def getStudies(self):
         queryString = graphql.studyListQueryString()

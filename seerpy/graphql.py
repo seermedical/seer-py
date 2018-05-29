@@ -116,6 +116,25 @@ def addLabelMutationString(groupId, startTime, duration, timezone):
         }
     ''' % (groupId, startTime, duration, timezone)
 
+def addLabelsMutationString(groupId, labels):
+    start = '''
+        mutation {
+            addLabelsToLabelGroup(
+                groupId: "%s",
+                labels: [''' % (groupId)
+    end = ''']
+                ) {
+                id
+            }
+        }
+        '''
+    
+    lst = ''
+    for l in labels:
+        lst = lst + '{ startTime: %f, duration: %f, timezone: %f },' % (l[0], l[1], l[2])
+    
+    return start + lst[:-1] + end
+
 def addLabelGroupMutationString(studyId, name, description):
     return '''
         mutation {

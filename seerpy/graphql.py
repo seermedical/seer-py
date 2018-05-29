@@ -17,6 +17,7 @@ def studyWithDataQueryString(studyId):
                     chunkPeriod
                     recordsPerChunk
                     sampleEncoding
+                    compression
                     signalMin
                     signalMax
                     units

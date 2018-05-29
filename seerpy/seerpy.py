@@ -288,7 +288,7 @@ class SeerConnect:
                     channelNames = metaData['channels.name'].copy().drop_duplicates().tolist()
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
                     metaData = metaData[['dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding', 'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',
-                                         'channelGroups.recordsPerChunk', 'channelGroups.signalMin', 'channelGroups.signalMax']]
+                                         'channelGroups.recordsPerChunk', 'channelGroups.compression', 'channelGroups.signalMin', 'channelGroups.signalMax']]
                     metaData = metaData.drop_duplicates()
                     metaData = metaData.dropna(axis=0, how='any', subset=['dataChunks.url'])
                     for r in range(metaData.shape[0]):
@@ -300,7 +300,8 @@ class SeerConnect:
             pool.close()
             pool.join()
         else:
-            dataList = list(map(downloadLink, dataQ))
+#            dataList = list(map(downloadLink, dataQ))
+            dataList = [downloadLink(dataQ[i]) for i in range(len(dataQ))]
         if len(dataList)>0:
             data = pd.concat(dataList)
             data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0, ascending=True,

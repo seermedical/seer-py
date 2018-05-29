@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import requests
 # import time
+import gzip
 
 def downloadLink(dataQ):
 
@@ -11,17 +12,25 @@ def downloadLink(dataQ):
 #                    t = time.time()
         data = requests.get(metaData['dataChunks.url'])
 #                    print('chunk download time: ',round(time.time()-t,2))
+        
+        try:
+            if metaData['channelGroups.compression'] == 'gzip':
+                data = gzip.decompress(data.content)
+            else:
+                data = data.content
+        except:
+            data = data.content
         dataType = metaData['channelGroups.sampleEncoding']
 #                    print(data.content)
 #                        print(metaData['dataChunks.url'])
-        data = np.fromstring(data.content, dtype=np.dtype(dataType))
+        data = np.fromstring(data, dtype=np.dtype(dataType))
         data = data.astype(np.float32)
         data = data.reshape(-1, len(channelNames), int(metaData['channelGroups.samplesPerRecord']))
         data = np.transpose(data, (0, 2, 1))
         data = data.reshape(-1, data.shape[2])
         chanMin = metaData['channelGroups.signalMin'].astype(np.float64)
         chanMax = metaData['channelGroups.signalMax'].astype(np.float64)
-        chanDiff = abs(chanMin) + abs(chanMax)
+        chanDiff = chanMax - chanMin
         digMin = np.iinfo(dataType).min
         digMax = np.iinfo(dataType).max
         digDiff = abs(digMin) + abs(digMax)

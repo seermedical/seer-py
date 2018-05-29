@@ -30,6 +30,7 @@ def downloadLink(dataQ):
         data = data.reshape(-1, data.shape[2])
         chanMin = metaData['channelGroups.signalMin'].astype(np.float64)
         chanMax = metaData['channelGroups.signalMax'].astype(np.float64)
+        exponent = metaData['channelGroups.exponent'].astype(np.float64)
         chanDiff = chanMax - chanMin
         digMin = np.iinfo(dataType).min
         digMax = np.iinfo(dataType).max
@@ -37,6 +38,7 @@ def downloadLink(dataQ):
         with np.errstate(divide='ignore', invalid='ignore'):
 #                                data = np.where(data>0.0, data/np.nanmax(data, axis=0)*chanMax, data/np.nanmin(data, axis=0)*chanMin)
             data = (data - digMin) / digDiff * chanDiff + chanMin
+        data = data * 10.0 ** exponent
         data = np.nan_to_num(data).astype(np.float32)
         data = pd.DataFrame(data=data, index=None, columns=channelNames)
         timeLine = np.arange(data.shape[0]) * (1000.0/metaData['channelGroups.sampleRate']) + metaData['dataChunks.time']

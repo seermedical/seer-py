@@ -11,6 +11,7 @@ import os
 
 from multiprocessing import Pool
 import time
+from time import gmtime, strftime
 
 
 
@@ -310,7 +311,9 @@ class SeerConnect:
             data = None
         return data
 
-    def makeLabel(self, label, time):
+    def makeLabel(self, label, time, timezone=None):
+        if timezone is None:
+            timezone = int(int(strftime("%z", gmtime()))/100)
         labels = []
         labelOn = 0
         labelStart = 0.0
@@ -322,9 +325,9 @@ class SeerConnect:
             if labelOn==1 and label[i]==0:
                 labelEnd = time[i]
                 labelOn = 0
-                labels.append([labelStart, labelEnd])
+                labels.append([labelStart, labelEnd, timezone])
         if labelOn==1:
-            labels.append([labelStart, labelEnd])
+            labels.append([labelStart, labelEnd, timezone])
         return np.asarray(labels, dtype=np.float64)
 
     def applyMovAvg(self, x, w):

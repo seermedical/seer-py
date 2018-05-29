@@ -132,6 +132,33 @@ class SeerConnect:
         """
         queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone)
         return self.graphqlClient.execute(gql(queryString))
+    
+    def addLabels(self, groupId, labels):
+        """Add label to label group
+
+        Parameters
+        ----------
+        groupID : string
+                Seer group ID
+        
+        labels: list of:
+                startTime : float
+                        label start time in epoch time
+                duration : float
+                        duration of event in milliseconds
+                timezone : float
+                        local UTC timezone (eg. Melbourne = 11.0)
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+
+        """
+        queryString = graphql.addLabelsMutationString(groupId, labels)
+        return self.graphqlClient.execute(gql(queryString))
 
     def getStudies(self):
         queryString = graphql.studyListQueryString()
@@ -319,16 +346,16 @@ class SeerConnect:
         labelStart = 0.0
         labelEnd = 0.0
         for i in range(label.shape[0]):
-            if labelOn==0 and label[i]!=0:
+            if labelOn==0 and label[i]>0.5:
                 labelStart = time[i]
                 labelOn = 1
-            if labelOn==1 and label[i]==0:
+            if labelOn==1 and label[i]<0.5:
                 labelEnd = time[i]
                 labelOn = 0
-                labels.append([labelStart, labelEnd, timezone])
+                labels.append([labelStart, labelEnd-labelStart, timezone])
         if labelOn==1:
-            labels.append([labelStart, labelEnd, timezone])
-        return np.asarray(labels, dtype=np.float64)
+            labels.append([labelStart, labelEnd-labelStart, timezone])
+        return labels
 
     def applyMovAvg(self, x, w):
         if len(x.shape) == 1:

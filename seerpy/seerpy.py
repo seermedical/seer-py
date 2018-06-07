@@ -10,7 +10,7 @@ from . import graphql
 import os
 
 from multiprocessing import Pool
-import time
+#import time
 from time import gmtime, strftime
 
 
@@ -174,6 +174,13 @@ class SeerConnect:
         queryString = graphql.channelGroupsQueryString(studyID)
         response = self.graphqlClient.execute(gql(queryString))
         return response['channelGroups']
+    
+    def getDataChunks(self, studyId, channelGroupId='*', fromTime=0, toTime=9e12):
+        queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
+        response = self.graphqlClient.execute(gql(queryString))['study']['channelGroup']
+        response = json_normalize(response['segments'])
+        dataChunks = self.pandasFlatten(response, '', 'dataChunks')
+        return dataChunks
 
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of
@@ -215,7 +222,7 @@ class SeerConnect:
         result = []
 
         for sdy in studiesToGet:
-            t = time.time()
+#            t = time.time()
             queryString = graphql.studyWithDataQueryString(sdy)
             result.append(self.graphqlClient.execute(gql(queryString))['study'])
             # print('study query time: ', round(time.time()-t,2))
@@ -251,7 +258,7 @@ class SeerConnect:
         channelGroups   = self.pandasFlatten(allData, '', 'channelGroups')
         channels        = self.pandasFlatten(channelGroups, 'channelGroups.', 'channels')
         segments        = self.pandasFlatten(channelGroups, 'channelGroups.', 'segments')
-        dataChunks      = self.pandasFlatten(segments, 'segments.', 'dataChunks')
+#        dataChunks      = self.pandasFlatten(segments, 'segments.', 'dataChunks')
         labelGroups     = self.pandasFlatten(allData, '', 'labelGroups')
         labels          = self.pandasFlatten(labelGroups, 'labelGroups.', 'labels')
 
@@ -265,14 +272,15 @@ class SeerConnect:
 #        print('dataframes created')
 
 #        labelGroupsM    = labelGroups.merge(labels, how='left', on='labelGroups.id', suffixes=('', '_y'))
-        segmentsM       = segments.merge(dataChunks, how='left', on='segments.id', suffixes=('', '_y'))
-        channelGroupsM  = channelGroups.merge(segmentsM, how='left', on='channelGroups.id', suffixes=('', '_y'))
+#        segmentsM       = segments.merge(dataChunks, how='left', on='segments.id', suffixes=('', '_y'))
+#        channelGroupsM  = channelGroups.merge(segmentsM, how='left', on='channelGroups.id', suffixes=('', '_y'))
+        channelGroupsM  = channelGroups.merge(segments, how='left', on='channelGroups.id', suffixes=('', '_y'))
         channelGroupsM  = channelGroupsM.merge(channels, how='left', on='channelGroups.id', suffixes=('', '_y'))
         allData         = allData.merge(channelGroupsM, how='left', on='id', suffixes=('', '_y'))
 #        allData         = allData.merge(labelGroupsM, how='left', on='id', suffixes=('', '_y'))
 #        print('dataframes merged')
 
-        return [allData, channelGroups, segments, channels, dataChunks, labelGroups, labels]
+        return [allData, channelGroups, segments, channels, labelGroups, labels]
 
     def getLinks(self, allData, threads=None):
         """Download data chunks and stich them together in one dataframe
@@ -312,9 +320,18 @@ class SeerConnect:
             for channelGroupsID in allData['channelGroups.id'].copy().drop_duplicates().tolist():
                 for segmentsID in allData['segments.id'].copy().drop_duplicates().tolist():
                     metaData = allData[(allData['id']==studyID) & (allData['channelGroups.id']==channelGroupsID) & (allData['segments.id']==segmentsID)].copy()
+                    
                     numChannels = len(metaData['channels.id'].copy().drop_duplicates().tolist())
                     channelNames = metaData['channels.name'].copy().drop_duplicates().tolist()
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
+
+                    metaData = metaData.drop_duplicates('segments.id')
+                    
+                    fromTime = metaData['segments.startTime'].min()
+                    toTime = fromTime + metaData['segments.duration'].sum()
+                    dataChunks = self.getDataChunks(studyID, channelGroupsID, fromTime, toTime)
+                    metaData = metaData.merge(dataChunks, how='left', left_on='segments.id', right_on='id', suffixes=('', '_y'))
+                    
                     metaData = metaData[['dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding', 'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',
                                          'channelGroups.recordsPerChunk', 'channelGroups.compression', 'channelGroups.signalMin', 'channelGroups.signalMax', 'channelGroups.exponent']]
                     metaData = metaData.drop_duplicates()

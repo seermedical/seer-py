@@ -26,11 +26,6 @@ def studyWithDataQueryString(studyId):
                         id
                         startTime
                         duration
-                        dataChunks {
-                            time
-                            length
-                            url
-                        }
                     }
                     channels {
                         id
@@ -57,6 +52,31 @@ def studyWithDataQueryString(studyId):
             }
         }
     ''' % (studyId)
+
+
+def dataChunksQueryString(studyId, channelGroupId, fromTime, toTime):
+    return '''
+        query {
+            study (id: "%s") {
+                id
+                name
+                channelGroup (channelGroupId: "%s") {
+                    id
+                    name
+                    segments (fromTime: %f, toTime: %f) {
+                        id
+                        startTime
+                        duration
+                        dataChunks {
+                            time
+                            length
+                            url
+                        }
+                    }
+                }
+            }
+        }
+    ''' % (studyId, channelGroupId, fromTime, toTime)
 
 def channelGroupsQueryString(studyId):
     return '''

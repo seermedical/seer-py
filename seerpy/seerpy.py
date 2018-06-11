@@ -175,12 +175,39 @@ class SeerConnect:
         response = self.graphqlClient.execute(gql(queryString))
         return response['channelGroups']
     
-    def getDataChunks(self, studyId, channelGroupId='*', fromTime=0, toTime=9e12):
+    def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
         queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
         response = self.graphqlClient.execute(gql(queryString))['study']['channelGroup']
         response = json_normalize(response['segments'])
         dataChunks = self.pandasFlatten(response, '', 'dataChunks')
         return dataChunks
+    
+    def getLabels(self, studyId, labelGroupId=None, fromTime=0, toTime=9e12):
+        queryString = graphql.getLabesQueryString(studyId, fromTime, toTime)
+        response = self.graphqlClient.execute(gql(queryString))['study']
+        response = json_normalize(response)
+        labelGroups = self.pandasFlatten(response, '', 'labelGroups')
+        labels = self.pandasFlatten(labelGroups, 'labelGroups.', 'labels')
+        tags = self.pandasFlatten(labels, 'labels.', 'tags')
+        tagType = self.pandasFlatten(tags, 'tags.', 'tagType')
+        category = self.pandasFlatten(tagType, 'tagType.', 'category')
+        
+        if 'labelGroups.labels' in labelGroups.columns: del labelGroups['labelGroups.labels']
+        if 'labels.tags' in labels.columns: del labels['labels.tags']
+        if 'tags.tagType' in tags.columns: del tags['tags.tagType']
+        if 'tagType.category' in tagType.columns: del tagType['tagType.category']
+        
+        try:
+            labelGroups  = labelGroups.merge(labels, how='left', on='labelGroups.id', suffixes=('', '_y'))
+            labelGroups  = labelGroups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+            labelGroups  = labelGroups.merge(tagType, how='left', on='tags.id', suffixes=('', '_y'))
+            labelGroups  = labelGroups.merge(category, how='left', on='tagType.id', suffixes=('', '_y'))
+        except Exception as e:
+#            print(e)
+            pass
+
+        
+        return labelGroups
 
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of

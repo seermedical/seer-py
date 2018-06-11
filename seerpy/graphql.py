@@ -77,6 +77,41 @@ def dataChunksQueryString(studyId, channelGroupId, fromTime, toTime):
             }
         }
     ''' % (studyId, channelGroupId, fromTime, toTime)
+    
+def getLabesQueryString(studyId, fromTime, toTime):
+        return '''
+        query {
+            study (id: "%s") {
+                id
+                name
+                labelGroups {
+                    id
+                    name
+                    labelType
+                    description
+                    labels {
+                        id
+                        note
+                        startTime
+                        duration
+                        timezone
+                        tags {
+                            id
+                            tagType {
+                                id
+                                category {
+                                        id
+                                        name
+                                        description
+                                        }
+                                value
+                                }
+                            }
+                    }
+                }
+            }
+        }
+    ''' % (studyId)
 
 def channelGroupsQueryString(studyId):
     return '''

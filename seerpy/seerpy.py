@@ -173,7 +173,7 @@ class SeerConnect:
     def getChannelGroups(self, studyID):
         queryString = graphql.channelGroupsQueryString(studyID)
         response = self.graphqlClient.execute(gql(queryString))
-        return response['channelGroups']
+        return response['study']['channelGroups']
     
     def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
         queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
@@ -182,32 +182,49 @@ class SeerConnect:
         dataChunks = self.pandasFlatten(response, '', 'dataChunks')
         return dataChunks
     
-    def getLabels(self, studyId, labelGroupId=None, fromTime=0, toTime=9e12):
-        queryString = graphql.getLabesQueryString(studyId, fromTime, toTime)
-        response = self.graphqlClient.execute(gql(queryString))['study']
-        response = json_normalize(response)
-        labelGroups = self.pandasFlatten(response, '', 'labelGroups')
-        labels = self.pandasFlatten(labelGroups, 'labelGroups.', 'labels')
-        tags = self.pandasFlatten(labels, 'labels.', 'tags')
-        tagType = self.pandasFlatten(tags, 'tags.', 'tagType')
-        category = self.pandasFlatten(tagType, 'tagType.', 'category')
+    def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12,
+                  limit=200, offset=0):
         
-        if 'labelGroups.labels' in labelGroups.columns: del labelGroups['labelGroups.labels']
-        if 'labels.tags' in labels.columns: del labels['labels.tags']
-        if 'tags.tagType' in tags.columns: del tags['tags.tagType']
-        if 'tagType.category' in tagType.columns: del tagType['tagType.category']
+        labelResults = None
         
-        try:
-            labelGroups  = labelGroups.merge(labels, how='left', on='labelGroups.id', suffixes=('', '_y'))
-            labelGroups  = labelGroups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
-            labelGroups  = labelGroups.merge(tagType, how='left', on='tags.id', suffixes=('', '_y'))
-            labelGroups  = labelGroups.merge(category, how='left', on='tagType.id', suffixes=('', '_y'))
-        except Exception as e:
-#            print(e)
-            pass
-
-        
-        return labelGroups
+        while True:
+            queryString = graphql.getLabesQueryString(studyId, labelGroupId, fromTime,
+                                                      toTime, limit, offset)
+            response = self.graphqlClient.execute(gql(queryString))['study']
+            labelGroup = json_normalize(response)
+            labels = self.pandasFlatten(labelGroup, 'labelGroup.', 'labels')
+            if len(labels) == 0:
+                break
+            tags = self.pandasFlatten(labels, 'labels.', 'tags')
+#            tagType = self.pandasFlatten(tags, 'tags.', 'tagType')
+#            category = self.pandasFlatten(tagType, 'tagType.', 'category')
+            
+            if 'labelGroup.labels' in labelGroup.columns: del labelGroup['labelGroup.labels']
+            if 'labels.tags' in labels.columns: del labels['labels.tags']
+#            if 'tags.tagType' in tags.columns: del tags['tags.tagType']
+#            if 'tagType.category' in tagType.columns: del tagType['tagType.category']
+            
+            try:
+                labelGroup  = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+                labelGroup  = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+#                labelGroup  = labelGroup.merge(tagType, how='left', on='tags.id', suffixes=('', '_y'))
+#                labelGroup  = labelGroup.merge(category, how='left', on='tagType.id', suffixes=('', '_y'))
+            except Exception as e:
+    #            print(e)
+                pass
+            
+            offset += limit
+            
+            if labelResults is None:
+                labelResults = labelGroup.copy()
+            else:
+                labelResults = labelResults.append(labelGroup, ignore_index=True, verify_integrity=False)
+        return labelResults
+    
+    def getLabelGroups(self, studyID):
+        queryString = graphql.labelGroupsQueryString(studyID)
+        response = self.graphqlClient.execute(gql(queryString))
+        return response['study']['labelGroups']
 
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of

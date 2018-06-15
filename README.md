@@ -20,7 +20,10 @@ The install instructions above will install all the required dependencies, howev
 To run the Jupyter notebook example (optional, included in Anaconda): `pip install notebook`
 
 ## Getting Started
-
 Check out the [Example](`Examples/Example.ipynb`) for a step-by-step example of how to use the SDK to access data on the Seer platform. 
 
 To start a Jupyter notebook, run `jupyter notebook` in a command/bash window. Further instructions on Jupyter can be found here: https://github.com/jupyter/notebook
+
+## Troubleshooting
+There is a known issue with using python's multiprocessing module on Windows with spyder. The function `getLinks` uses `multiprocessing.Pool` to run multiple downloads simultaneously, which can cause the process to run indefinitely. The workaround for this is to ensure that the current working directory is set to the directory containing your script. Running the script from a command window will also solve this problem. Alternatively, setting `threads=1` in the `getLinks` function will stop in from using `multiprocessing` altogether.
+

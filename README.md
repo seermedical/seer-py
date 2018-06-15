@@ -4,6 +4,9 @@ Python wrapper for seer-api, with the purpose of authenticating a user, download
 ## Install
 To install, simply clone or download this repository, then type `pip install .` which will install all dependencies, and the Seer python API.
 
+### Epilepsy Ecosystem Data
+For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest release](https://github.com/seermedical/seer-py/releases/latest) instead of cloning the repository or downloading the master branch. The file ContestDataDownloader.py in Examples will guide you through the download process.
+
 ## Requirements
 This library currently requires python 3, and it if you don't currently have a python 3 installation, we recommend you use the Anaconda distribution for its simplicity, support, stability and extensibility. It can be downloaded here: https://www.anaconda.com/download
 

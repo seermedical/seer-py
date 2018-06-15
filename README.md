@@ -11,14 +11,13 @@ For users attempting to download data for the [Epilepsy Ecosystem](https://www.e
 This library currently requires Python 3, and it if you don't currently have a Python 3 installation, we recommend you use the Anaconda distribution for its simplicity, support, stability and extensibility. It can be downloaded here: https://www.anaconda.com/download
 
 The install instructions above will install all the required dependencies, however, if you wish to install them yourself, here's what you'll need:
-- GraphQL python library is required to query the Seer database (in addition to Anaconda). To install, simply run:
-`pip install gql`
+- [`gql`](https://github.com/graphql-python/gql): a GraphQL python library is required to query the Seer platform. To install, simply run: `pip install gql`
 - Pandas, numpy, and matplotlib are also required. Some of these installs can be tricky, so Anaconda is recommended, however, they can be installed separately. Please see these guides for more detailed information:
   - https://scipy.org/install.html
   - https://matplotlib.org/users/installing.html
   - https://pandas.pydata.org/pandas-docs/stable/install.html
 
-To run the jupyter notebook example (optional, included in Anaconda): `pip install notebook`
+To run the Jupyter notebook example (optional, included in Anaconda): `pip install notebook`
 
 ## Getting Started
 

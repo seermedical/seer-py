@@ -26,11 +26,6 @@ def studyWithDataQueryString(studyId):
                         id
                         startTime
                         duration
-                        dataChunks {
-                            time
-                            length
-                            url
-                        }
                     }
                     channels {
                         id
@@ -41,18 +36,82 @@ def studyWithDataQueryString(studyId):
                         }
                     }
                 }
-                labelGroups {
+            }
+        }
+    ''' % (studyId)
+
+
+def dataChunksQueryString(studyId, channelGroupId, fromTime, toTime):
+    return '''
+        query {
+            study (id: "%s") {
+                id
+                name
+                channelGroup (channelGroupId: "%s") {
+                    id
+                    name
+                    segments (fromTime: %f, toTime: %f) {
+                        id
+                        startTime
+                        duration
+                        dataChunks {
+                            time
+                            length
+                            url
+                        }
+                    }
+                }
+            }
+        }
+    ''' % (studyId, channelGroupId, fromTime, toTime)
+    
+def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
+        return '''
+        query {
+            study (id: "%s") {
+                id
+                name
+                labelGroup (labelGroupId: "%s") {
                     id
                     name
                     labelType
                     description
-                    labels {
+                    labels (limit: %.0f, offset: %.0f) {
                         id
                         note
                         startTime
                         duration
                         timezone
+                        tags {
+                            id
+                            tagType {
+                                id
+                                category {
+                                        id
+                                        name
+                                        description
+                                        }
+                                value
+                                }
+                            }
                     }
+                }
+            }
+        }
+    ''' % (studyId, labelGroupId, limit, offset)
+
+
+def labelGroupsQueryString(studyId):
+        return '''
+        query {
+            study (id: "%s") {
+                id
+                name
+                labelGroups {
+                    id
+                    name
+                    labelType
+                    description
                 }
             }
         }

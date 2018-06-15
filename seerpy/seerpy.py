@@ -302,29 +302,18 @@ class SeerConnect:
         channelGroups   = self.pandasFlatten(allData, '', 'channelGroups')
         channels        = self.pandasFlatten(channelGroups, 'channelGroups.', 'channels')
         segments        = self.pandasFlatten(channelGroups, 'channelGroups.', 'segments')
-#        dataChunks      = self.pandasFlatten(segments, 'segments.', 'dataChunks')
-        labelGroups     = self.pandasFlatten(allData, '', 'labelGroups')
-        labels          = self.pandasFlatten(labelGroups, 'labelGroups.', 'labels')
 
-        if 'labelGroups.labels' in labelGroups.columns: del labelGroups['labelGroups.labels']
         if 'segments.dataChunks' in segments.columns: del segments['segments.dataChunks']
         if 'channelGroups.segments' in channelGroups.columns: del channelGroups['channelGroups.segments']
         if 'channelGroups.channels' in channelGroups.columns: del channelGroups['channelGroups.channels']
         if 'channelGroups' in allData.columns: del allData['channelGroups']
         if 'labelGroups' in allData.columns: del allData['labelGroups']
 
-#        print('dataframes created')
-
-#        labelGroupsM    = labelGroups.merge(labels, how='left', on='labelGroups.id', suffixes=('', '_y'))
-#        segmentsM       = segments.merge(dataChunks, how='left', on='segments.id', suffixes=('', '_y'))
-#        channelGroupsM  = channelGroups.merge(segmentsM, how='left', on='channelGroups.id', suffixes=('', '_y'))
         channelGroupsM  = channelGroups.merge(segments, how='left', on='channelGroups.id', suffixes=('', '_y'))
         channelGroupsM  = channelGroupsM.merge(channels, how='left', on='channelGroups.id', suffixes=('', '_y'))
         allData         = allData.merge(channelGroupsM, how='left', on='id', suffixes=('', '_y'))
-#        allData         = allData.merge(labelGroupsM, how='left', on='id', suffixes=('', '_y'))
-#        print('dataframes merged')
 
-        return [allData, channelGroups, segments, channels, labelGroups, labels]
+        return allData
 
     def getLinks(self, allData, threads=None):
         """Download data chunks and stich them together in one dataframe

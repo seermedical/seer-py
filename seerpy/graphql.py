@@ -36,19 +36,6 @@ def studyWithDataQueryString(studyId):
                         }
                     }
                 }
-                labelGroups {
-                    id
-                    name
-                    labelType
-                    description
-                    labels {
-                        id
-                        note
-                        startTime
-                        duration
-                        timezone
-                    }
-                }
             }
         }
     ''' % (studyId)

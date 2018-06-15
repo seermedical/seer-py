@@ -55,19 +55,14 @@ if __name__ == '__main__':
         print('  Retrieving metadata...')
 
         allData = None
-        allData, channelGroups, segments, channels, dataChunks, labelGroups, labels = client.createMetaData(study)
+        allData = client.createMetaData(study)
+        
+        #return values in uV
+        allData['channelGroups.exponent'] = 0
 
         if dtMin is not None and dtMax is not None:
             allData = allData[(allData.loc[:,'segments.startTime']>=dtMin) & (allData.loc[:,'segments.startTime']<=dtMax)]
-
-#        startTimes = allData.loc[:,'segments.startTime']
-#        startTimes = pd.to_datetime(pd.Series(startTimes), unit='ms')
-#        startTimes = startTimes.dt.minute
-#        startTimesCompare = startTimes.unique()
-#
-#        allData['Preictal'] = np.where(startTimes==30, 1, 0)
-
-        time.sleep(2)
+        
 
         numFiles = len(allData['segments.startTime'].unique())
         print('  Downloading %d file(s)...' % numFiles)
@@ -78,7 +73,7 @@ if __name__ == '__main__':
             startTime = datetime.fromtimestamp(chunk/1000, tz=timezone.utc)
             hour = (startTime - baseTime).total_seconds()/3600
             minute = startTime.minute
-            if minute == 30:
+            if minute >= 30:
                 preictal = 1
             else:
                 preictal = 0
@@ -107,7 +102,7 @@ if __name__ == '__main__':
             savemat(
                 filename + '.mat',
                 { 'data': np.asarray(data.iloc[:,-16:], dtype=np.float32) },
-                appendmat = False, do_compression = True
+                appendmat = False, do_compression = False
             )
             counter += 1
 

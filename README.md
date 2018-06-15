@@ -5,7 +5,7 @@ Python SDK for the Seer data platform, which handles authenticating a user, down
 To install, simply clone or download this repository, then type `pip install .` which will install all the dependencies.
 
 ### Epilepsy Ecosystem Data
-For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest release](https://github.com/seermedical/seer-py/releases/latest) instead of cloning the repository or downloading the master branch. Then use the script `ContestDataDownloader.py` in `Examples` as it will guide you through the download process.
+For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest release](https://github.com/seermedical/seer-py/releases/latest) instead of cloning the repository or downloading the master branch. Then open the script `ContestDataDownloader.py` in `Examples` and it will guide you through the download process (you will need to change a few things in this script including the path to download the data to).
 
 ## Requirements
 This library currently requires Python 3, and it if you don't currently have a Python 3 installation, we recommend you use the Anaconda distribution for its simplicity, support, stability and extensibility. It can be downloaded here: https://www.anaconda.com/download

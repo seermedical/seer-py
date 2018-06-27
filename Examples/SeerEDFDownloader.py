@@ -136,6 +136,7 @@ if __name__ == '__main__':
                     tempData = chunkData[chunkData['channelGroups.name']==chanGroup].copy()
     
                     startTime = datetime.fromtimestamp(chunk/1000, tz=timezone.utc)
+                    startTime += datetime.timedelta(hours=timezone)
         
                     fileName = directory + '/' + study + '_' + str(int(counter)).zfill(4) + '_' + chanGroup      
         

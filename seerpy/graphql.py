@@ -26,6 +26,7 @@ def studyWithDataQueryString(studyId):
                         id
                         startTime
                         duration
+                        timezone
                     }
                     channels {
                         id

@@ -26,6 +26,7 @@ def studyWithDataQueryString(studyId):
                         id
                         startTime
                         duration
+                        processed
                     }
                     channels {
                         id
@@ -54,7 +55,6 @@ def dataChunksQueryString(studyId, channelGroupId, fromTime, toTime):
                         id
                         startTime
                         duration
-                        processed
                         dataChunks {
                             time
                             length

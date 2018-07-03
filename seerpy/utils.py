@@ -51,4 +51,8 @@ def downloadLink(dataQ):
         return data
     except Exception as e:
         print(e)
+        print(metaData['dataChunks.url'])
+        import traceback
+        traceback.print_exc()
+        print(str(data)[:250])
         raise

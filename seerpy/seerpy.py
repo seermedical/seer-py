@@ -359,14 +359,14 @@ class SeerConnect:
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
 
                     metaData = metaData.drop_duplicates('segments.id')
-                    unprocessedSegments = metaData[metaData['segments.processed'] == 'null']
+                    unprocessedSegments = metaData[metaData['segments.processed'].isnull()]
                     if len(unprocessedSegments) > 0:
                         print('Warning: There are ', len(unprocessedSegments), ' unprocessed segments. Consider waiting until these are finished')
+                    metaData = metaData[metaData['segments.processed'].notnull()]
                     
                     fromTime = metaData['segments.startTime'].min()
                     toTime = fromTime + metaData['segments.duration'].sum()
                     dataChunks = self.getDataChunks(studyID, channelGroupsID, fromTime, toTime)
-                    dataChunks = dataChunks[dataChunks['segments.processed'] != 'null']
                     metaData = metaData.merge(dataChunks, how='left', left_on='segments.id', right_on='id', suffixes=('', '_y'))
                     
                     metaData = metaData[['dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding', 'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',

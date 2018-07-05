@@ -363,6 +363,8 @@ class SeerConnect:
                     if len(unprocessedSegments) > 0:
                         print('Warning: There are ', len(unprocessedSegments), ' unprocessed segments. Consider waiting until these are finished')
                     metaData = metaData[metaData['segments.processed'].notnull()]
+                    if len(metaData) == 0:
+                        continue
                     
                     fromTime = metaData['segments.startTime'].min()
                     toTime = fromTime + metaData['segments.duration'].sum()

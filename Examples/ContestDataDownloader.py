@@ -27,8 +27,8 @@ import os
 # studies = ['Pat1Test']
 studies = ['Pat1Test New']
 ## include a path to save downloaded data segments to file
-# path = 'D:/KAGGLE/data/ecosystem/test_download/' # replace with preferred path
-path = './' # replace with preferred path
+path = 'D:/KAGGLE/data/ecosystem/test_download/' # replace with preferred path
+# path = './' # replace with preferred path
 
 # Change this section for saving data segments as different file formats
 # fileType = '.csv'

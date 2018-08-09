@@ -412,6 +412,21 @@ class SeerConnect:
         if labelOn==1:
             labels.append([labelStart, labelEnd-labelStart, timezone])
         return labels
+    
+    
+    def getViewedTimes(self, studyID):
+        queryString = graphql.getViewedTimesString(studyID)
+        response = self.graphqlClient.execute(gql(queryString))
+        response = json_normalize(response['viewGroups'])
+        views = []
+        for i in range(len(response)):
+            view = json_normalize(response.loc[i,'views'])
+            view['user'] = response.loc[i,'user.fullName']
+            views.append(view)
+        views = pd.concat(views)
+        views['createdAt'] = pd.to_datetime(views['createdAt'])
+        views['updatedAt'] = pd.to_datetime(views['updatedAt'])
+        return views
 
     def applyMovAvg(self, x, w):
         if len(x.shape) == 1:

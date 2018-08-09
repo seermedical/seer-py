@@ -210,3 +210,23 @@ def removeLabelGroupMutationString(groupId):
             removeLabelGroupFromStudy(groupId: "%s")
         }
     ''' % (groupId)
+    
+    
+    
+def getViewedTimesString(studyId):
+    return '''
+        query {
+            viewGroups(studyId: "%s") {
+                user {
+                  fullName
+                }
+                views {
+                  id
+                  startTime
+                  duration
+                  createdAt
+                  updatedAt
+                }
+              }
+            }
+    ''' % (studyId)

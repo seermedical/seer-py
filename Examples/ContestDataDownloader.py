@@ -26,7 +26,13 @@ import os
 #studies = ['Pat1Test', 'Pat1Train', 'Pat2Test', 'Pat2Train', 'Pat3Test', 'Pat3Train']
 studies = ['Pat1Test']
 ## include a path to save downloaded data segments to file
-path = 'D:/KAGGLE/data/ecosystem/test_download/' # replace with preferred path
+# path = 'D:/KAGGLE/data/ecosystem/test_download/' # replace with preferred path
+path = './' # replace with preferred path
+
+# Change this section for saving data segments as different file formats
+# fileType = '.csv'
+# fileType = '.hdf5'
+fileType = '.mat'
 
 if __name__ == '__main__':
 
@@ -79,7 +85,10 @@ if __name__ == '__main__':
                 preictal = 0
 
             #filename = study + '_' + str(int(hour)) + '_' + str(preictal)
-            filename = directory + '/' + study + '_' + str(int(hour)) + '_' + str(preictal)          
+            filename = directory + '/' + study + '_' + str(int(hour)) + '_' + str(preictal) + fileType
+            if os.path.exists(filename):
+                counter += 1
+                continue
 
             b = ('   -> %s (%d/%d)' % (filename, counter, numFiles) + ''*200)
             sys.stdout.write('\r'+b)
@@ -89,21 +98,17 @@ if __name__ == '__main__':
             ## on Windows systems. Use Carefully.
             data = client.getLinks(allData[allData['segments.startTime']==chunk].copy(), threads=5)
 
-            ######################
-            # Change this section for saving data segments as different file formats
-
-            #for csv format
-            #data.to_csv(filename + '.csv', index=False, float_format='%.3f')
-
-            ##for hdf5 format
-            #data.to_hdf(filename + '.hdf5', key='data', format='table')
-
-            ##for matlab files
-            savemat(
-                filename + '.mat',
-                { 'data': np.asarray(data.iloc[:,-16:], dtype=np.float32) },
-                appendmat = False, do_compression = False
-            )
+            if fileType == '.csv':
+                # csv format
+                data.to_csv(filename, index=False, float_format='%.3f')
+            elif fileType == '.hdf5':
+                # hdf5 format
+                data.to_hdf(filename, key='data', format='table')
+            elif fileType == '.mat':
+                # matlab files
+                savemat(filename, { 'data': np.asarray(data.iloc[:,-16:], dtype=np.float32) }, appendmat=False, do_compression=False)
+            else:
+                raise('Unknown file type for download')
             counter += 1
 
         b = ('  Finished downloading study.' + ''*200)

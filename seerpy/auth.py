@@ -1,6 +1,8 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 import requests
 import getpass
+import os
+
 
 class SeerAuth:
 
@@ -40,5 +42,14 @@ class SeerAuth:
         return r.status_code
 
     def loginDetails(self):
-        self.email = input('Email Address: ')
-        self.password = getpass.getpass('Password: ')
+        pswdfile = '~/.seerpy/credentials'
+        if os.path.isfile(pswdfile):
+            f=open(pswdfile, 'r')
+            lines=f.readlines()
+            self.email=lines[0][:-1]
+            self.password=lines[1][:-1]
+            f.close()
+        else:
+            self.email = input('Email Address: ')
+            self.password = getpass.getpass('Password: ')
+

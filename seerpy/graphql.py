@@ -163,17 +163,29 @@ def studyQueryStudy(studyId):
         }
     ''' % (studyId)
 
-def addLabelMutationString(groupId, startTime, duration, timezone):
-    return '''
-        mutation {
-            addLabelsToLabelGroup(
-                groupId: "%s",
-                labels: [{ startTime: %f, duration: %f, timezone: %f }]
-            ) {
-                id
+def addLabelMutationString(groupId, startTime, duration, timezone, confidence):
+    if confidence is None:
+        return '''
+            mutation {
+                addLabelsToLabelGroup(
+                    groupId: "%s",
+                    labels: [{ startTime: %f, duration: %f, timezone: %f }]
+                ) {
+                    id
+                }
             }
-        }
-    ''' % (groupId, startTime, duration, timezone)
+        ''' % (groupId, startTime, duration, timezone)
+    else:
+        return '''
+            mutation {
+                addLabelsToLabelGroup(
+                    groupId: "%s",
+                    labels: [{ startTime: %f, duration: %f, timezone: %f, confidence: %f }]
+                ) {
+                    id
+                }
+            }
+        ''' % (groupId, startTime, duration, timezone, confidence)
 
 def addLabelsMutationString(groupId, labels):
     start = '''
@@ -190,7 +202,10 @@ def addLabelsMutationString(groupId, labels):
     
     lst = ''
     for l in labels:
-        lst = lst + '{ startTime: %f, duration: %f, timezone: %f },' % (l[0], l[1], l[2])
+        if len(l) <= 3:
+            lst = lst + '{ startTime: %f, duration: %f, timezone: %f },' % (l[0], l[1], l[2])
+        else:
+            lst = lst + '{ startTime: %f, duration: %f, timezone: %f, confidence: %f },' % (l[0], l[1], l[2], l[3])
     
     return start + lst[:-1] + end
 

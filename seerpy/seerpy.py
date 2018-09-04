@@ -102,7 +102,7 @@ class SeerConnect:
         queryString = graphql.removeLabelGroupMutationString(groupId)
         return self.graphqlClient.execute(gql(queryString))
 
-    def addLabel(self, groupId, startTime, duration, timezone):
+    def addLabel(self, groupId, startTime, duration, timezone, confidence = None):
         """Add label to label group
 
         Parameters
@@ -115,6 +115,8 @@ class SeerConnect:
                 duration of event in milliseconds
         timezone : float
                 local UTC timezone (eg. Melbourne = 11.0)
+        [optional] confidence : float (between 0 and 1)
+                optional value for confidence in label
 
         Returns
         -------
@@ -130,7 +132,7 @@ class SeerConnect:
             addLabel(labelGroup, alarm[i,0], alarm[i,1]-alarm[i,0])
 
         """
-        queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone)
+        queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone, confidence)
         return self.graphqlClient.execute(gql(queryString))
     
     def addLabels(self, groupId, labels):
@@ -148,7 +150,8 @@ class SeerConnect:
                         duration of event in milliseconds
                 timezone : float
                         local UTC timezone (eg. Melbourne = 11.0)
-
+                [optional] confidence : float (between 0 and 1)
+                        value for confidence in label 
         Returns
         -------
         None

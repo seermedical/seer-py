@@ -2,7 +2,7 @@
 import requests
 import getpass
 import os
-
+from os.path import expanduser
 
 class SeerAuth:
 
@@ -42,7 +42,8 @@ class SeerAuth:
         return r.status_code
 
     def loginDetails(self):
-        pswdfile = '~/.seerpy/credentials'
+        home = expanduser('~')
+        pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
             f=open(pswdfile, 'r')
             lines=f.readlines()

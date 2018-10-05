@@ -20,7 +20,7 @@ The install instructions above will install all the required dependencies, howev
 To run the Jupyter notebook example (optional, included in Anaconda): `pip install notebook`
 
 ## Getting Started
-Check out the [Example](`Examples/Example.ipynb`) for a step-by-step example of how to use the SDK to access data on the Seer platform. 
+Check out the [Example](Examples/Example.ipynb) for a step-by-step example of how to use the SDK to access data on the Seer platform. 
 
 To start a Jupyter notebook, run `jupyter notebook` in a command/bash window. Further instructions on Jupyter can be found here: https://github.com/jupyter/notebook
 

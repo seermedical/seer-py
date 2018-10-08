@@ -359,10 +359,10 @@ class SeerConnect:
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
 
                     metaData = metaData.drop_duplicates('segments.id')
-                    unprocessedSegments = metaData[metaData['segments.processed'].isnull()]
-                    if len(unprocessedSegments) > 0:
-                        print('Warning: There are ', len(unprocessedSegments), ' unprocessed segments. Consider waiting until these are finished')
-                    metaData = metaData[metaData['segments.processed'].notnull()]
+                    processedSegments = metaData[metaData['segments.processed'].notnull()]
+                    if len(processedSegments) < len(metaData):
+                        print('Warning: There are ', len(metaData) - len(processedSegments), ' unprocessed segments. Consider waiting until these are finished')
+                    metaData = processedSegments
                     if len(metaData) == 0:
                         continue
                     

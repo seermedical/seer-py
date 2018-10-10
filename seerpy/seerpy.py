@@ -348,6 +348,14 @@ class SeerConnect:
         
         
         dataQ = []
+        
+        metaData = allData.copy().drop_duplicates('segments.id')
+        processedSegments = metaData[metaData['segments.processed'].notnull()]
+        if len(processedSegments) < len(metaData):
+            print('\nWarning: There are ', len(metaData) - len(processedSegments), ' unprocessed segments, which will be skipped. Consider waiting until these are finished')
+        allData = allData[allData['segments.processed'].notnull()]
+
+
 #        uniqueUrls = allData['dataChunks.url'].copy().drop_duplicates()
         for studyID in allData['id'].copy().drop_duplicates().tolist():
             for channelGroupsID in allData['channelGroups.id'].copy().drop_duplicates().tolist():
@@ -359,12 +367,6 @@ class SeerConnect:
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
 
                     metaData = metaData.drop_duplicates('segments.id')
-                    processedSegments = metaData[metaData['segments.processed'].notnull()]
-                    if len(processedSegments) < len(metaData):
-                        print('Warning: There are ', len(metaData) - len(processedSegments), ' unprocessed segments. Consider waiting until these are finished')
-                    metaData = processedSegments
-                    if len(metaData) == 0:
-                        continue
                     
                     fromTime = metaData['segments.startTime'].min()
                     toTime = fromTime + metaData['segments.duration'].sum()

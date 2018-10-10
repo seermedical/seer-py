@@ -361,12 +361,13 @@ class SeerConnect:
             for channelGroupsID in allData['channelGroups.id'].copy().drop_duplicates().tolist():
                 for segmentsID in allData['segments.id'].copy().drop_duplicates().tolist():
                     metaData = allData[(allData['id']==studyID) & (allData['channelGroups.id']==channelGroupsID) & (allData['segments.id']==segmentsID)].copy()
+                    metaData = metaData.drop_duplicates('segments.id')
+                    if len(metaData) == 0:
+                        continue
                     
                     numChannels = len(metaData['channels.id'].copy().drop_duplicates().tolist())
                     channelNames = metaData['channels.name'].copy().drop_duplicates().tolist()
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
-
-                    metaData = metaData.drop_duplicates('segments.id')
                     
                     fromTime = metaData['segments.startTime'].min()
                     toTime = fromTime + metaData['segments.duration'].sum()

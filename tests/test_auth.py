@@ -20,7 +20,6 @@ class TestAuth:
 
     def test_success(self, requests_post, requests_get,
                      email_input, password_getpass):  # pylint:disable=unused-argument
-        print("requests_post", requests_post)
         requests_post.return_value.cookies = {'seer.sid': "cookie"}
         requests_get.return_value.status_code = 200
 
@@ -30,7 +29,6 @@ class TestAuth:
 
     def test_401_error(self, requests_post, requests_get,
                        email_input, password_getpass):  # pylint:disable=unused-argument
-        print("requests_post", requests_post)
         requests_post.return_value.cookies = {'seer.sid': "cookie"}
         requests_get.return_value.status_code = 401
 
@@ -40,7 +38,6 @@ class TestAuth:
 
     def test_other_error(self, requests_post, requests_get,
                        email_input, password_getpass):  # pylint:disable=unused-argument
-        print("requests_post", requests_post)
         requests_post.return_value.cookies = {'seer.sid': "cookie"}
         requests_get.return_value.status_code = "undefined"
 

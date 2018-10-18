@@ -1,0 +1,28 @@
+steps:
+  - label: ':hammer: Test'
+    command: './scripts/ci.sh'
+    branches: '!master'
+
+  - wait
+
+  - label: ':evergreen_tree: E2E Test'
+    command: './scripts/e2e.sh'
+    artifact_paths: 'cypress/videos/*;cypress/screenshots/*;cypress/snapshots/diff/*;cypress/snapshots/new/*;*.log'
+    branches: '!master'
+
+  - wait: ~
+    continue_on_failure: true
+
+  - label: ':whale: Push Image'
+    command: './scripts/deploy.sh'
+
+  - wait
+
+  - label: ':rocket: Trigger Deploy'
+    trigger: 'seer-platform'
+    async: true
+    branches: 'master'
+    build:
+      branch: 'master'
+      env:
+        WORKER_IMAGE_TAG: "build-${BUILDKITE_BUILD_ID}"

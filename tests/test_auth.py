@@ -37,7 +37,7 @@ class TestAuth:
         assert result.cookie is None
 
     def test_other_error(self, requests_post, requests_get,
-                       email_input, password_getpass):  # pylint:disable=unused-argument
+                         email_input, password_getpass):  # pylint:disable=unused-argument
         requests_post.return_value.cookies = {'seer.sid': "cookie"}
         requests_get.return_value.status_code = "undefined"
 

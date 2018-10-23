@@ -1,4 +1,3 @@
 steps:
   - label: ':hammer: Test'
     command: './scripts/ci.sh'
-    branches: '!master'

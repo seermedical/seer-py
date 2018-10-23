@@ -1,0 +1,208 @@
+{
+    "study": {
+        "channelGroups": [
+            {
+                "channels": [
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch0_id",
+                        "name": "ch0"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch1_id",
+                        "name": "ch1"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch2_id",
+                        "name": "ch2"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch3_id",
+                        "name": "ch3"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch4_id",
+                        "name": "ch4"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch5_id",
+                        "name": "ch5"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch6_id",
+                        "name": "ch6"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch7_id",
+                        "name": "ch7"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch8_id",
+                        "name": "ch8"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch9_id",
+                        "name": "ch9"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch10_id",
+                        "name": "ch10"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch11_id",
+                        "name": "ch11"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch12_id",
+                        "name": "ch12"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch13_id",
+                        "name": "ch13"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch14_id",
+                        "name": "ch14"
+                    },
+                    {
+                        "channelType": {
+                            "category": "generic",
+                            "name": "Generic"
+                        },
+                        "id": "study-4-ch15_id",
+                        "name": "ch15"
+                    }
+                ],
+                "chunkPeriod": 10,
+                "compression": "gzip",
+                "exponent": -6,
+                "id": "study-4-channel_group_id",
+                "name": "EEG",
+                "recordLength": 1,
+                "recordsPerChunk": 10,
+                "sampleEncoding": "int16",
+                "sampleRate": 400,
+                "samplesPerRecord": 400,
+                "segments": [
+                    {
+                        "duration": 600000,
+                        "id": "study-4-seg1_id",
+                        "startTime": 1262307600000
+                    },
+                    {
+                        "duration": 600000,
+                        "id": "study-4-seg2_id",
+                        "startTime": 1262311200000
+                    },
+                    {
+                        "duration": 600000,
+                        "id": "study-4-seg3_id",
+                        "startTime": 1262314800000
+                    },
+                    {
+                        "duration": 600000,
+                        "id": "study-4-seg4_id",
+                        "startTime": 1262318400000
+                    },
+                    {
+                        "duration": 750,
+                        "id": "study-4-seg5_id",
+                        "startTime": 1262322503842.5
+                    },
+                    {
+                        "duration": 46875,
+                        "id": "study-4-seg6_id",
+                        "startTime": 1262322505467.5
+                    },
+                    {
+                        "duration": 1375,
+                        "id": "study-4-seg7_id",
+                        "startTime": 1262322553217.5
+                    },
+                    {
+                        "duration": 44532.5,
+                        "id": "sstudy-4-eg8_id",
+                        "startTime": 1262322555467.5
+                    },
+                    {
+                        "duration": 600000,
+                        "id": "study-4-seg9_id",
+                        "startTime": 1262325600000
+                    },
+                    {
+                        "duration": 600000,
+                        "id": "study-4-seg10_id",
+                        "startTime": 1262332800000
+                    }
+                ],
+                "signalMax": 2200,
+                "signalMin": -2200,
+                "units": "v"
+            }
+        ],
+        "id": "study-4-id",
+        "name": "Study 4",
+        "patient": {
+            "id": "patient-4-id"
+        }
+    }
+}

@@ -158,3 +158,46 @@ class TestGetAllMetaData:
         assert result == {'studies' : []}
         # the only call will be in getStudies()
         assert gql_client.return_value.execute.call_count == 1
+
+
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetDataChunks:
+
+    def test_success(self, seer_auth, gql_client):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        with open(test_data_dir / "study1_data_chunks_1_1.json", "r") as f:
+            gql_client.return_value.execute.return_value = json.load(f)
+
+        test_result = pd.read_csv(test_data_dir / "study1_data_chunks_1_1.csv", index_col=0)
+
+        # run test
+        result = SeerConnect().getDataChunks("study-1-id", "study-1-channel-group-1-id",
+                                             1526275675734.375, 1526275776671.875)
+
+        # check result
+        assert result.equals(test_result)
+
+    def test_no_chunks_returned(self, seer_auth, gql_client):
+
+        # we don't explicitly handle an exception based on a study not found
+        # but this is probably the correct action
+
+        # the same would be true with other query methods
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        error_string = ("{'errorCode': 'NOT_FOUND', 'locations': [{'column': 2, 'line': 1}], "
+                        "'message': 'Study does not exist', 'path': ['study'], 'statusCode': 404}")
+        gql_client.return_value.execute.side_effect = Exception(error_string)
+
+        # run test
+        with pytest.raises(Exception) as exception_info:
+            SeerConnect().getDataChunks("study", "channel-group-id",1, 1)
+
+        # check result
+        assert str(exception_info.value) == error_string

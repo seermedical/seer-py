@@ -175,6 +175,12 @@ class SeerConnect:
         response = self.graphqlClient.execute(gql(queryString))
         return response['study']['channelGroups']
     
+    def getSegmentUrls(self, segmentIds):
+        queryString = graphql.segmentUrlsQueryString(segmentIds)
+        response = self.graphqlClient.execute(gql(queryString))
+        response = response['studyChannelGroupSegments']
+        return pd.DataFrame(response)
+    
     def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
         queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
         response = self.graphqlClient.execute(gql(queryString))['study']['channelGroup']

@@ -136,6 +136,18 @@ def channelGroupsQueryString(studyId):
             }
         }
     ''' % (studyId)
+    
+#    studyChannelGroupSegments
+    
+def segmentUrlsQueryString(segmentIds):
+    return '''
+        query {
+            studyChannelGroupSegments(segmentIds: %s) {
+                id
+                baseDataChunkUrl
+            }
+        }
+    ''' % ('["' + '\",\"'.join(segmentIds) + '"]')
 
 def studyListQueryString():
     return '''

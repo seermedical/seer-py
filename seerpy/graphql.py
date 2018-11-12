@@ -137,10 +137,10 @@ def channelGroupsQueryString(studyId):
         }
     ''' % (studyId)
 
-def studyListQueryString():
+def studyListQueryString(searchTerm=''):
     return '''
         query {
-            studies {
+            studies (searchTerm: "%s"){
                 id
                 patient {
                     id
@@ -148,7 +148,7 @@ def studyListQueryString():
                 name
             }
         }
-    '''
+    '''% (searchTerm)
 
 def studyQueryStudy(studyId):
     return '''

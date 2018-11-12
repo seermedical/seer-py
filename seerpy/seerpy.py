@@ -167,7 +167,7 @@ class SeerConnect:
         studies = []
         while True:
             queryString = graphql.studyListQueryString(limit, offset, searchTerm)
-            response = self.executeQuery(queryString)['studies']
+            response = self.graphqlClient.execute(gql(queryString))['studies']
             if len(response) == 0:
                 break
             else:

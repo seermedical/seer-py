@@ -137,10 +137,10 @@ def channelGroupsQueryString(studyId):
         }
     ''' % (studyId)
 
-def studyListQueryString():
+def studyListQueryString(limit, offset, searchTerm):
     return '''
         query {
-            studies {
+            studies (limit: %.0f, offset: %.0f, searchTerm: "%s"){
                 id
                 patient {
                     id
@@ -148,7 +148,7 @@ def studyListQueryString():
                 name
             }
         }
-    '''
+    '''% (limit, offset, searchTerm)
 
 def studyQueryStudy(studyId):
     return '''

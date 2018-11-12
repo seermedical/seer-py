@@ -160,8 +160,8 @@ class SeerConnect:
         queryString = graphql.addLabelsMutationString(groupId, labels)
         return self.graphqlClient.execute(gql(queryString))
 
-    def getStudies(self):
-        queryString = graphql.studyListQueryString()
+    def getStudies(self, searchTerm=''):
+        queryString = graphql.studyListQueryString(searchTerm)
         response = self.graphqlClient.execute(gql(queryString))
         return response['studies']
 
@@ -253,7 +253,8 @@ class SeerConnect:
         labelGroups, labels = SeerConnect.createMetaData()
 
         """
-        studies = self.getStudies()
+        searchTerm = study if study is not None else ''
+        studies = self.getStudies(searchTerm)
         studiesToGet = []
 
         for s in studies:

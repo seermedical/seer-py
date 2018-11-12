@@ -2,11 +2,22 @@
 import requests
 import getpass
 import os
+import json
 
 class SeerAuth:
 
     def __init__(self, apiUrl, email=None, password=None):
         self.apiUrl = apiUrl
+        self.cookie = None
+        try:
+            self.readCookie()
+            if self.cookie is not None:
+                status_code = self.verifyLogin()
+                if status_code == 200:
+                    print('Login Successful')
+                    return
+        except:
+            pass
         self.email = email
         self.password = password
         allowedAttempts = 3
@@ -43,6 +54,7 @@ class SeerAuth:
         else:
             apiUrl = self.apiUrl + '/api/auth/verify'
             r = requests.get(url=apiUrl, cookies=self.cookie)
+            self.writeCookie()
             return r.status_code
 
     def loginDetails(self):
@@ -57,3 +69,21 @@ class SeerAuth:
         else:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
+    
+    def writeCookie(self):
+        try:
+            home = os.environ['HOME'] if 'HOME' in os.environ else '~'
+            cookieFile = home + '/.seerpy/cookie'
+            if not os.path.isdir(home + '/.seerpy'):
+                os.mkdir(home + '/.seerpy')
+            with open(cookieFile, 'w') as f:
+                f.write(json.dumps(self.cookie))
+        except:
+            pass
+    
+    def readCookie(self):
+        home = os.environ['HOME'] if 'HOME' in os.environ else '~'
+        cookieFile = home + '/.seerpy/cookie'
+        if os.path.isfile(cookieFile):
+            with open(cookieFile, 'r') as f:
+                self.cookie = json.loads(f.read().strip())

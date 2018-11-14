@@ -39,8 +39,6 @@ def studyWithDataQueryString(studyId):
             }
         }
     ''' % (studyId)
-
-
     
 def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
         return '''
@@ -78,7 +76,7 @@ def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
     ''' % (studyId, labelGroupId, limit, offset)
 
 
-def labelGroupsQueryString(studyId):
+def labelGroupQueryString(studyId):
         return '''
         query {
             study (id: "%s") {
@@ -93,6 +91,27 @@ def labelGroupsQueryString(studyId):
             }
         }
     ''' % (studyId)
+
+def labelGroupsQueryString(limit, offset, studyIds):
+    start =  '''
+        query {
+            studies (limit: %.0f, offset: %.0f, studyIds: ['''% (limit, offset)
+            
+    end = ''']) {
+                id
+                name
+                labelGroups {
+                    id
+                    name
+
+                }
+            }
+        }
+    '''
+    lst = ''
+    for s in studyIds:
+        lst = lst + '"' + s + '",'
+    return start + lst[:-1] + end
 
 def channelGroupsQueryString(studyId):
     return '''
@@ -126,10 +145,10 @@ def segmentUrlsQueryString(segmentIds):
         }
     ''' % ('["' + '\",\"'.join(segmentIds) + '"]')
 
-def studyListQueryString():
+def studyListQueryString(limit, offset, searchTerm):
     return '''
         query {
-            studies {
+            studies (limit: %.0f, offset: %.0f, searchTerm: "%s"){
                 id
                 patient {
                     id
@@ -137,7 +156,7 @@ def studyListQueryString():
                 name
             }
         }
-    '''
+    '''% (limit, offset, searchTerm)
 
 def studyQueryStudy(studyId):
     return '''

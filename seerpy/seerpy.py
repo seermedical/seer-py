@@ -46,9 +46,14 @@ class SeerConnect:
                 timeout=60
             )
         )
+        
+        self.lastQueryTime = 0
+        self.apiLimitExpire = 300
+        self.apiLimit = 250
     
     def executeQuery(self, queryString, invocations=0):
         try:
+            time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
             return self.graphqlClient.execute(gql(queryString))
         except Exception as e:
             if invocations > 2:
@@ -177,10 +182,26 @@ class SeerConnect:
         queryString = graphql.addLabelsMutationString(groupId, labels)
         return self.executeQuery(queryString)
 
-    def getStudies(self):
-        queryString = graphql.studyListQueryString()
-        response = self.executeQuery(queryString)
-        return response['studies']
+    def getStudies(self, limit=50, offset=0, searchTerm=''):
+        studies = []
+        while True:
+            queryString = graphql.studyListQueryString(limit, offset, searchTerm)
+            response = self.executeQuery(queryString)['studies']
+            if len(response) == 0:
+                break
+            else:
+                studies = studies + response
+            offset += limit
+        studyList = []
+        for s in studies:
+            study = {}
+            study['id'] = s['id']
+            study['name'] = s['name']
+            if s['patient'] is not None:
+                study['patient.id'] = s['patient']['id']
+            studyList.append(study)
+        studies = pd.DataFrame(studyList)
+        return studies
 
     def getStudy(self, studyID):
         queryString = graphql.studyQueryString(studyID)
@@ -229,12 +250,7 @@ class SeerConnect:
                     labels = self.pandasFlatten(labelGroup, 'labelGroup.', 'labels')
                     break
                 except Exception as e:
-                    if str(e) in [err502, err503]:
-                        print('api limit hit on: ' + studyId + '   ' + labelGroupId)
-                        time.sleep(30)
-                        pass
-                    else:
-                        raise
+                    raise
             if len(labels) == 0:
                 break
             tags = self.pandasFlatten(labels, 'labels.', 'tags')
@@ -263,10 +279,42 @@ class SeerConnect:
                 labelResults = labelResults.append(labelGroup, ignore_index=True, verify_integrity=False)
         return labelResults
     
-    def getLabelGroups(self, studyID):
-        queryString = graphql.labelGroupsQueryString(studyID)
+    def getLabelGroup(self, studyID):
+        queryString = graphql.labelGroupQueryString(studyID)
         response = self.executeQuery(queryString)
         return response['study']['labelGroups']
+    
+    def getLabelGroups(self, studyIDs, limit=50, offset=0):
+        if type(studyIDs) == str:
+            studyIDs = [studyIDs]
+        studies = []
+        while True:
+            queryString = graphql.labelGroupsQueryString(limit, offset, studyIDs)
+            response = self.executeQuery(queryString)['studies']
+            if len(response) == 0:
+                break
+            else:
+                studies = studies + response
+            offset += limit
+            print('lg len: ' + str(len(studies)))
+        response = studies
+        labelGroups = []
+        for r in response:
+            studyId = r['id']
+            studyName = r['name']
+            for l in r['labelGroups']:
+                labelGroupId = l['id']
+                labelGroupName = l['name']
+                lg = {}
+                lg['id'] = studyId
+                lg['name'] = studyName
+                lg['labelGroup.id'] = labelGroupId
+                lg['labelGroup.name'] = labelGroupName
+                labelGroups.append(lg)
+#        response = self.pandasFlatten(response[0], '', 'labelGroups')
+#        response = [self.pandasFlatten(r, '', 'labelGroups') for r in response]
+        response = pd.DataFrame(labelGroups)
+        return response
 
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of
@@ -295,7 +343,9 @@ class SeerConnect:
         labelGroups, labels = SeerConnect.createMetaData()
 
         """
-        studies = self.getStudies()
+        
+        searchTerm = study if study is not None else ''
+        studies = self.getStudies(searchTerm=searchTerm)
         studiesToGet = []
 
         for s in studies:

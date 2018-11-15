@@ -201,3 +201,6 @@ class TestGetDataChunks:
 
         # check result
         assert str(exception_info.value) == error_string
+
+
+# test getLinks

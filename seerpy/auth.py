@@ -87,3 +87,9 @@ class SeerAuth:
         if os.path.isfile(cookieFile):
             with open(cookieFile, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
+    
+    def destroyCookie(self):
+        home = os.environ['HOME'] if 'HOME' in os.environ else '~'
+        cookieFile = home + '/.seerpy/cookie'
+        if os.path.isfile(cookieFile):
+            os.remove(cookieFile)

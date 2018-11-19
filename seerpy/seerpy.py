@@ -49,7 +49,7 @@ class SeerConnect:
         
         self.lastQueryTime = 0
         self.apiLimitExpire = 300
-        self.apiLimit = 250
+        self.apiLimit = 245
     
     def executeQuery(self, queryString, invocations=0):
         try:

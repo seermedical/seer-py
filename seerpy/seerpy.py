@@ -60,20 +60,21 @@ class SeerConnect:
             time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
             return self.graphqlClient.execute(gql(queryString))
         except Exception as e:
-            if invocations > 2:
+            if invocations > 4:
+                print('Too many failed query invocations. raising error')
                 raise
             error_string = str(e)
             if error_string in [err502, err503]:
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(30)
                 invocations += 1
-                self.executeQuery(queryString, invocations=invocations)
+                return self.executeQuery(queryString, invocations=invocations)
 
             if 'NOT_AUTHENTICATED' in str(e):
                 self.seerAuth.destroyCookie()
                 self.login()
                 invocations += 1
-                self.executeQuery(queryString, invocations=invocations)
+                return self.executeQuery(queryString, invocations=invocations)
 
             else:
                 raise

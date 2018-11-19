@@ -36,21 +36,25 @@ class SeerConnect:
 
         """
 
-        cookie = SeerAuth(apiUrl, email, password).cookie
+        self.apiUrl = apiUrl
+        self.login(email, password)
+
+        self.lastQueryTime = 0
+        self.apiLimitExpire = 300
+        self.apiLimit = 245
+
+    def login(self, email=None, password=None):
+        self.seerAuth = SeerAuth(self.apiUrl, email, password)
+        cookie = self.seerAuth.cookie
         header = {'Cookie': list(cookie.keys())[0] + '=' + cookie['seer.sid']}
         self.graphqlClient = GQLClient(
             transport=RequestsHTTPTransport(
-                url=apiUrl + '/api/graphql',
+                url=self.apiUrl + '/api/graphql',
                 headers=header,
                 use_json=True,
                 timeout=60
             )
         )
-
-        self.lastQueryTime = 0
-        self.apiLimitExpire = 300
-        self.apiLimit = 250
-
     def executeQuery(self, queryString, invocations=0):
         try:
             time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
@@ -63,7 +67,13 @@ class SeerConnect:
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(30)
                 invocations += 1
-                return self.executeQuery(queryString, invocations=invocations)
+                self.executeQuery(queryString, invocations=invocations)
+
+            if 'NOT_AUTHENTICATED' in str(e):
+                self.seerAuth.destroyCookie()
+                self.login()
+                invocations += 1
+                self.executeQuery(queryString, invocations=invocations)
 
             else:
                 raise
@@ -204,6 +214,16 @@ class SeerConnect:
         studies = pd.DataFrame(studyList)
         return studies
 
+    def studyNameToId(self, studyNames):
+        if type(studyNames) == str:
+            studyNames = [studyNames]
+        studyIds = []
+        studies = self.getStudies()
+        for _, s in studies.iterrows():
+            if s['name'] in studyNames:
+                studyIds.append(s['id'])
+        return studyIds
+
     def getStudy(self, studyID):
         queryString = graphql.studyQueryString(studyID)
         response = self.executeQuery(queryString)
@@ -297,7 +317,6 @@ class SeerConnect:
             else:
                 studies = studies + response
             offset += limit
-            print('lg len: ' + str(len(studies)))
         response = studies
         labelGroups = []
         for r in response:

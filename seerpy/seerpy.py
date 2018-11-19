@@ -213,6 +213,16 @@ class SeerConnect:
             studyList.append(study)
         studies = pd.DataFrame(studyList)
         return studies
+    
+    def studyNameToId(self, studyNames):
+        if type(studyNames) == str:
+            studyNames = [studyNames]
+        studyIds = []
+        studies = self.getStudies()
+        for _, s in studies.iterrows():
+            if s['name'] in studyNames:
+                studyIds.append(s['id'])
+        return studyIds
 
     def getStudy(self, studyID):
         queryString = graphql.studyQueryString(studyID)

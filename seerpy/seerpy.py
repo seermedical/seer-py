@@ -35,7 +35,7 @@ class SeerConnect:
         -------
 
         """
-        
+
         cookie = SeerAuth(apiUrl, email, password).cookie
         header = {'Cookie': list(cookie.keys())[0] + '=' + cookie['seer.sid']}
         self.graphqlClient = GQLClient(
@@ -46,11 +46,11 @@ class SeerConnect:
                 timeout=60
             )
         )
-        
+
         self.lastQueryTime = 0
         self.apiLimitExpire = 300
         self.apiLimit = 250
-    
+
     def executeQuery(self, queryString, invocations=0):
         try:
             time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
@@ -58,15 +58,16 @@ class SeerConnect:
         except Exception as e:
             if invocations > 2:
                 raise
-            if str(e) in [err502, err503]:
-                print(e + ' raised, trying again after a short break')
+            error_string = str(e)
+            if error_string in [err502, err503]:
+                print(error_string + ' raised, trying again after a short break')
                 time.sleep(30)
                 invocations += 1
-                self.executeQuery(queryString, invocations=invocations)
-                
+                return self.executeQuery(queryString, invocations=invocations)
+
             else:
                 raise
-                
+
 
     def addLabelGroup(self, studyId, name, description):
         """Add Label Group to study
@@ -154,7 +155,7 @@ class SeerConnect:
         """
         queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone)
         return self.executeQuery(queryString)
-    
+
     def addLabels(self, groupId, labels):
         """Add label to label group
 
@@ -162,7 +163,7 @@ class SeerConnect:
         ----------
         groupID : string
                 Seer group ID
-        
+
         labels: list of:
                 startTime : float
                         label start time in epoch time
@@ -212,7 +213,7 @@ class SeerConnect:
         queryString = graphql.channelGroupsQueryString(studyID)
         response = self.executeQuery(queryString)
         return response['study']['channelGroups']
-    
+
     def getSegmentUrls(self, segmentIds, limit=10000):
         segmentUrls = pd.DataFrame()
         counter = 0
@@ -227,19 +228,19 @@ class SeerConnect:
             counter += 1
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
         return segmentUrls
-    
+
     def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
         queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
         response = self.executeQuery(queryString)['study']['channelGroup']
         response = json_normalize(response['segments'])
         dataChunks = self.pandasFlatten(response, '', 'dataChunks')
         return dataChunks
-    
+
     def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12,
                   limit=200, offset=0):
-        
+
         labelResults = None
-        
+
         while True:
             while True:
                 try:
@@ -256,12 +257,12 @@ class SeerConnect:
             tags = self.pandasFlatten(labels, 'labels.', 'tags')
 #            tagType = self.pandasFlatten(tags, 'tags.', 'tagType')
 #            category = self.pandasFlatten(tagType, 'tagType.', 'category')
-            
+
             if 'labelGroup.labels' in labelGroup.columns: del labelGroup['labelGroup.labels']
             if 'labels.tags' in labels.columns: del labels['labels.tags']
 #            if 'tags.tagType' in tags.columns: del tags['tags.tagType']
 #            if 'tagType.category' in tagType.columns: del tagType['tagType.category']
-            
+
             try:
                 labelGroup  = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
                 labelGroup  = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
@@ -270,20 +271,20 @@ class SeerConnect:
             except Exception as e:
     #            print(e)
                 pass
-            
+
             offset += limit
-            
+
             if labelResults is None:
                 labelResults = labelGroup.copy()
             else:
                 labelResults = labelResults.append(labelGroup, ignore_index=True, verify_integrity=False)
         return labelResults
-    
+
     def getLabelGroup(self, studyID):
         queryString = graphql.labelGroupQueryString(studyID)
         response = self.executeQuery(queryString)
         return response['study']['labelGroups']
-    
+
     def getLabelGroups(self, studyIDs, limit=50, offset=0):
         if type(studyIDs) == str:
             studyIDs = [studyIDs]
@@ -343,7 +344,7 @@ class SeerConnect:
         labelGroups, labels = SeerConnect.createMetaData()
 
         """
-        
+
         searchTerm = study if study is not None else ''
         studies = self.getStudies(searchTerm=searchTerm)
         studiesToGet = []
@@ -406,7 +407,7 @@ class SeerConnect:
         allData         = allData.merge(channelGroupsM, how='left', on='id', suffixes=('', '_y'))
 
         return allData
-    
+
     def createDataChunkUrls(self, metaData, segmentUrls, fromTime=0, toTime=9e12):
         chunkPattern = '00000000000.dat'
         dataChunks = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
@@ -424,7 +425,7 @@ class SeerConnect:
                     dataChunk['segments.id'] = [row['segments.id']]
                     dataChunks = dataChunks.append(dataChunk)
         return dataChunks
-        
+
 
     def getLinks(self, allData, segmentUrls=None, threads=None, fromTime=0, toTime=9e12):
         """Download data chunks and stich them together in one dataframe
@@ -434,7 +435,7 @@ class SeerConnect:
         allData : pandas DataFrame
                 Dataframe containing metadata required for downloading and
                 processing raw data
-                
+
         threads : number of threads to use. If > 1 then will use multiprocessing
                     if None (default), it will use 1 on Windows and 5 on Linux/MacOS
 
@@ -456,28 +457,28 @@ class SeerConnect:
                 threads = 1
             else:
                 threads = 5
-        
+
         if segmentUrls is None:
             segmentIds = allData['segments.id'].unique().tolist()
             segmentUrls = self.getSegmentUrls(segmentIds)
-        
-        
+
+
         dataQ = []
 #        uniqueUrls = allData['dataChunks.url'].copy().drop_duplicates()
         for studyID in allData['id'].copy().drop_duplicates().tolist():
             for channelGroupsID in allData['channelGroups.id'].copy().drop_duplicates().tolist():
                 for segmentsID in allData['segments.id'].copy().drop_duplicates().tolist():
                     metaData = allData[(allData['id']==studyID) & (allData['channelGroups.id']==channelGroupsID) & (allData['segments.id']==segmentsID)].copy()
-                    
+
                     numChannels = len(metaData['channels.id'].copy().drop_duplicates().tolist())
                     channelNames = metaData['channels.name'].copy().drop_duplicates().tolist()
                     actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
 
                     metaData = metaData.drop_duplicates('segments.id')
-                    
+
                     dataChunks = self.createDataChunkUrls(metaData, segmentUrls, fromTime=fromTime, toTime=toTime)
                     metaData = metaData.merge(dataChunks, how='left', left_on='segments.id', right_on='segments.id', suffixes=('', '_y'))
-                    
+
                     metaData = metaData[['dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding', 'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',
                                          'channelGroups.recordsPerChunk', 'channelGroups.compression', 'channelGroups.signalMin', 'channelGroups.signalMax', 'channelGroups.exponent']]
                     metaData = metaData.drop_duplicates()
@@ -486,7 +487,7 @@ class SeerConnect:
                         dataQ.append([metaData.iloc[r, :], studyID, channelGroupsID, segmentsID, actualChannelNames])
 
         if threads > 1:
-            pool = Pool(processes=threads)      
+            pool = Pool(processes=threads)
             dataList = list(pool.map(downloadLink, dataQ))
             pool.close()
             pool.join()

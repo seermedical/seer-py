@@ -43,7 +43,8 @@ class SeerAuth:
         apiUrl = self.apiUrl + '/api/auth/login'
         body = {'email': self.email, 'password': self.password}
         r = requests.post(url=apiUrl, data=body)
-        if r.cookies is not None:
+        print("login status_code", r.status_code)
+        if r.status_code == requests.codes.ok and r.cookies is not None:
             self.cookie = {'seer.sid' : r.cookies['seer.sid']}
         else:
             self.cookie = None
@@ -69,7 +70,7 @@ class SeerAuth:
         else:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
-    
+
     def writeCookie(self):
         try:
             home = os.environ['HOME'] if 'HOME' in os.environ else '~'
@@ -80,14 +81,14 @@ class SeerAuth:
                 f.write(json.dumps(self.cookie))
         except:
             pass
-    
+
     def readCookie(self):
         home = os.environ['HOME'] if 'HOME' in os.environ else '~'
         cookieFile = home + '/.seerpy/cookie'
         if os.path.isfile(cookieFile):
             with open(cookieFile, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
-    
+
     def destroyCookie(self):
         home = os.environ['HOME'] if 'HOME' in os.environ else '~'
         cookieFile = home + '/.seerpy/cookie'

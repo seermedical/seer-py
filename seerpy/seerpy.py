@@ -55,6 +55,7 @@ class SeerConnect:
                 timeout=60
             )
         )
+
     def executeQuery(self, queryString, invocations=0):
         try:
             time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))

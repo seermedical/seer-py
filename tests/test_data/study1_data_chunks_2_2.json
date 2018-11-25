@@ -1,0 +1,44 @@
+{
+    "study": {
+        "channelGroup": {
+            "id": "study-1-channel-group-2-id",
+            "name": "ECG",
+            "segments": [
+                {
+                    "dataChunks": [
+                        {
+                            "length": 10000,
+                            "time": 1526275822812.5,
+                            "url": "https://host.com/study-1-channel-group-2-segment-2-id-00.dat"
+                        },
+                        {
+                            "length": 10000,
+                            "time": 1526275832812.5,
+                            "url": "https://host.com/study-1-channel-group-2-segment-2-id-01.dat"
+                        },
+                        {
+                            "length": 10000,
+                            "time": 1526275842812.5,
+                            "url": "https://host.com/study-1-channel-group-2-segment-2-id-02.dat"
+                        },
+                        {
+                            "length": 10000,
+                            "time": 1526275852812.5,
+                            "url": "https://host.com/study-1-channel-group-2-segment-2-id-03.dat"
+                        },
+                        {
+                            "length": 2187.5,
+                            "time": 1526275862812.5,
+                            "url": "https://host.com/study-1-channel-group-2-segment-2-id-04.dat"
+                        }
+                    ],
+                    "duration": 100937.5,
+                    "id": "study-1-channel-group-2-segment-2-id",
+                    "startTime": 1526275675734.375
+                }
+            ]
+        },
+        "id": "study-1-id",
+        "name": "Study 1"
+    }
+}

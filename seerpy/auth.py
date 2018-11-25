@@ -9,32 +9,31 @@ class SeerAuth:
     def __init__(self, apiUrl, email=None, password=None):
         self.apiUrl = apiUrl
         self.cookie = None
-        try:
-            self.readCookie()
-            if self.cookie is not None:
-                status_code = self.verifyLogin()
-                if status_code == 200:
-                    print('Login Successful')
-                    return
-        except:
-            pass
+
+        self.readCookie()
+        if self.verifyLogin() == 200:
+            print('Login Successful')
+            return
+
         self.email = email
         self.password = password
         allowedAttempts = 3
+
         for i in range(allowedAttempts):
-            if self.email is None or self.password is None:
+            if not self.email or not self.password:
                 self.loginDetails()
             self.login()
             response = self.verifyLogin()
-            if response == 200:
+            if response == requests.codes.ok:
                 print('Login Successful')
                 break
-            elif i < allowedAttempts-1:
+            elif i < allowedAttempts - 1:
                 print('\nLogin error, please re-enter your email and password: \n')
                 self.cookie = None
                 self.password = None
             else:
-                print('Login failed. please check your username and password or go to app.seermedical.com to reset your password')
+                print('Login failed. please check your username and password or go to',
+                       'app.seermedical.com to reset your password')
                 raise InterruptedError('Authentication Failed')
                 self.cookie = None
                 self.password = None
@@ -44,7 +43,7 @@ class SeerAuth:
         body = {'email': self.email, 'password': self.password}
         r = requests.post(url=apiUrl, data=body)
         print("login status_code", r.status_code)
-        if r.status_code == requests.codes.ok and r.cookies is not None:
+        if r.status_code == requests.codes.ok and r.cookies:
             self.cookie = {'seer.sid' : r.cookies['seer.sid']}
         else:
             self.cookie = None
@@ -52,11 +51,20 @@ class SeerAuth:
     def verifyLogin(self):
         if self.cookie is None:
             return 401
-        else:
-            apiUrl = self.apiUrl + '/api/auth/verify'
-            r = requests.get(url=apiUrl, cookies=self.cookie)
-            self.writeCookie()
-            return r.status_code
+
+        apiUrl = self.apiUrl + '/api/auth/verify'
+        r = requests.get(url=apiUrl, cookies=self.cookie)
+        if r.status_code != requests.codes.ok:
+            print("api verify call returned", r.status_code, "status code")
+            return 401
+
+        json_response = r.json()
+        if not json_response or not json_response['session'] == "active":
+            print("api verify call did not return an active session")
+            return 401
+
+        self.writeCookie()
+        return r.status_code
 
     def loginDetails(self):
         home = os.environ['HOME'] if 'HOME' in os.environ else '~'

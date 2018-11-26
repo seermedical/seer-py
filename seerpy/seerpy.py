@@ -70,7 +70,7 @@ class SeerConnect:
             error_string = str(e)
             if any(rate_limit_error in error_string for rate_limit_error in rate_limit_errors):
                 print(error_string + ' raised, trying again after a short break')
-                time.sleep(30)
+                time.sleep(30 * (invocations+1)**2)
                 invocations += 1
                 return self.executeQuery(queryString, invocations=invocations)
 

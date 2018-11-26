@@ -87,7 +87,6 @@ class SeerConnect:
         objects = []
         while True:
             formatted_query_string = query_string.format(limit=limit, offset=offset)
-            print(formatted_query_string)
             response = self.executeQuery(formatted_query_string)[object_name]
             if not response:
                 break
@@ -346,7 +345,7 @@ class SeerConnect:
         for i in range(len(response)):
             view = json_normalize(response.loc[i,'views'])
             view['user'] = response.loc[i,'user.fullName']
-            views.append(view)
+            views = views.append(view)
         
         views['createdAt'] = pd.to_datetime(views['createdAt'])
         views['updatedAt'] = pd.to_datetime(views['updatedAt'])
@@ -405,17 +404,11 @@ class SeerConnect:
             child[parentName+'id'] = parentId
             childList.append(child)
 
-        if len(childList)==1:
-            child = childList[0]
-            child.reset_index(drop=True, inplace=True)
-        elif len(childList)>0:
+        if childList:
             child = pd.concat(childList)
             child.reset_index(drop=True, inplace=True)
-        if len(childList) == 0 or len(child) == 0:
-            if parentName == '':
-                columns = ['id', childName + '.id']
-            else:
-                columns = [parentName + 'id']
+        if not childList or not len(child):
+            columns = [parentName + 'id', childName + '.id']
             child = pd.DataFrame(columns=columns)
         return child
 

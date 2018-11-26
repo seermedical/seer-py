@@ -1,20 +1,20 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+
+from multiprocessing import Pool
+import os
+import time
+from time import gmtime, strftime
+
 from gql import gql, Client as GQLClient
 from gql.transport.requests import RequestsHTTPTransport
 import numpy as np
 import pandas as pd
 from pandas.io.json import json_normalize
+
 from .auth import SeerAuth
 from .utils import downloadLink
 from . import graphql
-import os
 
-from multiprocessing import Pool
-import time
-from time import gmtime, strftime
-
-err502 = '503 Server Error: Service Unavailable for url: https://api.seermedical.com/api/graphql'
-err503 = '502 Server Error: Bad Gateway for url: https://api.seermedical.com/api/graphql'
 
 class SeerConnect:
 
@@ -57,6 +57,9 @@ class SeerConnect:
         )
 
     def executeQuery(self, queryString, invocations=0):
+
+        rate_limit_errors = ['503 Server Error', '502 Server Error']
+
         try:
             time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
             return self.graphqlClient.execute(gql(queryString))
@@ -65,7 +68,7 @@ class SeerConnect:
                 print('Too many failed query invocations. raising error')
                 raise
             error_string = str(e)
-            if error_string in [err502, err503]:
+            if any(rate_limit_error in error_string for rate_limit_error in rate_limit_errors):
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(30)
                 invocations += 1
@@ -77,9 +80,7 @@ class SeerConnect:
                 invocations += 1
                 return self.executeQuery(queryString, invocations=invocations)
 
-            else:
-                raise
-
+            raise
 
     def addLabelGroup(self, studyId, name, description):
         """Add Label Group to study

@@ -326,7 +326,7 @@ class SeerConnect:
         for i in range(len(response)):
             view = json_normalize(response.loc[i,'views'])
             view['user'] = response.loc[i,'user.fullName']
-            views.append(view)
+            views = views.append(view)
 
         views['createdAt'] = pd.to_datetime(views['createdAt'])
         views['updatedAt'] = pd.to_datetime(views['updatedAt'])

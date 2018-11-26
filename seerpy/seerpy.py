@@ -274,48 +274,38 @@ class SeerConnect:
                 break
 
             tags = self.pandasFlatten(labels, 'labels.', 'tags')
-#            tagType = self.pandasFlatten(tags, 'tags.', 'tagType')
-#            category = self.pandasFlatten(tagType, 'tagType.', 'category')
 
-            if 'labelGroup.labels' in labelGroup.columns: del labelGroup['labelGroup.labels']
-            if 'labels.tags' in labels.columns: del labels['labels.tags']
-#            if 'tags.tagType' in tags.columns: del tags['tags.tagType']
-#            if 'tagType.category' in tagType.columns: del tagType['tagType.category']
+            labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore')
+            labels.drop('labels.tags', inplace=True, errors='ignore')
 
             labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
             labelGroup = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
-#            labelGroup = labelGroup.merge(tagType, how='left', on='tags.id', suffixes=('', '_y'))
-#            labelGroup = labelGroup.merge(category, how='left', on='tagType.id', suffixes=('', '_y'))
 
             offset += limit
 
             if labelResults is None:
-                labelResults = labelGroup.copy()
+                labelResults = labelGroup
             else:
-                labelResults = labelResults.append(labelGroup, ignore_index=True, verify_integrity=False)
+                labelResults = labelResults.append(labelGroup, ignore_index=True,
+                                                   verify_integrity=False)
         return labelResults
 
-    def getLabelGroup(self, studyID):
-        queryString = graphql.labelGroupQueryString(studyID)
-        response = self.executeQuery(queryString)
-        return response['study']['labelGroups']
-
-    def getLabelGroups(self, study_ids, limit=50):
+    def get_label_groups_for_studies(self, study_ids, limit=50):
         if isinstance(study_ids, str):
             study_ids = [study_ids]
 
         labels_query_string = graphql.get_label_groups_for_study_ids_paged_query_string(study_ids)
-        studies = self.get_paginated_response(labels_query_string, 'studies', limit)
+        return self.get_paginated_response(labels_query_string, 'studies', limit)
 
+    def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
         label_groups = []
-        for study in studies:
+        for study in self.get_label_groups_for_studies(study_ids, limit):
             for label_group in study['labelGroups']:
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')
                 label_group['id'] = study['id']
                 label_group['name'] = study['name']
                 label_groups.append(label_group)
-
         return pd.DataFrame(label_groups)
 
     def getViewedTimes(self, studyID):
@@ -400,11 +390,10 @@ class SeerConnect:
         channels        = self.pandasFlatten(channelGroups, 'channelGroups.', 'channels')
         segments        = self.pandasFlatten(channelGroups, 'channelGroups.', 'segments')
 
-        if 'segments.dataChunks' in segments.columns: del segments['segments.dataChunks']
-        if 'channelGroups.segments' in channelGroups.columns: del channelGroups['channelGroups.segments']
-        if 'channelGroups.channels' in channelGroups.columns: del channelGroups['channelGroups.channels']
-        if 'channelGroups' in allData.columns: del allData['channelGroups']
-        if 'labelGroups' in allData.columns: del allData['labelGroups']
+        segments.drop(columns='segments.dataChunks', inplace=True, errors='ignore')
+        channelGroups.drop(columns=['channelGroups.segments', 'channelGroups.channels'],
+                           inplace=True, errors='ignore')
+        allData.drop(columns=['channelGroups', 'labelGroups'], inplace=True, errors='ignore')
 
         channelGroupsM  = channelGroups.merge(segments, how='left', on='channelGroups.id', suffixes=('', '_y'))
         channelGroupsM  = channelGroupsM.merge(channels, how='left', on='channelGroups.id', suffixes=('', '_y'))

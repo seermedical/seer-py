@@ -263,17 +263,16 @@ class SeerConnect:
 
         while True:
             while True:
-                try:
-                    queryString = graphql.getLabelsQueryString(studyId, labelGroupId, fromTime,
-                                                               toTime, limit, offset)
-                    response = self.executeQuery(queryString)['study']
-                    labelGroup = json_normalize(response)
-                    labels = self.pandasFlatten(labelGroup, 'labelGroup.', 'labels')
-                    break
-                except Exception as e:
-                    raise
-            if len(labels) == 0:
+                queryString = graphql.getLabelsQueryString(studyId, labelGroupId, fromTime, toTime,
+                                                           limit, offset)
+                print("queryString", queryString)
+                response = self.executeQuery(queryString)['study']
+                labelGroup = json_normalize(response)
+                labels = self.pandasFlatten(labelGroup, 'labelGroup.', 'labels')
                 break
+            if not labels:
+                break
+
             tags = self.pandasFlatten(labels, 'labels.', 'tags')
 #            tagType = self.pandasFlatten(tags, 'tags.', 'tagType')
 #            category = self.pandasFlatten(tagType, 'tagType.', 'category')
@@ -283,14 +282,10 @@ class SeerConnect:
 #            if 'tags.tagType' in tags.columns: del tags['tags.tagType']
 #            if 'tagType.category' in tagType.columns: del tagType['tagType.category']
 
-            try:
-                labelGroup  = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
-                labelGroup  = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
-#                labelGroup  = labelGroup.merge(tagType, how='left', on='tags.id', suffixes=('', '_y'))
-#                labelGroup  = labelGroup.merge(category, how='left', on='tagType.id', suffixes=('', '_y'))
-            except Exception as e:
-    #            print(e)
-                pass
+            labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+            labelGroup = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+#            labelGroup = labelGroup.merge(tagType, how='left', on='tags.id', suffixes=('', '_y'))
+#            labelGroup = labelGroup.merge(category, how='left', on='tagType.id', suffixes=('', '_y'))
 
             offset += limit
 

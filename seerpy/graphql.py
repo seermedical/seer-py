@@ -81,28 +81,9 @@ def getLabelsQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset)
     ''' % (studyId, labelGroupId, limit, offset, fromTime, toTime)
 
 
-def labelGroupQueryString(studyId):
-    return '''
-        query {
-            study (id: "%s") {
-                id
-                name
-                labelGroups {
-                    id
-                    name
-                    labelType
-                    description
-                }
-            }
-        }
-    ''' % (studyId)
-
-
 def get_label_groups_for_study_ids_paged_query_string(study_ids):
 
-    print("study_ids", study_ids)
     study_ids_string = ','.join(f'"{study_id}"' for study_id in study_ids)
-    print("study_ids_string", study_ids_string)
 
     return f"""
         query {{{{

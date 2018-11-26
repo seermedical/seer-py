@@ -40,8 +40,8 @@ def studyWithDataQueryString(studyId):
         }
     ''' % (studyId)
 
-def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
-        return '''
+def getLabelsQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
+    return '''
         query {
             study (id: "%s") {
                 id
@@ -82,7 +82,7 @@ def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
 
 
 def labelGroupQueryString(studyId):
-        return '''
+    return '''
         query {
             study (id: "%s") {
                 id
@@ -97,26 +97,25 @@ def labelGroupQueryString(studyId):
         }
     ''' % (studyId)
 
-def labelGroupsQueryString(limit, offset, studyIds):
-    start =  '''
-        query {
-            studies (limit: %.0f, offset: %.0f, studyIds: ['''% (limit, offset)
 
-    end = ''']) {
+def get_label_groups_for_study_ids_paged_query_string(study_ids):
+
+    print("study_ids", study_ids)
+    study_ids_string = ','.join(f'"{study_id}"' for study_id in study_ids)
+    print("study_ids_string", study_ids_string)
+
+    return f"""
+        query {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, studyIds: [{study_ids_string}]) {{{{
                 id
                 name
-                labelGroups {
+                labelGroups {{{{
                     id
                     name
+                }}}}
+            }}}}
+        }}}}"""
 
-                }
-            }
-        }
-    '''
-    lst = ''
-    for s in studyIds:
-        lst = lst + '"' + s + '",'
-    return start + lst[:-1] + end
 
 def channelGroupsQueryString(studyId):
     return '''

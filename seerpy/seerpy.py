@@ -258,16 +258,15 @@ class SeerConnect:
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
         return segmentUrls
 
-    def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12,
-                  limit=200, offset=0):
+    def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12, limit=200, offset=0):
 
         labelResults = None
 
         while True:
             while True:
                 try:
-                    queryString = graphql.getLabesQueryString(studyId, labelGroupId, fromTime,
-                                                              toTime, limit, offset)
+                    queryString = graphql.getLabelsQueryString(studyId, labelGroupId, fromTime,
+                                                               toTime, limit, offset)
                     response = self.executeQuery(queryString)['study']
                     labelGroup = json_normalize(response)
                     labels = self.pandasFlatten(labelGroup, 'labelGroup.', 'labels')
@@ -307,37 +306,24 @@ class SeerConnect:
         response = self.executeQuery(queryString)
         return response['study']['labelGroups']
 
-    def getLabelGroups(self, studyIDs, limit=50, offset=0):
-        if type(studyIDs) == str:
-            studyIDs = [studyIDs]
-        studies = []
-        while True:
-            queryString = graphql.labelGroupsQueryString(limit, offset, studyIDs)
-            response = self.executeQuery(queryString)['studies']
-            if len(response) == 0:
-                break
-            else:
-                studies = studies + response
-            offset += limit
-        response = studies
-        labelGroups = []
-        for r in response:
-            studyId = r['id']
-            studyName = r['name']
-            for l in r['labelGroups']:
-                labelGroupId = l['id']
-                labelGroupName = l['name']
-                lg = {}
-                lg['id'] = studyId
-                lg['name'] = studyName
-                lg['labelGroup.id'] = labelGroupId
-                lg['labelGroup.name'] = labelGroupName
-                labelGroups.append(lg)
-#        response = self.pandasFlatten(response[0], '', 'labelGroups')
-#        response = [self.pandasFlatten(r, '', 'labelGroups') for r in response]
-        response = pd.DataFrame(labelGroups)
-        return response
-    
+    def getLabelGroups(self, study_ids, limit=50):
+        if isinstance(study_ids, str):
+            study_ids = [study_ids]
+
+        labels_query_string = graphql.get_label_groups_for_study_ids_paged_query_string(study_ids)
+        studies = self.get_paginated_response(labels_query_string, 'studies', limit)
+
+        label_groups = []
+        for study in studies:
+            for label_group in study['labelGroups']:
+                label_group['labelGroup.id'] = label_group.pop('id')
+                label_group['labelGroup.name'] = label_group.pop('name')
+                label_group['id'] = study['id']
+                label_group['name'] = study['name']
+                label_groups.append(label_group)
+
+        return pd.DataFrame(label_groups)
+
     def getViewedTimes(self, studyID):
         queryString = graphql.getViewedTimesString(studyID)
         response = self.executeQuery(queryString)
@@ -347,7 +333,7 @@ class SeerConnect:
             view = json_normalize(response.loc[i,'views'])
             view['user'] = response.loc[i,'user.fullName']
             views.append(view)
-        
+
         views['createdAt'] = pd.to_datetime(views['createdAt'])
         views['updatedAt'] = pd.to_datetime(views['updatedAt'])
         return views

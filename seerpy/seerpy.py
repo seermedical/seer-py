@@ -388,7 +388,7 @@ class SeerConnect:
         if childList:
             child = pd.concat(childList)
             child.reset_index(drop=True, inplace=True)
-        if not childList or not len(child):
+        if not childList or child.empty:
             columns = [parentName + 'id', childName + '.id']
             child = pd.DataFrame(columns=columns)
         return child

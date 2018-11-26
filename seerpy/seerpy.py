@@ -251,15 +251,6 @@ class SeerConnect:
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
         return segmentUrls
 
-    # I think this can be removed
-
-    # def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
-    #     queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
-    #     response = self.executeQuery(queryString)['study']['channelGroup']
-    #     response = json_normalize(response['segments'])
-    #     dataChunks = self.pandasFlatten(response, '', 'dataChunks')
-    #     return dataChunks
-
     def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12,
                   limit=200, offset=0):
 

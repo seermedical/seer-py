@@ -336,6 +336,21 @@ class SeerConnect:
 #        response = [self.pandasFlatten(r, '', 'labelGroups') for r in response]
         response = pd.DataFrame(labelGroups)
         return response
+    
+    def getViewedTimes(self, studyID):
+        queryString = graphql.getViewedTimesString(studyID)
+        response = self.executeQuery(queryString)
+        response = json_normalize(response['viewGroups'])
+        views = pd.DataFrame(columns=['createdAt', 'duration', 'id', 'startTime', 'updatedAt', 'user', 'viewTimes'])
+        for i in range(len(response)):
+            view = json_normalize(response.loc[i,'views'])
+            view['user'] = response.loc[i,'user.fullName']
+            views.append(view)
+        
+        views['createdAt'] = pd.to_datetime(views['createdAt'])
+        views['updatedAt'] = pd.to_datetime(views['updatedAt'])
+        return views
+
 
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of

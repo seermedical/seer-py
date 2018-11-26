@@ -118,8 +118,8 @@ def get_channel_groups_query_string(studyId):
         }
     ''' % (studyId)
 
-#    studyChannelGroupSegments
 
+#    studyChannelGroupSegments
 def get_segment_urls_query_string(segmentIds):
     return '''
         query {
@@ -170,23 +170,20 @@ def get_add_label_mutation_string(groupId, startTime, duration, timezone):
     ''' % (groupId, startTime, duration, timezone)
 
 def get_add_labels_mutation_string(groupId, labels):
-    start = '''
-        mutation {
+
+    labels_string = ','.join(f'{{ startTime: {l[0]}, duration: {l[1]}, timezone: {l[2]} }}'
+                             for l in labels)
+
+    return f'''
+        mutation {{
             addLabelsToLabelGroup(
-                groupId: "%s",
-                labels: [''' % (groupId)
-    end = ''']
-                ) {
+                groupId: "{groupId}",
+                labels: [{labels_string}]
+            ) {{
                 id
-            }
-        }
-        '''
+            }}
+        }}'''
 
-    lst = ''
-    for l in labels:
-        lst = lst + '{ startTime: %f, duration: %f, timezone: %f },' % (l[0], l[1], l[2])
-
-    return start + lst[:-1] + end
 
 def get_add_label_group_mutation_string(studyId, name, description):
     return '''

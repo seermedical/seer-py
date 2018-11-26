@@ -82,6 +82,20 @@ class SeerConnect:
 
             raise
 
+    def get_paginated_response(self, query_string, object_name, limit=250):
+        offset = 0
+        objects = []
+        while True:
+            formatted_query_string = query_string.format(limit=limit, offset=offset)
+            print(formatted_query_string)
+            response = self.executeQuery(formatted_query_string)[object_name]
+            if not response:
+                break
+            else:
+                objects = objects + response
+            offset += limit
+        return objects
+
     def addLabelGroup(self, studyId, name, description):
         """Add Label Group to study
 
@@ -196,16 +210,13 @@ class SeerConnect:
         queryString = graphql.addLabelsMutationString(groupId, labels)
         return self.executeQuery(queryString)
 
-    def getStudies(self, limit=50, offset=0, searchTerm=''):
-        studies = []
-        while True:
-            queryString = graphql.studyListQueryString(limit, offset, searchTerm)
-            response = self.executeQuery(queryString)['studies']
-            if len(response) == 0:
-                break
-            else:
-                studies = studies + response
-            offset += limit
+    def getStudies(self, limit=50, searchTerm=''):
+        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(searchTerm)
+        return self.get_paginated_response(studies_query_string, 'studies', limit)
+
+    def get_studies_dataframe(self, limit=50, searchTerm=''):
+        studies = self.getStudies(limit, searchTerm)
+
         studyList = []
         for s in studies:
             study = {}
@@ -214,18 +225,13 @@ class SeerConnect:
             if s['patient'] is not None:
                 study['patient.id'] = s['patient']['id']
             studyList.append(study)
-        studies = pd.DataFrame(studyList)
-        return studies
+        return pd.DataFrame(studyList)
 
     def studyNameToId(self, studyNames):
-        if type(studyNames) == str:
+        if isinstance(studyNames, str):
             studyNames = [studyNames]
-        studyIds = []
-        studies = self.getStudies()
-        for _, s in studies.iterrows():
-            if s['name'] in studyNames:
-                studyIds.append(s['id'])
-        return studyIds
+        studies = self.get_studies_dataframe()
+        return studies[studies['name'].isin(studyNames)][['name', 'id']].reset_index(drop=True)
 
     def getStudy(self, studyID):
         queryString = graphql.studyQueryString(studyID)
@@ -376,7 +382,7 @@ class SeerConnect:
         """
 
         searchTerm = study if study is not None else ''
-        studies = self.getStudies(searchTerm=searchTerm)
+        studies = self.get_studies_dataframe(searchTerm=searchTerm)
 
         if study is not None:
             studies = studies.loc[studies['name'] == study]

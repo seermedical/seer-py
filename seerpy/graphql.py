@@ -39,7 +39,7 @@ def studyWithDataQueryString(studyId):
             }
         }
     ''' % (studyId)
-    
+
 def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
         return '''
         query {
@@ -101,7 +101,7 @@ def labelGroupsQueryString(limit, offset, studyIds):
     start =  '''
         query {
             studies (limit: %.0f, offset: %.0f, studyIds: ['''% (limit, offset)
-            
+
     end = ''']) {
                 id
                 name
@@ -137,9 +137,9 @@ def channelGroupsQueryString(studyId):
             }
         }
     ''' % (studyId)
-    
+
 #    studyChannelGroupSegments
-    
+
 def segmentUrlsQueryString(segmentIds):
     return '''
         query {
@@ -150,18 +150,19 @@ def segmentUrlsQueryString(segmentIds):
         }
     ''' % ('["' + '\",\"'.join(segmentIds) + '"]')
 
-def studyListQueryString(limit, offset, searchTerm):
-    return '''
-        query {
-            studies (limit: %.0f, offset: %.0f, searchTerm: "%s"){
+
+def get_studies_by_search_term_paged_query_string(searchTerm):
+    return f'''
+        query {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{searchTerm}") {{{{
                 id
-                patient {
-                    id
-                }
                 name
-            }
-        }
-    '''% (limit, offset, searchTerm)
+                patient {{{{
+                    id
+                }}}}
+            }}}}
+        }}}}'''
+
 
 def studyQueryStudy(studyId):
     return '''
@@ -200,11 +201,11 @@ def addLabelsMutationString(groupId, labels):
             }
         }
         '''
-    
+
     lst = ''
     for l in labels:
         lst = lst + '{ startTime: %f, duration: %f, timezone: %f },' % (l[0], l[1], l[2])
-    
+
     return start + lst[:-1] + end
 
 def addLabelGroupMutationString(studyId, name, description):

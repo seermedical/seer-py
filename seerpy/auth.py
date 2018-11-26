@@ -1,8 +1,11 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
-import requests
+
 import getpass
 import os
 import json
+
+import requests
+
 
 class SeerAuth:
 
@@ -24,7 +27,7 @@ class SeerAuth:
                 self.loginDetails()
             self.login()
             response = self.verifyLogin()
-            if response == requests.codes.ok:
+            if response == requests.codes.ok:  # pylint: disable=maybe-no-member
                 print('Login Successful')
                 break
             elif i < allowedAttempts - 1:
@@ -33,17 +36,17 @@ class SeerAuth:
                 self.password = None
             else:
                 print('Login failed. please check your username and password or go to',
-                       'app.seermedical.com to reset your password')
-                raise InterruptedError('Authentication Failed')
+                      'app.seermedical.com to reset your password')
                 self.cookie = None
                 self.password = None
+                raise InterruptedError('Authentication Failed')
 
     def login(self):
         apiUrl = self.apiUrl + '/api/auth/login'
         body = {'email': self.email, 'password': self.password}
         r = requests.post(url=apiUrl, data=body)
         print("login status_code", r.status_code)
-        if r.status_code == requests.codes.ok and r.cookies:
+        if r.status_code == requests.codes.ok and r.cookies:  # pylint: disable=maybe-no-member
             self.cookie = {'seer.sid' : r.cookies['seer.sid']}
         else:
             self.cookie = None
@@ -54,7 +57,7 @@ class SeerAuth:
 
         apiUrl = self.apiUrl + '/api/auth/verify'
         r = requests.get(url=apiUrl, cookies=self.cookie)
-        if r.status_code != requests.codes.ok:
+        if r.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
             print("api verify call returned", r.status_code, "status code")
             return 401
 
@@ -70,10 +73,10 @@ class SeerAuth:
         home = os.environ['HOME'] if 'HOME' in os.environ else '~'
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
-            f=open(pswdfile, 'r')
-            lines=f.readlines()
-            self.email=lines[0][:-1]
-            self.password=lines[1][:-1]
+            f = open(pswdfile, 'r')
+            lines = f.readlines()
+            self.email = lines[0][:-1]
+            self.password = lines[1][:-1]
             f.close()
         else:
             self.email = input('Email Address: ')

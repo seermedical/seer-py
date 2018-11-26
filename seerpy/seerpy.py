@@ -251,12 +251,14 @@ class SeerConnect:
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
         return segmentUrls
 
-    def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
-        queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
-        response = self.executeQuery(queryString)['study']['channelGroup']
-        response = json_normalize(response['segments'])
-        dataChunks = self.pandasFlatten(response, '', 'dataChunks')
-        return dataChunks
+    # I think this can be removed
+
+    # def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
+    #     queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
+    #     response = self.executeQuery(queryString)['study']['channelGroup']
+    #     response = json_normalize(response['segments'])
+    #     dataChunks = self.pandasFlatten(response, '', 'dataChunks')
+    #     return dataChunks
 
     def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12,
                   limit=200, offset=0):
@@ -368,20 +370,14 @@ class SeerConnect:
 
         searchTerm = study if study is not None else ''
         studies = self.getStudies(searchTerm=searchTerm)
-        studiesToGet = []
 
-        for s in studies:
-            if study is not None:
-                if s['name'] == study:
-                    studiesToGet.append(s['id'])
-            else:
-                studiesToGet.append(s['id'])
+        if study is not None:
+            studies = studies.loc[studies['name'] == study]
 
         result = []
-
-        for sdy in studiesToGet:
-#            t = time.time()
-            queryString = graphql.studyWithDataQueryString(sdy)
+        for row in studies.itertuples():
+            # t = time.time()
+            queryString = graphql.studyWithDataQueryString(row.id)
             result.append(self.executeQuery(queryString)['study'])
             # print('study query time: ', round(time.time()-t,2))
 

@@ -98,6 +98,8 @@ class TestGetAllMetaData:
         # this is the call in getStudies()
         with open(test_data_dir / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
+        # this is the "no more data" response for getStudies()
+        side_effects.append({'studies': []})
 
         # these are the calls from the loop in getAllMetaData()
         expected_results = []
@@ -126,6 +128,8 @@ class TestGetAllMetaData:
         # this is the call in getStudies()
         with open(test_data_dir / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
+        # this is the "no more data" response for getStudies()
+        side_effects.append({'studies': []})
 
         # these are the calls from the loop in getAllMetaData()
         expected_results = []
@@ -147,9 +151,15 @@ class TestGetAllMetaData:
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
+        side_effects = []
+
         # this is the call in getStudies()
         with open(test_data_dir / "studies.json", "r") as f:
-            gql_client.return_value.execute.return_value = {'studies': json.load(f)}
+            side_effects.append({'studies': json.load(f)})
+        # this is the "no more data" response for getStudies()
+        side_effects.append({'studies': []})
+
+        gql_client.return_value.execute.side_effect = side_effects
 
         # run test
         result = SeerConnect().getAllMetaData("Study 12")
@@ -157,50 +167,53 @@ class TestGetAllMetaData:
         # check result
         assert result == {'studies' : []}
         # the only call will be in getStudies()
-        assert gql_client.return_value.execute.call_count == 1
+        assert gql_client.return_value.execute.call_count == 2
 
 
-@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
-class TestGetDataChunks:
+# this function has been removed but keep these tests for now as they may be useful as a basis for
+# the replacement function
 
-    def test_success(self, seer_auth, gql_client):
+# @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+# @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+# class TestGetDataChunks:
 
-        # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+#     def test_success(self, seer_auth, gql_client):
 
-        with open(test_data_dir / "study1_data_chunks_1_1.json", "r") as f:
-            gql_client.return_value.execute.return_value = json.load(f)
+#         # setup
+#         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-        test_result = pd.read_csv(test_data_dir / "study1_data_chunks_1_1.csv", index_col=0)
+#         with open(test_data_dir / "study1_data_chunks_1_1.json", "r") as f:
+#             gql_client.return_value.execute.return_value = json.load(f)
 
-        # run test
-        result = SeerConnect().getDataChunks("study-1-id", "study-1-channel-group-1-id",
-                                             1526275675734.375, 1526275776671.875)
+#         test_result = pd.read_csv(test_data_dir / "study1_data_chunks_1_1.csv", index_col=0)
 
-        # check result
-        assert result.equals(test_result)
+#         # run test
+#         result = SeerConnect().getDataChunks("study-1-id", "study-1-channel-group-1-id",
+#                                              1526275675734.375, 1526275776671.875)
 
-    def test_no_chunks_returned(self, seer_auth, gql_client):
+#         # check result
+#         assert result.equals(test_result)
 
-        # we don't explicitly handle an exception based on a study not found
-        # but this is probably the correct action
+#     def test_no_chunks_returned(self, seer_auth, gql_client):
 
-        # the same would be true with other query methods
+#         # we don't explicitly handle an exception based on a study not found
+#         # but this is probably the correct action
 
-        # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+#         # the same would be true with other query methods
 
-        error_string = ("{'errorCode': 'NOT_FOUND', 'locations': [{'column': 2, 'line': 1}], "
-                        "'message': 'Study does not exist', 'path': ['study'], 'statusCode': 404}")
-        gql_client.return_value.execute.side_effect = Exception(error_string)
+#         # setup
+#         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-        # run test
-        with pytest.raises(Exception) as exception_info:
-            SeerConnect().getDataChunks("study", "channel-group-id",1, 1)
+#         error_string = ("{'errorCode': 'NOT_FOUND', 'locations': [{'column': 2, 'line': 1}], "
+#                         "'message': 'Study does not exist', 'path': ['study'], 'statusCode': 404}")
+#         gql_client.return_value.execute.side_effect = Exception(error_string)
 
-        # check result
-        assert str(exception_info.value) == error_string
+#         # run test
+#         with pytest.raises(Exception) as exception_info:
+#             SeerConnect().getDataChunks("study", "channel-group-id",1, 1)
+
+#         # check result
+#         assert str(exception_info.value) == error_string
 
 
 # test getLinks

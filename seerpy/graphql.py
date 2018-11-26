@@ -51,12 +51,17 @@ def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
                     name
                     labelType
                     description
-                    labels (limit: %.0f, offset: %.0f) {
+                    labels (limit: %.0f, offset: %.0f, fromTime: %.0f, toTime: %.0f) {
                         id
                         note
                         startTime
                         duration
                         timezone
+                        createdBy {
+                                fullName
+                                }
+                        updatedAt
+                        createdAt
                         tags {
                             id
                             tagType {
@@ -73,7 +78,7 @@ def getLabesQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
                 }
             }
         }
-    ''' % (studyId, labelGroupId, limit, offset)
+    ''' % (studyId, labelGroupId, limit, offset, fromTime, toTime)
 
 
 def labelGroupQueryString(studyId):

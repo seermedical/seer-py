@@ -56,7 +56,7 @@ class SeerConnect:
             )
         )
 
-    def executeQuery(self, queryString, invocations=0):
+    def execute_query(self, queryString, invocations=0):
 
         rate_limit_errors = ['503 Server Error', '502 Server Error']
 
@@ -72,13 +72,13 @@ class SeerConnect:
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(30 * (invocations+1)**2)
                 invocations += 1
-                return self.executeQuery(queryString, invocations=invocations)
+                return self.execute_query(queryString, invocations=invocations)
 
             if 'NOT_AUTHENTICATED' in str(e):
                 self.seerAuth.destroyCookie()
                 self.login()
                 invocations += 1
-                return self.executeQuery(queryString, invocations=invocations)
+                return self.execute_query(queryString, invocations=invocations)
 
             raise
 
@@ -87,7 +87,7 @@ class SeerConnect:
         objects = []
         while True:
             formatted_query_string = query_string.format(limit=limit, offset=offset)
-            response = self.executeQuery(formatted_query_string)[object_name]
+            response = self.execute_query(formatted_query_string)[object_name]
             if not response:
                 break
             else:
@@ -122,8 +122,8 @@ class SeerConnect:
         labelGroup = addLabelGroup(studyId, labelGroupName, labelGroupDescription)
 
         """
-        queryString = graphql.addLabelGroupMutationString(studyId, name, description)
-        response = self.executeQuery(queryString)
+        queryString = graphql.get_add_label_group_mutation_string(studyId, name, description)
+        response = self.execute_query(queryString)
         return response['addLabelGroupToStudy']['id']
 
 
@@ -148,8 +148,8 @@ class SeerConnect:
         delLG = delLabelGroup(GroupID)
 
         """
-        queryString = graphql.removeLabelGroupMutationString(groupId)
-        return self.executeQuery(queryString)
+        queryString = graphql.get_remove_label_group_mutation_string(groupId)
+        return self.execute_query(queryString)
 
     def addLabel(self, groupId, startTime, duration, timezone):
         """Add label to label group
@@ -179,8 +179,8 @@ class SeerConnect:
             addLabel(labelGroup, alarm[i,0], alarm[i,1]-alarm[i,0])
 
         """
-        queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone)
-        return self.executeQuery(queryString)
+        queryString = graphql.get_add_label_mutation_string(groupId, startTime, duration, timezone)
+        return self.execute_query(queryString)
 
     def addLabels(self, groupId, labels):
         """Add label to label group
@@ -206,8 +206,8 @@ class SeerConnect:
         -----
 
         """
-        queryString = graphql.addLabelsMutationString(groupId, labels)
-        return self.executeQuery(queryString)
+        queryString = graphql.get_add_labels_mutation_string(groupId, labels)
+        return self.execute_query(queryString)
 
     def getStudies(self, limit=50, searchTerm=''):
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(searchTerm)
@@ -234,12 +234,12 @@ class SeerConnect:
 
     def getStudy(self, studyID):
         queryString = graphql.studyQueryString(studyID)
-        response = self.executeQuery(queryString)
+        response = self.execute_query(queryString)
         return response['study']
 
     def getChannelGroups(self, studyID):
-        queryString = graphql.channelGroupsQueryString(studyID)
-        response = self.executeQuery(queryString)
+        queryString = graphql.get_channel_groups_query_string(studyID)
+        response = self.execute_query(queryString)
         return response['study']['channelGroups']
 
     def getSegmentUrls(self, segmentIds, limit=10000):
@@ -247,8 +247,8 @@ class SeerConnect:
         counter = 0
         while int(counter*limit) < len(segmentIds):
             segmentIdsBatch = segmentIds[int(counter*limit):int((counter+1)*limit)]
-            queryString = graphql.segmentUrlsQueryString(segmentIdsBatch)
-            response = self.executeQuery(queryString)
+            queryString = graphql.get_segment_urls_query_string(segmentIdsBatch)
+            response = self.execute_query(queryString)
             response = response['studyChannelGroupSegments']
             response = [i for i in response if i is not None]
             response = pd.DataFrame(response)
@@ -263,17 +263,17 @@ class SeerConnect:
 
         while True:
             while True:
-                queryString = graphql.getLabelsQueryString(studyId, labelGroupId, fromTime, toTime,
+                queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime, toTime,
                                                            limit, offset)
                 print("queryString", queryString)
-                response = self.executeQuery(queryString)['study']
+                response = self.execute_query(queryString)['study']
                 labelGroup = json_normalize(response)
-                labels = self.pandasFlatten(labelGroup, 'labelGroup.', 'labels')
+                labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')
                 break
             if not labels:
                 break
 
-            tags = self.pandasFlatten(labels, 'labels.', 'tags')
+            tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
             labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore')
             labels.drop('labels.tags', inplace=True, errors='ignore')
@@ -309,8 +309,8 @@ class SeerConnect:
         return pd.DataFrame(label_groups)
 
     def getViewedTimes(self, studyID):
-        queryString = graphql.getViewedTimesString(studyID)
-        response = self.executeQuery(queryString)
+        queryString = graphql.get_viewed_times_query_string(studyID)
+        response = self.execute_query(queryString)
         response = json_normalize(response['viewGroups'])
         views = pd.DataFrame(columns=['createdAt', 'duration', 'id', 'startTime', 'updatedAt', 'user', 'viewTimes'])
         for i in range(len(response)):
@@ -360,13 +360,13 @@ class SeerConnect:
         result = []
         for row in studies.itertuples():
             # t = time.time()
-            queryString = graphql.studyWithDataQueryString(row.id)
-            result.append(self.executeQuery(queryString)['study'])
+            queryString = graphql.get_study_with_data_query_string(row.id)
+            result.append(self.execute_query(queryString)['study'])
             # print('study query time: ', round(time.time()-t,2))
 
         return {'studies' : result}
 
-    def pandasFlatten(self, parent, parentName, childName):
+    def pandas_flatten(self, parent, parentName, childName):
         childList = []
         for i in range(len(parent)):
             parentId = parent[parentName+'id'][i]
@@ -386,9 +386,9 @@ class SeerConnect:
     def createMetaData(self, study=None):
         dataUrlsAll     = self.getAllMetaData(study)
         allData         = json_normalize(dataUrlsAll['studies'])
-        channelGroups   = self.pandasFlatten(allData, '', 'channelGroups')
-        channels        = self.pandasFlatten(channelGroups, 'channelGroups.', 'channels')
-        segments        = self.pandasFlatten(channelGroups, 'channelGroups.', 'segments')
+        channelGroups   = self.pandas_flatten(allData, '', 'channelGroups')
+        channels        = self.pandas_flatten(channelGroups, 'channelGroups.', 'channels')
+        segments        = self.pandas_flatten(channelGroups, 'channelGroups.', 'segments')
 
         segments.drop(columns='segments.dataChunks', inplace=True, errors='ignore')
         channelGroups.drop(columns=['channelGroups.segments', 'channelGroups.channels'],

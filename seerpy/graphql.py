@@ -1,5 +1,5 @@
 
-def studyWithDataQueryString(studyId):
+def get_study_with_data_query_string(studyId):
     return '''
         query {
             study (id: "%s") {
@@ -40,7 +40,7 @@ def studyWithDataQueryString(studyId):
         }
     ''' % (studyId)
 
-def getLabelsQueryString(studyId, labelGroupId, fromTime, toTime, limit, offset):
+def get_labels_query_string(studyId, labelGroupId, fromTime, toTime, limit, offset):
     return '''
         query {
             study (id: "%s") {
@@ -98,7 +98,7 @@ def get_label_groups_for_study_ids_paged_query_string(study_ids):
         }}}}"""
 
 
-def channelGroupsQueryString(studyId):
+def get_channel_groups_query_string(studyId):
     return '''
         query {
             study(id: "%s") {
@@ -120,7 +120,7 @@ def channelGroupsQueryString(studyId):
 
 #    studyChannelGroupSegments
 
-def segmentUrlsQueryString(segmentIds):
+def get_segment_urls_query_string(segmentIds):
     return '''
         query {
             studyChannelGroupSegments(segmentIds: %s) {
@@ -144,7 +144,7 @@ def get_studies_by_search_term_paged_query_string(searchTerm):
         }}}}'''
 
 
-def studyQueryStudy(studyId):
+def get_study_query_string(studyId):
     return '''
         query {
             study(id: "%s") {
@@ -157,7 +157,7 @@ def studyQueryStudy(studyId):
         }
     ''' % (studyId)
 
-def addLabelMutationString(groupId, startTime, duration, timezone):
+def get_add_label_mutation_string(groupId, startTime, duration, timezone):
     return '''
         mutation {
             addLabelsToLabelGroup(
@@ -169,7 +169,7 @@ def addLabelMutationString(groupId, startTime, duration, timezone):
         }
     ''' % (groupId, startTime, duration, timezone)
 
-def addLabelsMutationString(groupId, labels):
+def get_add_labels_mutation_string(groupId, labels):
     start = '''
         mutation {
             addLabelsToLabelGroup(
@@ -188,7 +188,7 @@ def addLabelsMutationString(groupId, labels):
 
     return start + lst[:-1] + end
 
-def addLabelGroupMutationString(studyId, name, description):
+def get_add_label_group_mutation_string(studyId, name, description):
     return '''
         mutation {
             addLabelGroupToStudy(studyId: "%s", name: "%s", description: "%s") {
@@ -197,14 +197,14 @@ def addLabelGroupMutationString(studyId, name, description):
         }
     ''' % (studyId, name, description)
 
-def removeLabelGroupMutationString(groupId):
+def get_remove_label_group_mutation_string(groupId):
     return '''
         mutation {
             removeLabelGroupFromStudy(groupId: "%s")
         }
     ''' % (groupId)
 
-def getViewedTimesString(studyId):
+def get_viewed_times_query_string(studyId):
     return '''
         query {
             viewGroups(studyId: "%s") {

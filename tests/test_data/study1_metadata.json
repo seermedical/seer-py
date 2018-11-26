@@ -1,0 +1,333 @@
+{
+    "study": {
+        "channelGroups": [
+            {
+                "channels": [
+                    {
+                        "channelType": {
+                            "category": "ecg",
+                            "name": "ECG"
+                        },
+                        "id": "study-1-channel-ecg-1-id",
+                        "name": "ECGR"
+                    },
+                    {
+                        "channelType": {
+                            "category": "ecg",
+                            "name": "ECG"
+                        },
+                        "id": "study-1-channel-ecg-2-id",
+                        "name": "ECGS"
+                    }
+                ],
+                "chunkPeriod": 10,
+                "compression": "gzip",
+                "exponent": -3,
+                "id": "study-1-channel-group-1-id",
+                "name": "ECG",
+                "recordLength": 1,
+                "recordsPerChunk": 10,
+                "sampleEncoding": "int16",
+                "sampleRate": 256,
+                "samplesPerRecord": 256,
+                "segments": [
+                    {
+                        "duration": 100937.5,
+                        "id": "study-1-channel-group-1-segment-1-id",
+                        "startTime": 1526275675734.375
+                    },
+                    {
+                        "duration": 3442187.5,
+                        "id": "study-1-channel-group-1-segment-2-id",
+                        "startTime": 1526275822812.5
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-3-id",
+                        "startTime": 1526279265000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-4-id",
+                        "startTime": 1526282865000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-5-id",
+                        "startTime": 1526286465000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-6-id",
+                        "startTime": 1526290065000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-7-id",
+                        "startTime": 1526293665000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-8-id",
+                        "startTime": 1526297265000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-9-id",
+                        "startTime": 1526300865000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-1-segment-10-id",
+                        "startTime": 1526304465000
+                    }
+                ],
+                "signalMax": 5,
+                "signalMin": -5,
+                "units": "V"
+            },
+            {
+                "channels": [
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "Fz"
+                        },
+                        "id": "study-1-channel-eeg-1-id",
+                        "name": "Fz"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "C4"
+                        },
+                        "id": "study-1-channel-eeg-2-id",
+                        "name": "C4"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "Pz"
+                        },
+                        "id": "study-1-channel-eeg-3-id",
+                        "name": "Pz"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "C3"
+                        },
+                        "id": "study-1-channel-eeg-4-id",
+                        "name": "C3"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "F3"
+                        },
+                        "id": "study-1-channel-eeg-5-id",
+                        "name": "F3"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "F4"
+                        },
+                        "id": "study-1-channel-eeg-6-id",
+                        "name": "F4"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "P4"
+                        },
+                        "id": "study-1-channel-eeg-7-id",
+                        "name": "P4"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "P3"
+                        },
+                        "id": "study-1-channel-eeg-8-id",
+                        "name": "P3"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "A2"
+                        },
+                        "id": "study-1-channel-eeg-9-id",
+                        "name": "A2"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "T4"
+                        },
+                        "id": "study-1-channel-eeg-10-id",
+                        "name": "T4"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "A1"
+                        },
+                        "id": "study-1-channel-eeg-11-id",
+                        "name": "A1"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "T3"
+                        },
+                        "id": "study-1-channel-eeg-12-id",
+                        "name": "T3"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "Fp1"
+                        },
+                        "id": "study-1-channel-eeg-13-id",
+                        "name": "Fp1"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "Fp2"
+                        },
+                        "id": "study-1-channel-eeg-14-id",
+                        "name": "Fp2"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "O2"
+                        },
+                        "id": "study-1-channel-eeg-15-id",
+                        "name": "O2"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "O1"
+                        },
+                        "id": "study-1-channel-eeg-16-id",
+                        "name": "O1"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "F7"
+                        },
+                        "id": "study-1-channel-eeg-17-id",
+                        "name": "F7"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "F8"
+                        },
+                        "id": "study-1-channel-eeg-18-id",
+                        "name": "F8"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "T6"
+                        },
+                        "id": "study-1-channel-eeg-19-id",
+                        "name": "T6"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "T5"
+                        },
+                        "id": "study-1-channel-eeg-20-id",
+                        "name": "T5"
+                    },
+                    {
+                        "channelType": {
+                            "category": "eeg",
+                            "name": "Cz"
+                        },
+                        "id": "study-1-channel-eeg-21-id",
+                        "name": "Cz"
+                    }
+                ],
+                "chunkPeriod": 10,
+                "compression": "gzip",
+                "exponent": -6,
+                "id": "study-1-channel-group-2-id",
+                "name": "EEG",
+                "recordLength": 1,
+                "recordsPerChunk": 10,
+                "sampleEncoding": "int16",
+                "sampleRate": 256,
+                "samplesPerRecord": 256,
+                "segments": [
+                    {
+                        "duration": 100937.5,
+                        "id": "study-1-channel-group-2-segment-1-id",
+                        "startTime": 1526275675734.375
+                    },
+                    {
+                        "duration": 3442187.5,
+                        "id": "study-1-channel-group-2-segment-2-id",
+                        "startTime": 1526275822812.5
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-3-id",
+                        "startTime": 1526279265000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-4-id",
+                        "startTime": 1526282865000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-5-id",
+                        "startTime": 1526286465000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-6-id",
+                        "startTime": 1526290065000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-7-id",
+                        "startTime": 1526293665000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-8-id",
+                        "startTime": 1526297265000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-9-id",
+                        "startTime": 1526300865000
+                    },
+                    {
+                        "duration": 3600000,
+                        "id": "study-1-channel-group-2-segment-10-id",
+                        "startTime": 1526304465000
+                    }
+                ],
+                "signalMax": 1000,
+                "signalMin": -1000,
+                "units": "V"
+            }
+        ],
+        "id": "study-1-id",
+        "name": "Study 1",
+        "patient": {
+            "id": "patient-1-id"
+        }
+    }
+}

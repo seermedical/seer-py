@@ -16,7 +16,7 @@ from .utils import downloadLink
 from . import graphql
 
 
-class SeerConnect:
+class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def __init__(self, apiUrl='https://api.seermedical.com', email=None, password=None):
         """Creates a GraphQL client able to interact with
@@ -232,8 +232,8 @@ class SeerConnect:
 
         while True:
             while True:
-                queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime, toTime,
-                                                           limit, offset)
+                queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime,
+                                                              toTime, limit, offset)
                 print("queryString", queryString)
                 response = self.execute_query(queryString)['study']
                 labelGroup = json_normalize(response)
@@ -247,7 +247,8 @@ class SeerConnect:
             labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore')
             labels.drop('labels.tags', inplace=True, errors='ignore')
 
-            labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+            labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id',
+                                          suffixes=('', '_y'))
             labelGroup = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
 
             offset += limit
@@ -281,10 +282,11 @@ class SeerConnect:
         queryString = graphql.get_viewed_times_query_string(studyID)
         response = self.execute_query(queryString)
         response = json_normalize(response['viewGroups'])
-        views = pd.DataFrame(columns=['createdAt', 'duration', 'id', 'startTime', 'updatedAt', 'user', 'viewTimes'])
+        views = pd.DataFrame(columns=['createdAt', 'duration', 'id', 'startTime', 'updatedAt',
+                                      'user', 'viewTimes'])
         for i in range(len(response)):
-            view = json_normalize(response.loc[i,'views'])
-            view['user'] = response.loc[i,'user.fullName']
+            view = json_normalize(response.loc[i, 'views'])
+            view['user'] = response.loc[i, 'user.fullName']
             views = views.append(view)
 
         views['createdAt'] = pd.to_datetime(views['createdAt'])
@@ -353,20 +355,22 @@ class SeerConnect:
         return child
 
     def createMetaData(self, study=None):
-        dataUrlsAll     = self.getAllMetaData(study)
-        allData         = json_normalize(dataUrlsAll['studies'])
-        channelGroups   = self.pandas_flatten(allData, '', 'channelGroups')
-        channels        = self.pandas_flatten(channelGroups, 'channelGroups.', 'channels')
-        segments        = self.pandas_flatten(channelGroups, 'channelGroups.', 'segments')
+        dataUrlsAll = self.getAllMetaData(study)
+        allData = json_normalize(dataUrlsAll['studies'])
+        channelGroups = self.pandas_flatten(allData, '', 'channelGroups')
+        channels = self.pandas_flatten(channelGroups, 'channelGroups.', 'channels')
+        segments = self.pandas_flatten(channelGroups, 'channelGroups.', 'segments')
 
         segments.drop(columns='segments.dataChunks', inplace=True, errors='ignore')
         channelGroups.drop(columns=['channelGroups.segments', 'channelGroups.channels'],
                            inplace=True, errors='ignore')
         allData.drop(columns=['channelGroups', 'labelGroups'], inplace=True, errors='ignore')
 
-        channelGroupsM  = channelGroups.merge(segments, how='left', on='channelGroups.id', suffixes=('', '_y'))
-        channelGroupsM  = channelGroupsM.merge(channels, how='left', on='channelGroups.id', suffixes=('', '_y'))
-        allData         = allData.merge(channelGroupsM, how='left', on='id', suffixes=('', '_y'))
+        channelGroupsM = channelGroups.merge(segments, how='left', on='channelGroups.id',
+                                             suffixes=('', '_y'))
+        channelGroupsM = channelGroupsM.merge(channels, how='left', on='channelGroups.id',
+                                              suffixes=('', '_y'))
+        allData = allData.merge(channelGroupsM, how='left', on='id', suffixes=('', '_y'))
 
         return allData
 
@@ -374,16 +378,21 @@ class SeerConnect:
         chunkPattern = '00000000000.dat'
         dataChunks = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
         metaData = metaData.drop_duplicates('segments.id')
-        for index, row in metaData.iterrows():
-            segBaseUrl = segmentUrls.loc[segmentUrls['segments.id']==row['segments.id'],'baseDataChunkUrl'].iloc[0]
-            numOfChunks = int(np.ceil(row['segments.duration'] / row['channelGroups.chunkPeriod'] / 1000.))
-            for i in range(numOfChunks):
-                if (row['channelGroups.chunkPeriod']* 1000 * i + row['segments.startTime'] <= toTime and
-                    row['channelGroups.chunkPeriod']* 1000 * (i + 1) + row['segments.startTime'] >= fromTime):
-                    dataChunkName = str(i).zfill(len(chunkPattern)-4) + chunkPattern[-4:]
-                    dataChunk = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+        for row in metaData.itertuples():
+            segBaseUrl = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
+                                         'baseDataChunkUrl'].iloc[0]
+            duration = row['segments.duration']
+            chunk_period = row['channelGroups.chunkPeriod']
+            num_chunks = int(np.ceil(duration / chunk_period / 1000.))
+            start_time = row['segments.startTime']
+            for i in range(num_chunks):
+                if (chunk_period * 1000 * i + start_time <= toTime and
+                        chunk_period * 1000 * (i + 1) + start_time >= fromTime):
+                    dataChunkName = str(i).zfill(len(chunkPattern) - 4) + chunkPattern[-4:]
+                    dataChunk = pd.DataFrame(columns=['segments.id', 'dataChunks.url',
+                                                      'dataChunks.time'])
                     dataChunk['dataChunks.url'] = [segBaseUrl.replace(chunkPattern, dataChunkName)]
-                    dataChunk['dataChunks.time'] = [row['channelGroups.chunkPeriod']* 1000 * i + row['segments.startTime']]
+                    dataChunk['dataChunks.time'] = [chunk_period * 1000 * i + start_time]
                     dataChunk['segments.id'] = [row['segments.id']]
                     dataChunks = dataChunks.append(dataChunk)
         return dataChunks
@@ -424,45 +433,59 @@ class SeerConnect:
             segmentIds = allData['segments.id'].unique().tolist()
             segmentUrls = self.getSegmentUrls(segmentIds)
 
-
         dataQ = []
+
 #        uniqueUrls = allData['dataChunks.url'].copy().drop_duplicates()
-        for studyID in allData['id'].copy().drop_duplicates().tolist():
-            for channelGroupsID in allData['channelGroups.id'].copy().drop_duplicates().tolist():
-                for segmentsID in allData['segments.id'].copy().drop_duplicates().tolist():
-                    metaData = allData[(allData['id']==studyID) & (allData['channelGroups.id']==channelGroupsID) & (allData['segments.id']==segmentsID)].copy()
+        for segment_id in allData['segments.id'].copy().drop_duplicates().tolist():
+            meta_data = allData[allData['segments.id'] == segment_id].copy()
 
-                    numChannels = len(metaData['channels.id'].copy().drop_duplicates().tolist())
-                    channelNames = metaData['channels.name'].copy().drop_duplicates().tolist()
-                    actualChannelNames = channelNames if len(channelNames) == numChannels else ['Channel %s' % (i) for i in range(0, numChannels)]
+            num_channels = len(meta_data['channels.id'].copy().drop_duplicates().tolist())
+            channel_names = meta_data['channels.name'].copy().drop_duplicates().tolist()
 
-                    metaData = metaData.drop_duplicates('segments.id')
+            actual_channel_names = channel_names
+            if len(channel_names) != num_channels:
+                actual_channel_names = ['Channel %s' % (i) for i in range(0, num_channels)]
 
-                    dataChunks = self.createDataChunkUrls(metaData, segmentUrls, fromTime=fromTime, toTime=toTime)
-                    metaData = metaData.merge(dataChunks, how='left', left_on='segments.id', right_on='segments.id', suffixes=('', '_y'))
+            meta_data = meta_data.drop_duplicates('segments.id')
 
-                    metaData = metaData[['dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding', 'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',
-                                         'channelGroups.recordsPerChunk', 'channelGroups.compression', 'channelGroups.signalMin', 'channelGroups.signalMax', 'channelGroups.exponent']]
-                    metaData = metaData.drop_duplicates()
-                    metaData = metaData.dropna(axis=0, how='any', subset=['dataChunks.url'])
-                    for r in range(metaData.shape[0]):
-                        dataQ.append([metaData.iloc[r, :], studyID, channelGroupsID, segmentsID, actualChannelNames])
+            study_id = meta_data['id'].iloc['0']
+            channel_groups_id = meta_data['channelGroups.id'].iloc['0']
+
+            data_chunks = self.createDataChunkUrls(meta_data, segmentUrls, fromTime=fromTime,
+                                                   toTime=toTime)
+            meta_data = meta_data.merge(data_chunks, how='left', left_on='segments.id',
+                                        right_on='segments.id', suffixes=('', '_y'))
+
+            meta_data = meta_data[['dataChunks.url', 'dataChunks.time',
+                                   'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
+                                   'channelGroups.samplesPerRecord',
+                                   'channelGroups.recordsPerChunk',
+                                   'channelGroups.compression', 'channelGroups.signalMin',
+                                   'channelGroups.signalMax', 'channelGroups.exponent']]
+            meta_data = meta_data.drop_duplicates()
+            meta_data = meta_data.dropna(axis=0, how='any', subset=['dataChunks.url'])
+            for r in range(meta_data.shape[0]):
+                dataQ.append([meta_data.iloc[r, :], study_id, channel_groups_id, segment_id,
+                              actual_channel_names])
 
         if threads > 1:
             pool = Pool(processes=threads)
-            dataList = list(pool.map(downloadLink, dataQ))
+            data_list = list(pool.map(downloadLink, dataQ))
             pool.close()
             pool.join()
         else:
 #            dataList = list(map(downloadLink, dataQ))
-            dataList = [downloadLink(dataQ[i]) for i in range(len(dataQ))]
-        if len(dataList)>0:
-            data = pd.concat(dataList)
-            data = data.loc[(data['time']>=fromTime) & (data['time']<toTime)]
-            data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0, ascending=True,
-                                    inplace=False, kind='quicksort', na_position='last')
+            data_list = [downloadLink(dataQ[i]) for i in range(len(dataQ))]
+
+        if data_list:
+            data = pd.concat(data_list)
+            data = data.loc[(data['time'] >= fromTime) & (data['time'] < toTime)]
+            data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0,
+                                    ascending=True, inplace=False, kind='quicksort',
+                                    na_position='last')
         else:
             data = None
+
         return data
 
     def makeLabel(self, label, time, timezone=None):
@@ -473,22 +496,22 @@ class SeerConnect:
         labelStart = 0.0
         labelEnd = 0.0
         for i in range(label.shape[0]):
-            if labelOn==0 and label[i]>0.5:
+            if labelOn == 0 and label[i] > 0.5:
                 labelStart = time[i]
                 labelOn = 1
-            if labelOn==1 and label[i]<0.5:
+            if labelOn == 1 and label[i] < 0.5:
                 labelEnd = time[i]
                 labelOn = 0
-                labels.append([labelStart, labelEnd-labelStart, timezone])
-        if labelOn==1:
-            labels.append([labelStart, labelEnd-labelStart, timezone])
+                labels.append([labelStart, labelEnd - labelStart, timezone])
+        if labelOn == 1:
+            labels.append([labelStart, labelEnd - labelStart, timezone])
         return labels
 
     def applyMovAvg(self, x, w):
         if len(x.shape) == 1:
-            x = x.reshape(-1,1)
-        wn=int(w/2.0)
+            x = x.reshape(-1, 1)
+        wn = int(w / 2.0)
         xn = np.zeros(x.shape, dtype=np.float32)
-        for i in range(wn, x.shape[0]-wn):
+        for i in range(wn, x.shape[0] - wn):
             xn[i, :] = np.mean(np.abs(x[i-wn:i+wn, :]), axis=0)
         return xn

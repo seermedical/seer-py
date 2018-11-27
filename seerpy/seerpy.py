@@ -57,7 +57,6 @@ class SeerConnect:
         )
 
     def execute_query(self, queryString, invocations=0):
-
         rate_limit_errors = ['503 Server Error', '502 Server Error']
 
         try:
@@ -178,12 +177,12 @@ class SeerConnect:
         queryString = graphql.get_add_labels_mutation_string(groupId, labels)
         return self.execute_query(queryString)
 
-    def getStudies(self, limit=50, searchTerm=''):
+    def get_studies(self, limit=50, searchTerm=''):
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(searchTerm)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
     def get_studies_dataframe(self, limit=50, searchTerm=''):
-        studies = self.getStudies(limit, searchTerm)
+        studies = self.get_studies(limit, searchTerm)
 
         studyList = []
         for s in studies:
@@ -195,16 +194,17 @@ class SeerConnect:
             studyList.append(study)
         return pd.DataFrame(studyList)
 
-    def studyNameToId(self, studyNames):
-        if isinstance(studyNames, str):
-            studyNames = [studyNames]
+    def get_study_ids_from_names_dataframe(self, study_names):
+        if isinstance(study_names, str):
+            study_names = [study_names]
         studies = self.get_studies_dataframe()
-        return studies[studies['name'].isin(studyNames)][['name', 'id']].reset_index(drop=True)
+        return studies[studies['name'].isin(study_names)][['name', 'id']].reset_index(drop=True)
 
-    def getStudy(self, studyID):
-        queryString = graphql.studyQueryString(studyID)
-        response = self.execute_query(queryString)
-        return response['study']
+    def get_studies_by_id(self, study_ids, limit=50):
+        if isinstance(study_ids, str):
+            study_ids = [study_ids]
+        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(study_ids)
+        return self.get_paginated_response(studies_query_string, 'studies', limit)
 
     def getChannelGroups(self, studyID):
         queryString = graphql.get_channel_groups_query_string(studyID)

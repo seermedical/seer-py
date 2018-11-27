@@ -144,18 +144,22 @@ def get_studies_by_search_term_paged_query_string(searchTerm):
         }}}}'''
 
 
-def get_study_query_string(studyId):
-    return '''
-        query {
-            study(id: "%s") {
+def get_studies_by_study_id_paged_query_string(study_ids):
+
+    print("study_ids", study_ids)
+    study_ids_string = ','.join(f'"{study_id}"' for study_id in study_ids)
+    print("study_ids_string", study_ids_string)
+
+    return f"""
+        query {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, studyIds: [{study_ids_string}]) {{{{
                 id
-                patient {
-                    id
-                }
                 name
-            }
-        }
-    ''' % (studyId)
+                patient {{{{
+                    id
+                }}}}
+            }}}}
+        }}}}"""
 
 
 def get_add_labels_mutation_string(groupId, labels):

@@ -157,17 +157,6 @@ def get_study_query_string(studyId):
         }
     ''' % (studyId)
 
-def get_add_label_mutation_string(groupId, startTime, duration, timezone):
-    return '''
-        mutation {
-            addLabelsToLabelGroup(
-                groupId: "%s",
-                labels: [{ startTime: %f, duration: %f, timezone: %f }]
-            ) {
-                id
-            }
-        }
-    ''' % (groupId, startTime, duration, timezone)
 
 def get_add_labels_mutation_string(groupId, labels):
 

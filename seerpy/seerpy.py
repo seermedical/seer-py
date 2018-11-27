@@ -151,37 +151,6 @@ class SeerConnect:
         queryString = graphql.get_remove_label_group_mutation_string(groupId)
         return self.execute_query(queryString)
 
-    def addLabel(self, groupId, startTime, duration, timezone):
-        """Add label to label group
-
-        Parameters
-        ----------
-        groupID : string
-                Seer group ID
-        startTime : float
-                label start time in epoch time
-        duration : float
-                duration of event in milliseconds
-        timezone : float
-                local UTC timezone (eg. Melbourne = 11.0)
-
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-
-        Example
-        -------
-        alarm = np.array([[1000, 200], [3000, 500], [5000, 400]])
-        for i in range(alarm.shape[0]):
-            addLabel(labelGroup, alarm[i,0], alarm[i,1]-alarm[i,0])
-
-        """
-        queryString = graphql.get_add_label_mutation_string(groupId, startTime, duration, timezone)
-        return self.execute_query(queryString)
-
     def addLabels(self, groupId, labels):
         """Add label to label group
 

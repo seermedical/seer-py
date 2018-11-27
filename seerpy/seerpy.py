@@ -488,7 +488,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return data
 
-    def makeLabel(self, label, time, timezone=None):
+    def makeLabel(self, label, times, timezone=None):
         if timezone is None:
             timezone = int(int(strftime("%z", gmtime()))/100)
         labels = []
@@ -497,10 +497,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labelEnd = 0.0
         for i in range(label.shape[0]):
             if labelOn == 0 and label[i] > 0.5:
-                labelStart = time[i]
+                labelStart = times[i]
                 labelOn = 1
             if labelOn == 1 and label[i] < 0.5:
-                labelEnd = time[i]
+                labelEnd = times[i]
                 labelOn = 0
                 labels.append([labelStart, labelEnd - labelStart, timezone])
         if labelOn == 1:

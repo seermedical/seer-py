@@ -381,7 +381,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         chunkPattern = '00000000000.dat'
         dataChunks = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
         metaData = metaData.drop_duplicates('segments.id')
-        for row in metaData.itertuples():
+        for idx, row in metaData.iterrows():
             segBaseUrl = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
                                          'baseDataChunkUrl'].iloc[0]
             duration = row['segments.duration']

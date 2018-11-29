@@ -234,7 +234,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             while True:
                 queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime,
                                                               toTime, limit, offset)
-                print("queryString", queryString)
+#                print("queryString", queryString)
                 response = self.execute_query(queryString)['study']
                 labelGroup = json_normalize(response)
                 labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')

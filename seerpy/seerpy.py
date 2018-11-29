@@ -244,8 +244,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-            labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore')
-            labels.drop('labels.tags', inplace=True, errors='ignore')
+            labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore',
+                            axis='columns')
+            labels.drop('labels.tags', inplace=True, errors='ignore',
+                            axis='columns')
 
             labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id',
                                           suffixes=('', '_y'))

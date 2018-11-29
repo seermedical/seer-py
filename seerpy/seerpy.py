@@ -239,7 +239,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 labelGroup = json_normalize(response)
                 labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')
                 break
-            if not labels:
+            if labels.empty:
                 break
 
             tags = self.pandas_flatten(labels, 'labels.', 'tags')

@@ -361,10 +361,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         channels = self.pandas_flatten(channelGroups, 'channelGroups.', 'channels')
         segments = self.pandas_flatten(channelGroups, 'channelGroups.', 'segments')
 
-        segments.drop(columns='segments.dataChunks', inplace=True, errors='ignore')
-        channelGroups.drop(columns=['channelGroups.segments', 'channelGroups.channels'],
-                           inplace=True, errors='ignore')
-        allData.drop(columns=['channelGroups', 'labelGroups'], inplace=True, errors='ignore')
+        segments.drop('segments.dataChunks', inplace=True, errors='ignore', axis='columns')
+        channelGroups.drop(['channelGroups.segments', 'channelGroups.channels'],
+                           inplace=True, errors='ignore', axis='columns')
+        allData.drop(['channelGroups', 'labelGroups'], inplace=True, errors='ignore', 
+                     axis='columns')
 
         channelGroupsM = channelGroups.merge(segments, how='left', on='channelGroups.id',
                                              suffixes=('', '_y'))

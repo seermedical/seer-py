@@ -451,8 +451,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             meta_data = meta_data.drop_duplicates('segments.id')
 
-            study_id = meta_data['id'].iloc['0']
-            channel_groups_id = meta_data['channelGroups.id'].iloc['0']
+            study_id = meta_data['id'].iloc[0]
+            channel_groups_id = meta_data['channelGroups.id'].iloc[0]
 
             data_chunks = self.createDataChunkUrls(meta_data, segmentUrls, fromTime=fromTime,
                                                    toTime=toTime)

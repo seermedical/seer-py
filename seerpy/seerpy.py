@@ -10,7 +10,7 @@ from . import graphql
 import os
 
 from multiprocessing import Pool
-#import time
+import time
 from time import gmtime, strftime
 
 
@@ -46,6 +46,26 @@ class SeerConnect:
             )
         )
 
+    def execute_query(self, queryString, invocations=0):
+        rate_limit_errors = ['503 Server Error', '502 Server Error']
+
+        try:
+            time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
+            response = self.graphqlClient.execute(gql(queryString))
+            self.lastQueryTime = time.time()
+            return response
+        except Exception as e:
+            if invocations > 6:
+                print('Too many failed query invocations. raising error')
+                raise
+            error_string = str(e)
+            if any(rate_limit_error in error_string for rate_limit_error in rate_limit_errors):
+                print(error_string + ' raised, trying again after a short break')
+                time.sleep(30 * (invocations+1)**2)
+                invocations += 1
+                return self.execute_query(queryString, invocations=invocations)
+            raise
+
     def addLabelGroup(self, studyId, name, description):
         """Add Label Group to study
 
@@ -74,7 +94,7 @@ class SeerConnect:
 
         """
         queryString = graphql.addLabelGroupMutationString(studyId, name, description)
-        response = self.graphqlClient.execute(gql(queryString))
+        response = self.execute_query(queryString)
         return response['addLabelGroupToStudy']['id']
 
 
@@ -100,7 +120,7 @@ class SeerConnect:
 
         """
         queryString = graphql.removeLabelGroupMutationString(groupId)
-        return self.graphqlClient.execute(gql(queryString))
+        return self.execute_query(queryString)
 
     def addLabel(self, groupId, startTime, duration, timezone, confidence = None):
         """Add label to label group
@@ -133,7 +153,7 @@ class SeerConnect:
 
         """
         queryString = graphql.addLabelMutationString(groupId, startTime, duration, timezone, confidence)
-        return self.graphqlClient.execute(gql(queryString))
+        return self.execute_query(queryString)
     
     def addLabels(self, groupId, labels):
         """Add label to label group
@@ -161,13 +181,13 @@ class SeerConnect:
 
         """
         queryString = graphql.addLabelsMutationString(groupId, labels)
-        return self.graphqlClient.execute(gql(queryString))
+        return self.execute_query(queryString)
 
     def getStudies(self, limit=50, offset=0, searchTerm=''):
         studies = []
         while True:
             queryString = graphql.studyListQueryString(limit, offset, searchTerm)
-            response = self.graphqlClient.execute(gql(queryString))['studies']
+            response = self.execute_query(queryString)['studies']
             if len(response) == 0:
                 break
             else:
@@ -177,17 +197,17 @@ class SeerConnect:
 
     def getStudy(self, studyID):
         queryString = graphql.studyQueryString(studyID)
-        response = self.graphqlClient.execute(gql(queryString))
+        response = self.execute_query(queryString)
         return response['study']
 
     def getChannelGroups(self, studyID):
         queryString = graphql.channelGroupsQueryString(studyID)
-        response = self.graphqlClient.execute(gql(queryString))
+        response = self.execute_query(queryString)
         return response['study']['channelGroups']
     
     def getDataChunks(self, studyId, channelGroupId, fromTime=0, toTime=9e12):
         queryString = graphql.dataChunksQueryString(studyId, channelGroupId, fromTime, toTime)
-        response = self.graphqlClient.execute(gql(queryString))['study']['channelGroup']
+        response = self.execute_query(queryString)['study']['channelGroup']
         response = json_normalize(response['segments'])
         dataChunks = self.pandasFlatten(response, '', 'dataChunks')
         return dataChunks
@@ -200,7 +220,7 @@ class SeerConnect:
         while True:
             queryString = graphql.getLabesQueryString(studyId, labelGroupId, fromTime,
                                                       toTime, limit, offset)
-            response = self.graphqlClient.execute(gql(queryString))['study']
+            response = self.execute_query(queryString)['study']
             labelGroup = json_normalize(response)
             labels = self.pandasFlatten(labelGroup, 'labelGroup.', 'labels')
             if len(labels) == 0:
@@ -233,7 +253,7 @@ class SeerConnect:
     
     def getLabelGroups(self, studyID):
         queryString = graphql.labelGroupsQueryString(studyID)
-        response = self.graphqlClient.execute(gql(queryString))
+        response = self.execute_query(queryString)
         return response['study']['labelGroups']
 
     def getAllMetaData(self, study=None):
@@ -279,7 +299,7 @@ class SeerConnect:
         for sdy in studiesToGet:
 #            t = time.time()
             queryString = graphql.studyWithDataQueryString(sdy)
-            result.append(self.graphqlClient.execute(gql(queryString))['study'])
+            result.append(self.execute_query(queryString)['study'])
             # print('study query time: ', round(time.time()-t,2))
 
         return {'studies' : result}

@@ -45,6 +45,10 @@ class SeerConnect:
                 timeout=60
             )
         )
+        
+        self.lastQueryTime = 0
+        self.apiLimitExpire = 300
+        self.apiLimit = 240
 
     def execute_query(self, queryString, invocations=0):
         rate_limit_errors = ['503 Server Error', '502 Server Error']

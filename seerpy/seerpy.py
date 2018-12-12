@@ -70,7 +70,7 @@ class SeerConnect:
                 return self.execute_query(queryString, invocations=invocations)
             raise
 
-    def addLabelGroup(self, studyId, name, description):
+    def addLabelGroup(self, studyId, name, description, labelType=None):
         """Add Label Group to study
 
         Parameters
@@ -97,7 +97,7 @@ class SeerConnect:
         labelGroup = addLabelGroup(studyId, labelGroupName, labelGroupDescription)
 
         """
-        queryString = graphql.addLabelGroupMutationString(studyId, name, description)
+        queryString = graphql.addLabelGroupMutationString(studyId, name, description, labelType)
         response = self.execute_query(queryString)
         return response['addLabelGroupToStudy']['id']
 

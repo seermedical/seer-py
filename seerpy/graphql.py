@@ -209,14 +209,18 @@ def addLabelsMutationString(groupId, labels):
     
     return start + lst[:-1] + end
 
-def addLabelGroupMutationString(studyId, name, description):
+def addLabelGroupMutationString(studyId, name, description, labelType):
+    if labelType is None:
+        labelTypeString = ''
+    else:
+        labelTypeString = ', labelType: ' + labelType
     return '''
         mutation {
-            addLabelGroupToStudy(studyId: "%s", name: "%s", description: "%s") {
+            addLabelGroupToStudy(studyId: "%s", name: "%s", description: "%s"%s) {
                 id
             }
         }
-    ''' % (studyId, name, description)
+    ''' % (studyId, name, description, labelTypeString)
 
 def removeLabelGroupMutationString(groupId):
     return '''

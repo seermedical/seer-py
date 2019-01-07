@@ -399,7 +399,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                     dataChunk['dataChunks.time'] = [chunk_start_time]
                     dataChunk['segments.id'] = [row['segments.id']]
                     dataChunks = dataChunks.append(dataChunk)
-        return dataChunks
+
+        return dataChunks.reset_index(drop=True)
 
     def getLinks(self, allData, segmentUrls=None, threads=None,  # pylint:disable=too-many-arguments
                  fromTime=0, toTime=9e12):

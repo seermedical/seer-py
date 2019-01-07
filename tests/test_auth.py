@@ -11,6 +11,8 @@ from seerpy.auth import SeerAuth
 # pylint complains that the methods could be a function. this disables that warning.
 # pylint:disable=no-self-use
 
+# this isn't a useful check for test code
+# pylint:disable=too-many-arguments
 
 @mock.patch('seerpy.auth.getpass.getpass', autospec=True, return_value="password")
 @mock.patch('builtins.input', autospec=True, return_value="email")

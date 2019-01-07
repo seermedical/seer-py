@@ -1,0 +1,5 @@
+,baseDataChunkUrl,segments.id
+0,https://blah.cloudfront.net/segment-id-1_00000000000.dat?Policy=blah,segment-id-1
+1,https://blah.cloudfront.net/segment-id-2_00000000000.dat?Policy=blah,segment-id-2
+2,https://blah.cloudfront.net/segment-id-3_00000000000.dat?Policy=blah,segment-id-3
+3,https://blah.cloudfront.net/segment-id-4_00000000000.dat?Policy=blah,segment-id-4

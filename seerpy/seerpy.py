@@ -223,8 +223,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             segmentUrls = segmentUrls.append(response)
             counter += 1
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
-        segmentUrls.reset_index(drop=True, inplace=True)
-        return segmentUrls
+        return segmentUrls.reset_index(drop=True)
 
     def getLabels(self, studyId, labelGroupId, fromTime=0,  # pylint:disable=too-many-arguments
                   toTime=9e12, limit=200, offset=0):
@@ -245,8 +244,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-            labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore', axis='columns')
-            labels.drop('labels.tags', inplace=True, errors='ignore', axis='columns')
+            labelGroup = labelGroup.drop('labelGroup.labels', errors='ignore', axis='columns')
+            labels = labels.drop('labels.tags', errors='ignore', axis='columns')
 
             labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id',
                                           suffixes=('', '_y'))
@@ -348,8 +347,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             childList.append(child)
 
         if childList:
-            child = pd.concat(childList)
-            child.reset_index(drop=True, inplace=True)
+            child = pd.concat(childList).reset_index(drop=True)
         if not childList or child.empty:
             columns = [parentName + 'id', childName + '.id']
             child = pd.DataFrame(columns=columns)
@@ -362,11 +360,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         channels = self.pandas_flatten(channelGroups, 'channelGroups.', 'channels')
         segments = self.pandas_flatten(channelGroups, 'channelGroups.', 'segments')
 
-        segments.drop('segments.dataChunks', inplace=True, errors='ignore', axis='columns')
-        channelGroups.drop(['channelGroups.segments', 'channelGroups.channels'],
-                           inplace=True, errors='ignore', axis='columns')
-        allData.drop(['channelGroups', 'labelGroups'], inplace=True, errors='ignore',
-                     axis='columns')
+        segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
+        channelGroups = channelGroups.drop(['channelGroups.segments', 'channelGroups.channels'],
+                                           errors='ignore', axis='columns')
+        allData = allData.drop(['channelGroups', 'labelGroups'], errors='ignore', axis='columns')
 
         channelGroupsM = channelGroups.merge(segments, how='left', on='channelGroups.id',
                                              suffixes=('', '_y'))
@@ -486,8 +483,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             data = pd.concat(data_list)
             data = data.loc[(data['time'] >= fromTime) & (data['time'] < toTime)]
             data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0,
-                                    ascending=True, inplace=False, kind='quicksort',
-                                    na_position='last')
+                                    ascending=True, na_position='last')
         else:
             data = None
 

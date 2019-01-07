@@ -55,13 +55,13 @@ class TestCreateMetaData:
             test_input = json.load(f)
         get_all_metadata.return_value = {'studies': [test_input['study']]}
 
-        test_result = pd.read_csv(test_data_dir / "study1_metadata.csv", index_col=0)
+        expected_result = pd.read_csv(test_data_dir / "study1_metadata.csv", index_col=0)
 
         # run test
         result = SeerConnect().createMetaData()
 
         # check result
-        assert result.equals(test_result)
+        assert result.equals(expected_result)
 
     def test_four_studies(self, seer_connect_init,  # pylint:disable=unused-argument
                           get_all_metadata):
@@ -75,13 +75,13 @@ class TestCreateMetaData:
 
         get_all_metadata.return_value = {'studies': studies}
 
-        test_result = pd.read_csv(test_data_dir / "studies1-4_metadata.csv", index_col=0)
+        expected_result = pd.read_csv(test_data_dir / "studies1-4_metadata.csv", index_col=0)
 
         # run test
         result = SeerConnect().createMetaData()
 
         # check result
-        assert result.equals(test_result)
+        assert result.equals(expected_result)
 
 
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
@@ -182,13 +182,13 @@ class TestGetSegmentUrls:
         with open(test_data_dir / "segment_urls_1.json", "r") as f:
             gql_client.return_value.execute.return_value = json.load(f)
 
-        test_result = pd.read_csv(test_data_dir / "segment_urls_1.csv", index_col=0)
+        expected_result = pd.read_csv(test_data_dir / "segment_urls_1.csv", index_col=0)
 
         # run test
         result = SeerConnect().getSegmentUrls(["segment-1-id", "segment-2-id"])
 
         # check result
-        assert result.equals(test_result)
+        assert result.equals(expected_result)
 
     def test_multiple_batches(self, seer_auth, gql_client):
 
@@ -201,16 +201,14 @@ class TestGetSegmentUrls:
                 side_effects.append(json.load(f))
         gql_client.return_value.execute.side_effect = side_effects
 
-        test_result = pd.read_csv(test_data_dir / "segment_urls_2.csv", index_col=0)
+        expected_result = pd.read_csv(test_data_dir / "segment_urls_2.csv", index_col=0)
 
         # run test
         result = SeerConnect().getSegmentUrls(["segment-1-id", "segment-2-id",
                                                "segment-3-id", "segment-4-id"], 2)
 
-        print("result", result)
-        print("test_result", test_result)
         # check result
-        assert result.equals(test_result)
+        assert result.equals(expected_result)
 
     def test_none_segment_ids(self, seer_auth, gql_client):
 
@@ -255,3 +253,24 @@ class TestGetSegmentUrls:
 
         # check result
         assert result.empty
+
+
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestCreateDataChunkUrls:
+
+    def test_success(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "segment_urls_3.csv", index_col=0)
+
+        expected_result = pd.read_csv(test_data_dir / "study1_data_chunk_urls.csv", index_col=0)
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        # check result
+        assert result.equals(expected_result)

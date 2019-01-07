@@ -1,11 +1,11 @@
 {
     "studyChannelGroupSegments": [
         {
-            "baseDataChunkUrl": "https://blah.cloudfront.net/segment-id-1_00000000000.dat?Policy=blah",
+            "baseDataChunkUrl": "https://blah.cloudfront.net/segment-id-1_00000000000.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah3",
             "id": "segment-id-1"
         },
         {
-            "baseDataChunkUrl": "https://blah.cloudfront.net/segment-id-2_00000000000.dat?Policy=blah",
+            "baseDataChunkUrl": "https://blah.cloudfront.net/segment-id-2_00000000000.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah4",
             "id": "segment-id-2"
         }
     ]

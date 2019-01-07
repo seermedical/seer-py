@@ -380,8 +380,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         dataChunks = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
         metaData = metaData.drop_duplicates('segments.id')
         for _, row in metaData.iterrows():
-            segBaseUrl = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
-                                         'baseDataChunkUrl'].iloc[0]
+            segBaseUrls = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
+                                         'baseDataChunkUrl']
+            if segBaseUrls.empty:
+                continue
+            segBaseUrl = segBaseUrls.iloc[0]
+
             chunk_period = row['channelGroups.chunkPeriod']
             num_chunks = int(np.ceil(row['segments.duration'] / chunk_period / 1000.))
             start_time = row['segments.startTime']

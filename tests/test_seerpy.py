@@ -274,3 +274,60 @@ class TestCreateDataChunkUrls:
 
         # check result
         assert result.equals(expected_result)
+
+    def test_empty_input(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "empty_metadata.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "empty_segment_urls.csv", index_col=0)
+
+        expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        print("result", result)
+
+        # check result
+        assert result.equals(expected_result)
+
+    def test_empty_metadata(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "empty_metadata.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "segment_urls_3.csv", index_col=0)
+
+        expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        print("result", result)
+
+        # check result
+        assert result.equals(expected_result)
+
+    def test_empty_segments_urls(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "empty_segment_urls.csv", index_col=0)
+
+        expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        print("result", result)
+
+        # check result
+        assert result.equals(expected_result)

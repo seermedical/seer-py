@@ -125,7 +125,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(queryString)
         return response['addLabelGroupToStudy']['id']
 
-
     def delLabelGroup(self, groupId):
         """Delete Label Group from study
 
@@ -214,8 +213,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def getSegmentUrls(self, segmentIds, limit=10000):
         segmentUrls = pd.DataFrame()
         counter = 0
-        while int(counter*limit) < len(segmentIds):
-            segmentIdsBatch = segmentIds[int(counter*limit):int((counter+1)*limit)]
+        while int(counter * limit) < len(segmentIds):
+            segmentIdsBatch = segmentIds[int(counter * limit):int((counter + 1) * limit)]
             queryString = graphql.get_segment_urls_query_string(segmentIdsBatch)
             response = self.execute_query(queryString)
             response = response['studyChannelGroupSegments']
@@ -224,6 +223,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             segmentUrls = segmentUrls.append(response)
             counter += 1
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
+        segmentUrls.reset_index(drop=True, inplace=True)
         return segmentUrls
 
     def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12, limit=200, offset=0):
@@ -244,10 +244,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-            labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore',
-                            axis='columns')
-            labels.drop('labels.tags', inplace=True, errors='ignore',
-                            axis='columns')
+            labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore', axis='columns')
+            labels.drop('labels.tags', inplace=True, errors='ignore', axis='columns')
 
             labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id',
                                           suffixes=('', '_y'))
@@ -294,7 +292,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         views['createdAt'] = pd.to_datetime(views['createdAt'])
         views['updatedAt'] = pd.to_datetime(views['updatedAt'])
         return views
-
 
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of
@@ -366,7 +363,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segments.drop('segments.dataChunks', inplace=True, errors='ignore', axis='columns')
         channelGroups.drop(['channelGroups.segments', 'channelGroups.channels'],
                            inplace=True, errors='ignore', axis='columns')
-        allData.drop(['channelGroups', 'labelGroups'], inplace=True, errors='ignore', 
+        allData.drop(['channelGroups', 'labelGroups'], inplace=True, errors='ignore',
                      axis='columns')
 
         channelGroupsM = channelGroups.merge(segments, how='left', on='channelGroups.id',
@@ -381,7 +378,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         chunkPattern = '00000000000.dat'
         dataChunks = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
         metaData = metaData.drop_duplicates('segments.id')
-        for idx, row in metaData.iterrows():
+        for _, row in metaData.iterrows():
             segBaseUrl = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
                                          'baseDataChunkUrl'].iloc[0]
             duration = row['segments.duration']
@@ -399,7 +396,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                     dataChunk['segments.id'] = [row['segments.id']]
                     dataChunks = dataChunks.append(dataChunk)
         return dataChunks
-
 
     def getLinks(self, allData, segmentUrls=None, threads=None, fromTime=0, toTime=9e12):
         """Download data chunks and stich them together in one dataframe

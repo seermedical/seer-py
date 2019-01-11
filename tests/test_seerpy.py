@@ -212,7 +212,7 @@ class TestGetSegmentUrls:
 
     def test_none_segment_ids(self, seer_auth, gql_client):
 
-        # TOSO: should we check for none and make it an empty list???
+        # TODO: should we check for none and make it an empty list???
 
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}

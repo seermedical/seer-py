@@ -94,7 +94,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             offset += limit
         return objects
 
-    def addLabelGroup(self, studyId, name, description):
+    def addLabelGroup(self, studyId, name, description, labelType=None):
         """Add Label Group to study
 
         Parameters
@@ -121,7 +121,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labelGroup = addLabelGroup(studyId, labelGroupName, labelGroupDescription)
 
         """
-        queryString = graphql.get_add_label_group_mutation_string(studyId, name, description)
+        queryString = graphql.get_add_label_group_mutation_string(studyId, name, description, labelType)
         response = self.execute_query(queryString)
         return response['addLabelGroupToStudy']['id']
 

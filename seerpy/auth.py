@@ -90,7 +90,7 @@ class SeerAuth:
                 os.mkdir(home + '/.seerpy')
             with open(cookieFile, 'w') as f:
                 f.write(json.dumps(self.cookie))
-        except:
+        except Exception:  # pylint:disable=broad-except
             pass
 
     def readCookie(self):
@@ -105,3 +105,4 @@ class SeerAuth:
         cookieFile = home + '/.seerpy/cookie'
         if os.path.isfile(cookieFile):
             os.remove(cookieFile)
+        self.cookie = None

@@ -7,6 +7,8 @@ __pycache__*
 *.ipynb_checkpoints*
 .vscode
 .DS_Store
+.coverage
+htmlcov/
 
 seer.egg-info
 *.mat

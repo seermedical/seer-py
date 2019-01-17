@@ -178,14 +178,18 @@ def get_add_labels_mutation_string(groupId, labels):
         }}'''
 
 
-def get_add_label_group_mutation_string(studyId, name, description):
+def get_add_label_group_mutation_string(studyId, name, description, labelType):
+    if labelType is None:
+        labelTypeString = ''
+    else:
+        labelTypeString = ', labelType: ' + labelType
     return '''
         mutation {
-            addLabelGroupToStudy(studyId: "%s", name: "%s", description: "%s") {
+            addLabelGroupToStudy(studyId: "%s", name: "%s", description: "%s"%s) {
                 id
             }
         }
-    ''' % (studyId, name, description)
+    ''' % (studyId, name, description, labelTypeString)
 
 def get_remove_label_group_mutation_string(groupId):
     return '''

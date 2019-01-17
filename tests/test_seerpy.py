@@ -55,13 +55,13 @@ class TestCreateMetaData:
             test_input = json.load(f)
         get_all_metadata.return_value = {'studies': [test_input['study']]}
 
-        test_result = pd.read_csv(test_data_dir / "study1_metadata.csv", index_col=0)
+        expected_result = pd.read_csv(test_data_dir / "study1_metadata.csv", index_col=0)
 
         # run test
         result = SeerConnect().createMetaData()
 
         # check result
-        assert result.equals(test_result)
+        assert result.equals(expected_result)
 
     def test_four_studies(self, seer_connect_init,  # pylint:disable=unused-argument
                           get_all_metadata):
@@ -75,13 +75,13 @@ class TestCreateMetaData:
 
         get_all_metadata.return_value = {'studies': studies}
 
-        test_result = pd.read_csv(test_data_dir / "studies1-4_metadata.csv", index_col=0)
+        expected_result = pd.read_csv(test_data_dir / "studies1-4_metadata.csv", index_col=0)
 
         # run test
         result = SeerConnect().createMetaData()
 
         # check result
-        assert result.equals(test_result)
+        assert result.equals(expected_result)
 
 
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
@@ -170,50 +170,164 @@ class TestGetAllMetaData:
         assert gql_client.return_value.execute.call_count == 2
 
 
-# this function has been removed but keep these tests for now as they may be useful as a basis for
-# the replacement function
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetSegmentUrls:
 
-# @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-# @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
-# class TestGetDataChunks:
+    def test_success(self, seer_auth, gql_client):
 
-#     def test_success(self, seer_auth, gql_client):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-#         # setup
-#         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        with open(test_data_dir / "segment_urls_1.json", "r") as f:
+            gql_client.return_value.execute.return_value = json.load(f)
 
-#         with open(test_data_dir / "study1_data_chunks_1_1.json", "r") as f:
-#             gql_client.return_value.execute.return_value = json.load(f)
+        expected_result = pd.read_csv(test_data_dir / "segment_urls_1.csv", index_col=0)
 
-#         test_result = pd.read_csv(test_data_dir / "study1_data_chunks_1_1.csv", index_col=0)
+        # run test
+        result = SeerConnect().getSegmentUrls(["segment-1-id", "segment-2-id"])
 
-#         # run test
-#         result = SeerConnect().getDataChunks("study-1-id", "study-1-channel-group-1-id",
-#                                              1526275675734.375, 1526275776671.875)
+        # check result
+        assert result.equals(expected_result)
 
-#         # check result
-#         assert result.equals(test_result)
+    def test_multiple_batches(self, seer_auth, gql_client):
 
-#     def test_no_chunks_returned(self, seer_auth, gql_client):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-#         # we don't explicitly handle an exception based on a study not found
-#         # but this is probably the correct action
+        side_effects = []
+        for file_name in ["segment_urls_1.json", "segment_urls_2.json"]:
+            with open(test_data_dir / file_name, "r") as f:
+                side_effects.append(json.load(f))
+        gql_client.return_value.execute.side_effect = side_effects
 
-#         # the same would be true with other query methods
+        expected_result = pd.read_csv(test_data_dir / "segment_urls_2.csv", index_col=0)
 
-#         # setup
-#         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        # run test
+        result = SeerConnect().getSegmentUrls(["segment-1-id", "segment-2-id",
+                                               "segment-3-id", "segment-4-id"], 2)
 
-#         error_string = ("{'errorCode': 'NOT_FOUND', 'locations': [{'column': 2, 'line': 1}], "
-#                         "'message': 'Study does not exist', 'path': ['study'], 'statusCode': 404}")
-#         gql_client.return_value.execute.side_effect = Exception(error_string)
+        # check result
+        assert result.equals(expected_result)
 
-#         # run test
-#         with pytest.raises(Exception) as exception_info:
-#             SeerConnect().getDataChunks("study", "channel-group-id",1, 1)
+    def test_none_segment_ids(self, seer_auth, gql_client):
 
-#         # check result
-#         assert str(exception_info.value) == error_string
+        # TODO: should we check for none and make it an empty list???
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        error_string = ("object of type 'NoneType' has no len()")
+        gql_client.return_value.execute.side_effect = Exception(error_string)
+
+        # run test
+        with pytest.raises(Exception) as exception_info:
+            SeerConnect().getSegmentUrls(None)
+
+        # check result
+        assert str(exception_info.value) == error_string
+
+    def test_empty_segment_ids(self, seer_auth, gql_client):  # pylint:disable=unused-argument
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # gql_client is never called as we don't enter the loop
+
+        # run test
+        result = SeerConnect().getSegmentUrls([])
+
+        # check result
+        assert result.empty
+
+    def test_unmatched_segment_ids(self, seer_auth, gql_client):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        with open(test_data_dir / "segment_urls_no_match.json", "r") as f:
+            gql_client.return_value.execute.return_value = json.load(f)
+
+        # run test
+        result = SeerConnect().getSegmentUrls(["blah", "blah1"])
+
+        # check result
+        assert result.empty
 
 
-# test getLinks
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestCreateDataChunkUrls:
+
+    def test_success(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "segment_urls_3.csv", index_col=0)
+
+        expected_result = pd.read_csv(test_data_dir / "study1_data_chunk_urls.csv", index_col=0)
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        # check result
+        assert result.equals(expected_result)
+
+    def test_empty_input(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "empty_metadata.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "empty_segment_urls.csv", index_col=0)
+
+        expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        print("result", result)
+
+        # check result
+        assert result.equals(expected_result)
+
+    def test_empty_metadata(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "empty_metadata.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "segment_urls_3.csv", index_col=0)
+
+        expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        print("result", result)
+
+        # check result
+        assert result.equals(expected_result)
+
+    def test_empty_segments_urls(self, seer_auth):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        # setup
+        meta_data = pd.read_csv(test_data_dir / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(test_data_dir / "empty_segment_urls.csv", index_col=0)
+
+        expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+
+        # run test
+        result = SeerConnect().createDataChunkUrls(meta_data, segment_urls)
+
+        print("result", result)
+
+        # check result
+        assert result.equals(expected_result)

@@ -134,7 +134,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(queryString)
         return response['addLabelGroupToStudy']['id']
 
-
     def delLabelGroup(self, groupId):
         """Delete Label Group from study
 
@@ -223,8 +222,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def getSegmentUrls(self, segmentIds, limit=10000):
         segmentUrls = pd.DataFrame()
         counter = 0
-        while int(counter*limit) < len(segmentIds):
-            segmentIdsBatch = segmentIds[int(counter*limit):int((counter+1)*limit)]
+        while int(counter * limit) < len(segmentIds):
+            segmentIdsBatch = segmentIds[int(counter * limit):int((counter + 1) * limit)]
             queryString = graphql.get_segment_urls_query_string(segmentIdsBatch)
             response = self.execute_query(queryString)
             response = response['studyChannelGroupSegments']
@@ -233,9 +232,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             segmentUrls = segmentUrls.append(response)
             counter += 1
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
-        return segmentUrls
+        return segmentUrls.reset_index(drop=True)
 
-    def getLabels(self, studyId, labelGroupId, fromTime=0, toTime=9e12, limit=200, offset=0):
+    def getLabels(self, studyId, labelGroupId, fromTime=0,  # pylint:disable=too-many-arguments
+                  toTime=9e12, limit=200, offset=0):
 
         labelResults = None
 
@@ -253,10 +253,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-            labelGroup.drop('labelGroup.labels', inplace=True, errors='ignore',
-                            axis='columns')
-            labels.drop('labels.tags', inplace=True, errors='ignore',
-                            axis='columns')
+            labelGroup = labelGroup.drop('labelGroup.labels', errors='ignore', axis='columns')
+            labels = labels.drop('labels.tags', errors='ignore', axis='columns')
 
             labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id',
                                           suffixes=('', '_y'))
@@ -304,7 +302,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         views['updatedAt'] = pd.to_datetime(views['updatedAt'])
         return views
 
-
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of
         pandas DataFrames
@@ -348,7 +345,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return {'studies' : result}
 
-    def pandas_flatten(self, parent, parentName, childName):
+    @staticmethod  # maybe this could move to a utility class
+    def pandas_flatten(parent, parentName, childName):
         childList = []
         for i in range(len(parent)):
             parentId = parent[parentName+'id'][i]
@@ -358,8 +356,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             childList.append(child)
 
         if childList:
-            child = pd.concat(childList)
-            child.reset_index(drop=True, inplace=True)
+            child = pd.concat(childList).reset_index(drop=True)
         if not childList or child.empty:
             columns = [parentName + 'id', childName + '.id']
             child = pd.DataFrame(columns=columns)
@@ -372,11 +369,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         channels = self.pandas_flatten(channelGroups, 'channelGroups.', 'channels')
         segments = self.pandas_flatten(channelGroups, 'channelGroups.', 'segments')
 
-        segments.drop('segments.dataChunks', inplace=True, errors='ignore', axis='columns')
-        channelGroups.drop(['channelGroups.segments', 'channelGroups.channels'],
-                           inplace=True, errors='ignore', axis='columns')
-        allData.drop(['channelGroups', 'labelGroups'], inplace=True, errors='ignore', 
-                     axis='columns')
+        segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
+        channelGroups = channelGroups.drop(['channelGroups.segments', 'channelGroups.channels'],
+                                           errors='ignore', axis='columns')
+        allData = allData.drop(['channelGroups', 'labelGroups'], errors='ignore', axis='columns')
 
         channelGroupsM = channelGroups.merge(segments, how='left', on='channelGroups.id',
                                              suffixes=('', '_y'))
@@ -386,31 +382,38 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return allData
 
-    def createDataChunkUrls(self, metaData, segmentUrls, fromTime=0, toTime=9e12):
+    # pylint:disable=too-many-locals
+    @staticmethod
+    def createDataChunkUrls(metaData, segmentUrls, fromTime=0, toTime=9e12):
         chunkPattern = '00000000000.dat'
         dataChunks = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
         metaData = metaData.drop_duplicates('segments.id')
-        for idx, row in metaData.iterrows():
-            segBaseUrl = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
-                                         'baseDataChunkUrl'].iloc[0]
-            duration = row['segments.duration']
+        for _, row in metaData.iterrows():
+            segBaseUrls = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
+                                         'baseDataChunkUrl']
+            if segBaseUrls.empty:
+                continue
+            segBaseUrl = segBaseUrls.iloc[0]
+
             chunk_period = row['channelGroups.chunkPeriod']
-            num_chunks = int(np.ceil(duration / chunk_period / 1000.))
+            num_chunks = int(np.ceil(row['segments.duration'] / chunk_period / 1000.))
             start_time = row['segments.startTime']
             for i in range(num_chunks):
-                if (chunk_period * 1000 * i + start_time <= toTime and
-                        chunk_period * 1000 * (i + 1) + start_time >= fromTime):
+                chunk_start_time = chunk_period * 1000 * i + start_time
+                next_chunk_start_time = chunk_period * 1000 * (i + 1) + start_time
+                if (chunk_start_time <= toTime and next_chunk_start_time >= fromTime):
                     dataChunkName = str(i).zfill(len(chunkPattern) - 4) + chunkPattern[-4:]
                     dataChunk = pd.DataFrame(columns=['segments.id', 'dataChunks.url',
                                                       'dataChunks.time'])
                     dataChunk['dataChunks.url'] = [segBaseUrl.replace(chunkPattern, dataChunkName)]
-                    dataChunk['dataChunks.time'] = [chunk_period * 1000 * i + start_time]
+                    dataChunk['dataChunks.time'] = [chunk_start_time]
                     dataChunk['segments.id'] = [row['segments.id']]
                     dataChunks = dataChunks.append(dataChunk)
-        return dataChunks
 
+        return dataChunks.reset_index(drop=True)
 
-    def getLinks(self, allData, segmentUrls=None, threads=None, fromTime=0, toTime=9e12):
+    def getLinks(self, allData, segmentUrls=None, threads=None,  # pylint:disable=too-many-arguments
+                 fromTime=0, toTime=9e12):
         """Download data chunks and stich them together in one dataframe
 
         Parameters
@@ -493,14 +496,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             data = pd.concat(data_list)
             data = data.loc[(data['time'] >= fromTime) & (data['time'] < toTime)]
             data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0,
-                                    ascending=True, inplace=False, kind='quicksort',
-                                    na_position='last')
+                                    ascending=True, na_position='last')
         else:
             data = None
 
         return data
 
-    def makeLabel(self, label, times, timezone=None):
+    @staticmethod
+    def makeLabel(label, times, timezone=None):
         if timezone is None:
             timezone = int(int(strftime("%z", gmtime()))/100)
         labels = []
@@ -519,7 +522,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             labels.append([labelStart, labelEnd - labelStart, timezone])
         return labels
 
-    def applyMovAvg(self, x, w):
+    @staticmethod
+    def applyMovAvg(x, w):
         if len(x.shape) == 1:
             x = x.reshape(-1, 1)
         wn = int(w / 2.0)

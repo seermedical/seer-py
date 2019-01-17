@@ -40,7 +40,8 @@ def get_study_with_data_query_string(studyId):
         }
     ''' % (studyId)
 
-def get_labels_query_string(studyId, labelGroupId, fromTime, toTime, limit, offset):
+def get_labels_query_string(studyId, labelGroupId, fromTime,  # pylint:disable=too-many-arguments
+                            toTime, limit, offset):
     return '''
         query {
             study (id: "%s") {

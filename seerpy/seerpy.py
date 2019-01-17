@@ -41,7 +41,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         self.lastQueryTime = 0
         self.apiLimitExpire = 300
-        self.apiLimit = 245
+        self.apiLimit = 240
 
     def login(self, email=None, password=None):
         self.seerAuth = SeerAuth(self.apiUrl, email, password)
@@ -52,7 +52,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 url=self.apiUrl + '/api/graphql',
                 headers=header,
                 use_json=True,
-                timeout=60
+                timeout=30
             )
         )
 
@@ -61,7 +61,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         try:
             time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
-            return self.graphqlClient.execute(gql(queryString))
+            response = self.graphqlClient.execute(gql(queryString))
+            self.lastQueryTime = time.time()
+            return response
         except Exception as e:
             if invocations > 4:
                 print('Too many failed query invocations. raising error')
@@ -71,6 +73,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(30 * (invocations+1)**2)
                 invocations += 1
+                self.login()
                 return self.execute_query(queryString, invocations=invocations)
 
             if 'NOT_AUTHENTICATED' in str(e):
@@ -78,7 +81,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 self.login()
                 invocations += 1
                 return self.execute_query(queryString, invocations=invocations)
-
+            
+            if 'Read timed out.' in str(e):
+                print(error_string + ' raised, trying again after a short break')
+                time.sleep(30 * (invocations+1)**2)
+                invocations += 1
+                self.login()
+                return self.execute_query(queryString, invocations=invocations)
             raise
 
     def get_paginated_response(self, query_string, object_name, limit=250):

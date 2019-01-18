@@ -59,8 +59,8 @@ def get_labels_query_string(studyId, labelGroupId, fromTime,  # pylint:disable=t
                         duration
                         timezone
                         createdBy {
-                                fullName
-                                }
+                            fullName
+                        }
                         updatedAt
                         createdAt
                         tags {
@@ -68,13 +68,13 @@ def get_labels_query_string(studyId, labelGroupId, fromTime,  # pylint:disable=t
                             tagType {
                                 id
                                 category {
-                                        id
-                                        name
-                                        description
-                                        }
-                                value
+                                    id
+                                    name
+                                    description
                                 }
+                                value
                             }
+                        }
                     }
                 }
             }

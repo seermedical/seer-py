@@ -231,14 +231,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labelResults = None
 
         while True:
-            while True:
-                queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime,
-                                                              toTime, limit, offset)
-#                print("queryString", queryString)
-                response = self.execute_query(queryString)['study']
-                labelGroup = json_normalize(response)
-                labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')
-                break
+            queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime, toTime,
+                                                          limit, offset)
+            # print("queryString", queryString)
+            response = self.execute_query(queryString)['study']
+            labelGroup = json_normalize(response)
+            labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')
             if labels.empty:
                 break
 
@@ -347,7 +345,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             childList.append(child)
 
         if childList:
-            child = pd.concat(childList).reset_index(drop=True)
+            child = pd.concat(childList, sort=False).reset_index(drop=True)
         if not childList or child.empty:
             columns = [parentName + 'id', childName + '.id']
             child = pd.DataFrame(columns=columns)
@@ -381,7 +379,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         metaData = metaData.drop_duplicates('segments.id')
         for _, row in metaData.iterrows():
             segBaseUrls = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
-                                         'baseDataChunkUrl']
+                                          'baseDataChunkUrl']
             if segBaseUrls.empty:
                 continue
             segBaseUrl = segBaseUrls.iloc[0]

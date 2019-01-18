@@ -84,11 +84,13 @@ class TestCreateMetaData:
         assert result.equals(expected_result)
 
 
+@mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetAllMetaData:
 
-    def test_no_study_param(self, seer_auth, gql_client):
+    def test_no_study_param(self, seer_auth, gql_client,
+                            time_sleep):  # pylint:disable=unused-argument
 
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -118,7 +120,8 @@ class TestGetAllMetaData:
         # check result
         assert result == {'studies' : expected_results}
 
-    def test_existing_study_param(self, seer_auth, gql_client):
+    def test_existing_study_param(self, seer_auth, gql_client,
+                                  time_sleep):  # pylint:disable=unused-argument
 
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -146,7 +149,8 @@ class TestGetAllMetaData:
         # check result
         assert result == {'studies' : expected_results}
 
-    def test_nonexistent_study_param(self, seer_auth, gql_client):
+    def test_nonexistent_study_param(self, seer_auth, gql_client,
+                                     time_sleep):  # pylint:disable=unused-argument
 
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -190,7 +194,9 @@ class TestGetSegmentUrls:
         # check result
         assert result.equals(expected_result)
 
-    def test_multiple_batches(self, seer_auth, gql_client):
+    @mock.patch('time.sleep', return_value=None)
+    def test_multiple_batches(self, time_sleep, seer_auth,  # pylint:disable=unused-argument
+                              gql_client):
 
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -333,11 +339,12 @@ class TestCreateDataChunkUrls:
         assert result.equals(expected_result)
 
 
+@mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabels:
 
-    def test_success(self, seer_auth, gql_client):
+    def test_success(self, seer_auth, gql_client, time_sleep):  # pylint:disable=unused-argument
 
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}

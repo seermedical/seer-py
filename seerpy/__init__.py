@@ -1,1 +1,1 @@
-from .seerpy import *
+from .seerpy import SeerConnect

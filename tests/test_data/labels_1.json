@@ -1,0 +1,86 @@
+{
+    "study": {
+        "id": "study-1-id",
+        "labelGroup": {
+            "description": "description",
+            "id": "label-group-1-id",
+            "labelType": "default",
+            "labels": [
+                {
+                    "createdAt": "2018-08-29 05:49:29",
+                    "createdBy": {
+                        "fullName": "full name"
+                    },
+                    "duration": 3643,
+                    "id": "label-1-id",
+                    "note": "note 1",
+                    "startTime": 1499747329065,
+                    "tags":
+                        [
+                            {
+                                "category": {
+                                  "description": "Artifact",
+                                  "id": "artifact",
+                                  "name": "Artifact"
+                                },
+                                "id": "tag-1-id",
+                                "value": "Normal jerk"
+                              }
+                        ],
+                    "timezone": 10,
+                    "updatedAt": "2018-08-29 05:49:29"
+                },
+                {
+                    "createdAt": "2018-08-29 05:49:29",
+                    "createdBy": {
+                        "fullName": "full name"
+                    },
+                    "duration": 5127,
+                    "id": "label-2-id",
+                    "note": "note 2",
+                    "startTime": 1499747431224,
+                    "tags":
+                        [
+                            {
+                                "category": {
+                                  "description": "Artifact",
+                                  "id": "artifact",
+                                  "name": "Artifact"
+                                },
+                                "id": "tag-1-id",
+                                "value": "Normal jerk"
+                              }
+                        ],
+                    "timezone": 10,
+                    "updatedAt": "2018-08-29 05:49:29"
+                },
+                {
+                    "createdAt": "2018-08-29 05:49:29",
+                    "createdBy": {
+                        "fullName": "full name"
+                    },
+                    "duration": 3876,
+                    "id": "label-3-id",
+                    "note": "note 3",
+                    "startTime": 1499747512661,
+                    "tags":
+                        [
+                            {
+                                "category": {
+                                  "description": "Artifact",
+                                  "id": "artifact",
+                                  "name": "Artifact"
+                                },
+                                "id": "tag-1-id",
+                                "value": "Normal jerk"
+                              }
+                        ],
+                    "timezone": 10,
+                    "updatedAt": "2018-08-29 05:49:29"
+                }
+            ],
+            "name": "LabelGroup"
+        },
+        "name": "study 1 name"
+    }
+}

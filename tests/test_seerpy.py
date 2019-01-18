@@ -331,3 +331,31 @@ class TestCreateDataChunkUrls:
 
         # check result
         assert result.equals(expected_result)
+
+
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetLabels:
+
+    def test_success(self, seer_auth, gql_client):
+
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+
+        with open(test_data_dir / "labels_1.json", "r") as f:
+            side_effects.append(json.load(f))
+        # this is the "no more data" response for getLabels()
+        with open(test_data_dir / "labels_1_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = pd.read_csv(test_data_dir / "labels_1.csv", index_col=0)
+
+        # run test
+        result = SeerConnect().getLabels("study-1-id", "label-group-1-id")
+
+        # check result
+        assert result.equals(expected_result)

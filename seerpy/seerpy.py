@@ -81,7 +81,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 self.login()
                 invocations += 1
                 return self.execute_query(queryString, invocations=invocations)
-            
+
             if 'Read timed out.' in str(e):
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(30 * (invocations+1)**2)
@@ -234,38 +234,52 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
         return segmentUrls.reset_index(drop=True)
 
-    def getLabels(self, studyId, labelGroupId, fromTime=0,  # pylint:disable=too-many-arguments
-                  toTime=9e12, limit=200, offset=0):
 
-        labelResults = None
+    def get_labels(self, studyId, labelGroupId, fromTime=0,  # pylint:disable=too-many-arguments
+                   toTime=9e12, limit=200, offset=0):
+
+        label_results = None
 
         while True:
             queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime, toTime,
                                                           limit, offset)
-            # print("queryString", queryString)
             response = self.execute_query(queryString)['study']
-            labelGroup = json_normalize(response)
-            labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')
-            if labels.empty:
+            labels = response['labelGroup']['labels']
+            if not labels:
                 break
 
-            tags = self.pandas_flatten(labels, 'labels.', 'tags')
-
-            labelGroup = labelGroup.drop('labelGroup.labels', errors='ignore', axis='columns')
-            labels = labels.drop('labels.tags', errors='ignore', axis='columns')
-
-            labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id',
-                                          suffixes=('', '_y'))
-            labelGroup = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+            if label_results is None:
+                label_results = response
+            else:
+                label_results['labelGroup']['labels'].extend(labels)
 
             offset += limit
 
-            if labelResults is None:
-                labelResults = labelGroup
-            else:
-                labelResults = labelResults.append(labelGroup, ignore_index=True,
-                                                   verify_integrity=False)
-        return labelResults
+        return label_results
+
+
+    def get_labels_dataframe(self, studyId, labelGroupId,  # pylint:disable=too-many-arguments
+                             fromTime=0, toTime=9e12, limit=200, offset=0):
+
+        label_results = self.get_labels(studyId, labelGroupId, fromTime, toTime, limit, offset)
+        labelGroup = json_normalize(label_results)
+        labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')
+        tags = self.pandas_flatten(labels, 'labels.', 'tags')
+
+        labelGroup = labelGroup.drop('labelGroup.labels', errors='ignore', axis='columns')
+        labels = labels.drop('labels.tags', errors='ignore', axis='columns')
+
+        labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+        labelGroup = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+
+        return labelGroup
+
+
+    def getLabels(self, studyId, labelGroupId, fromTime=0,  # pylint:disable=too-many-arguments
+                  toTime=9e12, limit=200, offset=0):
+
+        return self.get_labels_dataframe(studyId, labelGroupId, fromTime, toTime, limit, offset)
+
 
     def get_label_groups_for_studies(self, study_ids, limit=50):
         if isinstance(study_ids, str):

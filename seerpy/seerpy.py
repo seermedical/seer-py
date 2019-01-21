@@ -235,15 +235,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return segmentUrls.reset_index(drop=True)
 
 
-    def get_labels(self, studyId, labelGroupId, fromTime=0,  # pylint:disable=too-many-arguments
-                   toTime=9e12, limit=200, offset=0):
+    def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
+                   to_time=9e12, limit=200, offset=0):
 
         label_results = None
 
         while True:
-            queryString = graphql.get_labels_query_string(studyId, labelGroupId, fromTime, toTime,
-                                                          limit, offset)
-            response = self.execute_query(queryString)['study']
+            query_string = graphql.get_labels_query_string(study_id, label_group_id, from_time,
+                                                           to_time, limit, offset)
+            response = self.execute_query(query_string)['study']
             labels = response['labelGroup']['labels']
             if not labels:
                 break
@@ -258,27 +258,28 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_results
 
 
-    def get_labels_dataframe(self, studyId, labelGroupId,  # pylint:disable=too-many-arguments
-                             fromTime=0, toTime=9e12, limit=200, offset=0):
+    def get_labels_dataframe(self, study_id, label_group_id,  # pylint:disable=too-many-arguments
+                             from_time=0, to_time=9e12, limit=200, offset=0):
 
-        label_results = self.get_labels(studyId, labelGroupId, fromTime, toTime, limit, offset)
-        labelGroup = json_normalize(label_results)
-        labels = self.pandas_flatten(labelGroup, 'labelGroup.', 'labels')
+        label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
+        label_group = json_normalize(label_results)
+        labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-        labelGroup = labelGroup.drop('labelGroup.labels', errors='ignore', axis='columns')
+        label_group = label_group.drop('labelGroup.labels', errors='ignore', axis='columns')
         labels = labels.drop('labels.tags', errors='ignore', axis='columns')
 
-        labelGroup = labelGroup.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
-        labelGroup = labelGroup.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+        label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+        label_group = label_group.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
 
-        return labelGroup
+        return label_group
 
 
-    def getLabels(self, studyId, labelGroupId, fromTime=0,  # pylint:disable=too-many-arguments
-                  toTime=9e12, limit=200, offset=0):
+    def getLabels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
+                  to_time=9e12, limit=200, offset=0):
 
-        return self.get_labels_dataframe(studyId, labelGroupId, fromTime, toTime, limit, offset)
+        return self.get_labels_dataframe(study_id, label_group_id, from_time, to_time, limit,
+                                         offset)
 
 
     def get_label_groups_for_studies(self, study_ids, limit=50):

@@ -147,9 +147,7 @@ def get_studies_by_search_term_paged_query_string(searchTerm):
 
 def get_studies_by_study_id_paged_query_string(study_ids):
 
-    print("study_ids", study_ids)
     study_ids_string = ','.join(f'"{study_id}"' for study_id in study_ids)
-    print("study_ids_string", study_ids_string)
 
     return f"""
         query {{{{

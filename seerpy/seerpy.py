@@ -276,7 +276,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
 
     def getLabels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                  to_time=9e12, limit=200, offset=0):
+                  to_time=9e12, limit=250, offset=0):
 
         return self.get_labels_dataframe(study_id, label_group_id, from_time, to_time, limit,
                                          offset)

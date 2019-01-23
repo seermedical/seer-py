@@ -211,7 +211,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_studies_by_id(self, study_ids, limit=50):
         if isinstance(study_ids, str):
             study_ids = [study_ids]
-        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(study_ids)
+        studies_query_string = graphql.get_studies_by_study_id_paged_query_string(study_ids)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
     def getChannelGroups(self, studyID):

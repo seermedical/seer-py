@@ -13,3 +13,4 @@ htmlcov/
 seer.egg-info
 *.mat
 seerpy.egg-info
+.cache

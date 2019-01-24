@@ -161,11 +161,29 @@ def get_studies_by_study_id_paged_query_string(study_ids):
         }}}}"""
 
 
+def get_string_from_dict(dictionary):
+    labels_string = ""
+    for d in dictionary:
+        labels_string += " {"
+        for k in d.keys():
+            labels_string += " " + k + ": "
+            if isinstance(d[k], str):
+                labels_string += "\"" + d[k] + "\","
+            elif isinstance(d[k], dict):
+                labels_string += get_string_from_dict(d[k])
+            elif isinstance(d[k], list):
+                labels_string += "[\"" + "\", \"".join(d[k]) + "\"],"
+            else:
+                labels_string += str(d[k]) + ","
+        labels_string = labels_string[:-1] # remove last comma
+        labels_string += "},"
+    labels_string = labels_string[:-1] # remove last comma
+    return labels_string
+
+
 def get_add_labels_mutation_string(groupId, labels):
 
-    labels_string = ','.join(f'{{ startTime: {l[0]}, duration: {l[1]}, timezone: {l[2]} }}'
-                             for l in labels)
-
+    labels_string = get_string_from_dict(labels)
     return f'''
         mutation {{
             addLabelsToLabelGroup(
@@ -175,6 +193,24 @@ def get_add_labels_mutation_string(groupId, labels):
                 id
             }}
         }}'''
+
+def get_tag_id_query_string():
+
+    return '''
+        query {
+          labelTags {
+            id
+            category {
+              id
+              name
+              description
+            }
+            value
+            forStudy
+            forDiary
+          }
+        }
+        '''
 
 
 def get_add_label_group_mutation_string(studyId, name, description, labelType):

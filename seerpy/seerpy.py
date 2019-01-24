@@ -182,8 +182,21 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -----
 
         """
+        if isinstance(labels, pd.DataFrame):
+            labels = labels.to_dict('records')
         queryString = graphql.get_add_labels_mutation_string(groupId, labels)
         return self.execute_query(queryString)
+
+    def get_tag_ids(self):
+        queryString = graphql.get_tag_id_query_string()
+        response = self.execute_query(queryString)
+        return response['labelTags']
+
+    def get_tag_ids_dataframe(self):
+        tag_ids = self.get_tag_ids()
+        tag_ids = json_normalize(tag_ids)
+        return tag_ids
+
 
     def get_studies(self, limit=50, searchTerm=''):
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(searchTerm)

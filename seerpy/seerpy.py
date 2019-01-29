@@ -103,6 +103,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             offset += limit
         return objects
 
+    def execute_custom_query(self, query_string):
+        return self.execute_query(query_string)
+
     def addLabelGroup(self, studyId, name, description, labelType=None):
         """Add Label Group to study
 

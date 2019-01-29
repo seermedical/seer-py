@@ -359,11 +359,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         """
 
-        searchTerm = study if study is not None else ''
-        studies = self.get_studies_dataframe(searchTerm=searchTerm)
-
+        studies = None
         if study is not None:
-            studies = studies.loc[studies['name'] == study]
+            study_split = study.split('-')
+            if len(study_split) == 5:
+                if (len(study_split[0]) == 8 and len(study_split[1]) == 4 and
+                    len(study_split[2]) == 4 and len(study_split[3]) == 4 and
+                    len(study_split[4]) == 12):
+                    studies = pd.DataFrame([study], columns=['id'])
+
+        if studies is None:
+            searchTerm = study if study is not None else ''
+            studies = self.get_studies_dataframe(searchTerm=searchTerm)
+            if study is not None:
+                studies = studies.loc[studies['name'] == study]
 
         result = []
         for row in studies.itertuples():

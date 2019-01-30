@@ -278,6 +278,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                              from_time=0, to_time=9e12, limit=200, offset=0):
 
         label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
+        if label_results is None:
+            return label_results
         label_group = json_normalize(label_results)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')

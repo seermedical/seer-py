@@ -250,3 +250,70 @@ def get_viewed_times_query_string(studyId):
               }
             }
     ''' % (studyId)
+
+def get_organisations_query_string():
+    return """
+        query {
+          organisations {
+            id
+            partyId
+            ownerId
+            name
+            description
+            isPublic
+            isDeleted
+          }
+        }
+    """
+
+def get_patients_query_string(party_id=""):
+    return f"""
+    query {{
+      patients (partyId: "{party_id}") {{
+        id
+        user {{
+          id
+          fullName
+          shortName
+          email
+        }}
+      }}
+    }}
+    """
+
+def get_diary_labels_query_string(patient_id):
+    return f"""
+    query {{
+      patient (id: "{patient_id}") {{
+        id
+        diary {{
+          id
+          labelGroups {{
+            id
+            labelType
+            labelSourceType
+            name
+            labels {{
+              id
+              startTime
+              timezone
+              duration
+              note
+              tags {{
+                id
+                tagType {{
+                  id
+                  category  {{
+                    id
+                    name
+                    description
+                  }}
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+      }}
+    }}
+    """

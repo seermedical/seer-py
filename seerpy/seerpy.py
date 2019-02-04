@@ -333,6 +333,50 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         views['updatedAt'] = pd.to_datetime(views['updatedAt'])
         return views
 
+    def get_organisations(self):
+        query_string = graphql.get_organisations_query_string()
+        response = self.execute_query(query_string)['organisations']
+        return response
+
+    def get_organisations_dataframe(self):
+        orgs = self.get_organisations()
+        if orgs is None:
+            return orgs
+        return pd.DataFrame(orgs)
+
+    def get_patients(self, party_id=""):
+        query_string = graphql.get_patients_query_string(party_id)
+        response = self.execute_query(query_string)['patients']
+        return response
+
+    def get_patients_dataframe(self, party_id=""):
+        patients = self.get_patients(party_id)
+        if patients is None:
+            return patients
+        return json_normalize(patients)
+
+    def get_diary_labels(self, patient_id):
+        query_string = graphql.get_diary_labels_query_string(patient_id)
+        response = self.execute_query(query_string)['patient']['diary']['labelGroups']
+        return response
+
+    def get_diary_labels_dataframe(self, patient_id):
+        label_results = self.get_diary_labels(patient_id)
+        if label_results is None:
+            return label_results
+
+        label_groups = json_normalize(label_results)
+        labels = self.pandas_flatten(label_groups, '', 'labels')
+        tags = self.pandas_flatten(labels, 'labels.', 'tags')
+
+        label_groups = label_groups.drop('labels', errors='ignore', axis='columns')
+        labels = labels.drop('labels.tags', errors='ignore', axis='columns')
+        label_groups = label_groups.merge(labels, how='left', on='id', suffixes=('', '_y'))
+        label_groups = label_groups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+        label_groups = label_groups.rename({'id':'labelGroups.id'})
+        label_groups['id'] = patient_id
+        return label_groups
+
     def getAllMetaData(self, study=None):
         """Get all the data available to user in the form of
         pandas DataFrames

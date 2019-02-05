@@ -3,7 +3,6 @@
 from multiprocessing import Pool
 import os
 import time
-from time import gmtime, strftime
 
 from gql import gql, Client as GQLClient
 from gql.transport.requests import RequestsHTTPTransport
@@ -12,13 +11,13 @@ import pandas as pd
 from pandas.io.json import json_normalize
 
 from .auth import SeerAuth
-from .utils import downloadLink
+from . import utils
 from . import graphql
 
 
 class SeerConnect:  # pylint: disable=too-many-public-methods
 
-    def __init__(self, apiUrl='https://api.seermedical.com', email=None, password=None):
+    def __init__(self, api_url='https://api.seermedical.com', email=None, password=None):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -36,33 +35,34 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         """
 
-        self.apiUrl = apiUrl
+        self.api_url = api_url
         self.login(email, password)
 
-        self.lastQueryTime = 0
-        self.apiLimitExpire = 300
-        self.apiLimit = 240
+        self.last_query_time = 0
+        self.api_limit_expire = 300
+        self.api_limit = 240
 
     def login(self, email=None, password=None):
-        self.seerAuth = SeerAuth(self.apiUrl, email, password)
-        cookie = self.seerAuth.cookie
+        self.seer_auth = SeerAuth(self.api_url, email, password)
+        cookie = self.seer_auth.cookie
         header = {'Cookie': list(cookie.keys())[0] + '=' + cookie['seer.sid']}
-        self.graphqlClient = GQLClient(
+        self.graphql_client = GQLClient(
             transport=RequestsHTTPTransport(
-                url=self.apiUrl + '/api/graphql',
+                url=self.api_url + '/api/graphql',
                 headers=header,
                 use_json=True,
                 timeout=30
             )
         )
 
-    def execute_query(self, queryString, invocations=0):
+    def execute_query(self, query_string, invocations=0):
         rate_limit_errors = ['503 Server Error', '502 Server Error']
 
         try:
-            time.sleep(max(0, (self.apiLimitExpire/self.apiLimit)-(time.time()-self.lastQueryTime)))
-            response = self.graphqlClient.execute(gql(queryString))
-            self.lastQueryTime = time.time()
+            time.sleep(max(0, ((self.api_limit_expire / self.api_limit)
+                               - (time.time() - self.last_query_time))))
+            response = self.graphql_client.execute(gql(query_string))
+            self.last_query_time = time.time()
             return response
         except Exception as e:
             if invocations > 4:
@@ -74,20 +74,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 time.sleep(30 * (invocations+1)**2)
                 invocations += 1
                 self.login()
-                return self.execute_query(queryString, invocations=invocations)
+                return self.execute_query(query_string, invocations=invocations)
 
             if 'NOT_AUTHENTICATED' in str(e):
-                self.seerAuth.destroyCookie()
+                self.seer_auth.destroyCookie()
                 self.login()
                 invocations += 1
-                return self.execute_query(queryString, invocations=invocations)
+                return self.execute_query(query_string, invocations=invocations)
 
             if 'Read timed out.' in str(e):
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(30 * (invocations+1)**2)
                 invocations += 1
                 self.login()
-                return self.execute_query(queryString, invocations=invocations)
+                return self.execute_query(query_string, invocations=invocations)
             raise
 
     def get_paginated_response(self, query_string, object_name, limit=250):
@@ -103,22 +103,36 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             offset += limit
         return objects
 
-    def execute_custom_query(self, query_string):
-        return self.execute_query(query_string)
+    @staticmethod  # maybe this could move to a utility class
+    def pandas_flatten(parent, parent_name, child_name):
+        child_list = []
+        for i in range(len(parent)):
+            parent_id = parent[parent_name+'id'][i]
+            child = json_normalize(parent[parent_name+child_name][i])
+            child.columns = [child_name+'.' + str(col) for col in child.columns]
+            child[parent_name+'id'] = parent_id
+            child_list.append(child)
 
-    def addLabelGroup(self, studyId, name, description, labelType=None):
+        if child_list:
+            child = pd.concat(child_list).reset_index(drop=True)
+        if not child_list or child.empty:
+            columns = [parent_name + 'id', child_name + '.id']
+            child = pd.DataFrame(columns=columns)
+        return child
+
+    def addL_label_group(self, study_id, name, description, label_type=None):
         """Add Label Group to study
 
         Parameters
         ----------
-        studyID : string
+        study_id : string
                 Seer study ID
-        labelTypeId : string
-                Seer label type ID
         name : string
                 name of label
         description : string
                 description of label
+        label_type : string
+                Seer label type ID
 
         Returns
         -------
@@ -130,24 +144,25 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Example
         -------
-        labelGroup = addLabelGroup(studyId, labelGroupName, labelGroupDescription)
+        labelGroup = addL_label_group(study_id, name, description)
 
         """
-        queryString = graphql.get_add_label_group_mutation_string(studyId, name, description, labelType)
-        response = self.execute_query(queryString)
+        query_string = graphql.get_add_label_group_mutation_string(study_id, name, description,
+                                                                   label_type)
+        response = self.execute_query(query_string)
         return response['addLabelGroupToStudy']['id']
 
-    def delLabelGroup(self, groupId):
+    def del_label_group(self, group_id):
         """Delete Label Group from study
 
         Parameters
         ----------
-        groupID : string
+        group_id : string
                 Seer label group ID to delete
 
         Returns
         -------
-        labelGroupID : string
+        label_group_id : string
                 ID of deleted label group
 
         Notes
@@ -155,27 +170,33 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Example
         -------
-        delLG = delLabelGroup(GroupID)
+        delLG = del_label_group(group_id)
 
         """
-        queryString = graphql.get_remove_label_group_mutation_string(groupId)
-        return self.execute_query(queryString)
+        query_string = graphql.get_remove_label_group_mutation_string(group_id)
+        return self.execute_query(query_string)
 
-    def addLabels(self, groupId, labels):
-        """Add label to label group
+    def add_labels(self, group_id, labels):
+        """Add labels to label group
 
         Parameters
         ----------
-        groupID : string
-                Seer group ID
+        group_id : string
+                Seer label group ID
 
         labels: list of:
+                note: string
+                        label note
                 startTime : float
                         label start time in epoch time
                 duration : float
                         duration of event in milliseconds
                 timezone : float
                         local UTC timezone (eg. Melbourne = 11.0)
+                tagIds: [String!]
+                        list of tag ids
+                confidence: float
+                        Confidence given to label between 0 and 1
 
         Returns
         -------
@@ -187,12 +208,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         if isinstance(labels, pd.DataFrame):
             labels = labels.to_dict('records')
-        queryString = graphql.get_add_labels_mutation_string(groupId, labels)
-        return self.execute_query(queryString)
+        query_string = graphql.get_add_labels_mutation_string(group_id, labels)
+        return self.execute_query(query_string)
 
     def get_tag_ids(self):
-        queryString = graphql.get_tag_id_query_string()
-        response = self.execute_query(queryString)
+        query_string = graphql.get_tag_id_query_string()
+        response = self.execute_query(query_string)
         return response['labelTags']
 
     def get_tag_ids_dataframe(self):
@@ -200,9 +221,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         tag_ids = json_normalize(tag_ids)
         return tag_ids
 
+    def get_study_ids(self, limit=50, search_term=''):
+        studies = self.get_studies(limit, search_term)
+        return [study['id'] for study in studies]
 
-    def get_studies(self, limit=50, searchTerm=''):
-        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(searchTerm)
+    def get_studies(self, limit=50, search_term=''):
+        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
     def get_studies_dataframe(self, limit=50, searchTerm=''):
@@ -230,30 +254,29 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         studies_query_string = graphql.get_studies_by_study_id_paged_query_string(study_ids)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
-    def getChannelGroups(self, studyID):
-        queryString = graphql.get_channel_groups_query_string(studyID)
-        response = self.execute_query(queryString)
+    def get_channel_groups(self, study_id):
+        query_string = graphql.get_channel_groups_query_string(study_id)
+        response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
-    def getSegmentUrls(self, segmentIds, limit=10000):
-        segmentUrls = pd.DataFrame()
+    def get_segment_urls(self, segment_ids, limit=10000):
+        # TODO: collect these in a list and create the dataframe at the end
+        segment_urls = pd.DataFrame()
         counter = 0
-        while int(counter * limit) < len(segmentIds):
-            segmentIdsBatch = segmentIds[int(counter * limit):int((counter + 1) * limit)]
-            queryString = graphql.get_segment_urls_query_string(segmentIdsBatch)
-            response = self.execute_query(queryString)
+        while int(counter * limit) < len(segment_ids):
+            segment_ids_batch = segment_ids[int(counter * limit):int((counter + 1) * limit)]
+            query_string = graphql.get_segment_urls_query_string(segment_ids_batch)
+            response = self.execute_query(query_string)
             response = response['studyChannelGroupSegments']
             response = [i for i in response if i is not None]
             response = pd.DataFrame(response)
-            segmentUrls = segmentUrls.append(response)
+            segment_urls = segment_urls.append(response)
             counter += 1
-        segmentUrls = segmentUrls.rename(columns={'id': 'segments.id'})
-        return segmentUrls.reset_index(drop=True)
-
+        segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
+        return segment_urls.reset_index(drop=True)
 
     def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
-
         label_results = None
 
         while True:
@@ -273,7 +296,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-
     def get_labels_dataframe(self, study_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
 
@@ -291,14 +313,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_group = label_group.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
 
         return label_group
-
-
-    def getLabels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                  to_time=9e12, limit=250, offset=0):
-
-        return self.get_labels_dataframe(study_id, label_group_id, from_time, to_time, limit,
-                                         offset)
-
 
     def get_label_groups_for_studies(self, study_ids, limit=50):
         if isinstance(study_ids, str):
@@ -318,12 +332,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 label_groups.append(label_group)
         return pd.DataFrame(label_groups)
 
-    def getViewedTimes(self, studyID):
-        queryString = graphql.get_viewed_times_query_string(studyID)
+    def get_viewed_times(self, study_id):
+        queryString = graphql.get_viewed_times_query_string(study_id)
         response = self.execute_query(queryString)
         response = json_normalize(response['viewGroups'])
         views = pd.DataFrame(columns=['createdAt', 'duration', 'id', 'startTime', 'updatedAt',
                                       'user', 'viewTimes'])
+        # TODO: can we use at[] here instead of loc[]?
         for i in range(len(response)):
             view = json_normalize(response.loc[i, 'views'])
             view['user'] = response.loc[i, 'user.fullName']
@@ -377,149 +392,137 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups['id'] = patient_id
         return label_groups
 
-    def getAllMetaData(self, study=None):
-        """Get all the data available to user in the form of
-        pandas DataFrames
+    def get_all_study_meta_data_by_names(self, study_names=None):
+        """Get all the meta data available about named studies
 
         Parameters
         ----------
-        patient (Optional) : name of patient
+        study_names (Optional) : a list of study names. If not provided, data will be returned for
+        all studies
 
         Returns
         -------
-        allData : pandas DataFrame
-        channelGroups : pandas DataFrame
-        segments : pandas DataFrame
-        channels : pandas DataFrame
-        dataChunks : pandas DataFrame
-        labelGroups : pandas DataFrame
-        labels : pandas DataFrame
-
-        Notes
-        -----
+        allData : dict
+                a dictionary with a single key 'studies' with a list of studies as it's value
 
         Example
         -------
-        allData, channelGroups, segments, channels, dataChunks,
-        labelGroups, labels = SeerConnect.createMetaData()
-
+        studies = get_all_study_meta_data_by_names()['studies']
         """
+        study_ids = None
+        if study_names:
+            study_ids = self.get_study_ids_from_names_dataframe(study_names)['id'].tolist()
+        return self.get_all_study_meta_data_by_ids(study_ids)
 
-        studies = None
-        if study is not None:
-            study_split = study.split('-')
-            if len(study_split) == 5:
-                if (len(study_split[0]) == 8 and len(study_split[1]) == 4 and
-                    len(study_split[2]) == 4 and len(study_split[3]) == 4 and
-                    len(study_split[4]) == 12):
-                    studies = pd.DataFrame([study], columns=['id'])
+    def get_all_study_meta_data_by_ids(self, study_ids=None):
+        """Get all the meta data available about studies with the suppled ids
 
-        if studies is None:
-            searchTerm = study if study is not None else ''
-            studies = self.get_studies_dataframe(searchTerm=searchTerm)
-            if study is not None:
-                studies = studies.loc[studies['name'] == study]
+        Parameters
+        ----------
+        study_ids (Optional) : a list of study ids. If not provided, data will be returned for
+        all studies
 
-        result = []
-        for row in studies.itertuples():
-            # t = time.time()
-            queryString = graphql.get_study_with_data_query_string(row.id)
-            result.append(self.execute_query(queryString)['study'])
-            # print('study query time: ', round(time.time()-t,2))
+        Returns
+        -------
+        allData : dict
+                a dictionary with a single key 'studies' with a list of studies as it's value
+
+        Example
+        -------
+        studies = get_all_study_meta_data_by_ids()['studies']
+        """
+        if study_ids == []:  # treat empty list as asking for nothing, not everything
+            return {'studies' : []}
+
+        if not study_ids:
+            study_ids = self.get_study_ids()
+
+        result = [self.execute_query(graphql.get_study_with_data_query_string(study_id))['study']
+                  for study_id in study_ids]
 
         return {'studies' : result}
 
-    @staticmethod  # maybe this could move to a utility class
-    def pandas_flatten(parent, parentName, childName):
-        childList = []
-        for i in range(len(parent)):
-            parentId = parent[parentName+'id'][i]
-            child = json_normalize(parent[parentName+childName][i])
-            child.columns = [childName+'.' + str(col) for col in child.columns]
-            child[parentName+'id'] = parentId
-            childList.append(child)
+    def get_all_study_meta_data_dataframe_by_names(self, study_names=None):
+        study_ids = None
+        if study_names:
+            study_ids = self.get_study_ids_from_names_dataframe(study_names)['id']
+        return self.get_all_study_meta_data_dataframe_by_ids(study_ids)
 
-        if childList:
-            child = pd.concat(childList).reset_index(drop=True)
-        if not childList or child.empty:
-            columns = [parentName + 'id', childName + '.id']
-            child = pd.DataFrame(columns=columns)
-        return child
-
-    def createMetaData(self, study=None):
-        dataUrlsAll = self.getAllMetaData(study)
-        allData = json_normalize(dataUrlsAll['studies'])
-        channelGroups = self.pandas_flatten(allData, '', 'channelGroups')
-        channels = self.pandas_flatten(channelGroups, 'channelGroups.', 'channels')
-        segments = self.pandas_flatten(channelGroups, 'channelGroups.', 'segments')
+    def get_all_study_meta_data_dataframe_by_ids(self, study_ids=None):
+        meta_data = self.get_all_study_meta_data_by_ids(study_ids)
+        all_data = json_normalize(meta_data['studies'])
+        channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
+        channels = self.pandas_flatten(channel_groups, 'channelGroups.', 'channels')
+        segments = self.pandas_flatten(channel_groups, 'channelGroups.', 'segments')
 
         segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
-        channelGroups = channelGroups.drop(['channelGroups.segments', 'channelGroups.channels'],
-                                           errors='ignore', axis='columns')
-        allData = allData.drop(['channelGroups', 'labelGroups'], errors='ignore', axis='columns')
+        channel_groups = channel_groups.drop(['channelGroups.segments', 'channelGroups.channels'],
+                                             errors='ignore', axis='columns')
+        all_data = all_data.drop(['channelGroups', 'labelGroups'], errors='ignore', axis='columns')
 
-        channelGroupsM = channelGroups.merge(segments, how='left', on='channelGroups.id',
-                                             suffixes=('', '_y'))
-        channelGroupsM = channelGroupsM.merge(channels, how='left', on='channelGroups.id',
+        channel_groups = channel_groups.merge(segments, how='left', on='channelGroups.id',
                                               suffixes=('', '_y'))
-        allData = allData.merge(channelGroupsM, how='left', on='id', suffixes=('', '_y'))
+        channel_groups = channel_groups.merge(channels, how='left', on='channelGroups.id',
+                                              suffixes=('', '_y'))
+        all_data = all_data.merge(channel_groups, how='left', on='id', suffixes=('', '_y'))
 
-        return allData
+        return all_data
 
     # pylint:disable=too-many-locals
     @staticmethod
-    def createDataChunkUrls(metaData, segmentUrls, fromTime=0, toTime=9e12):
-        chunkPattern = '00000000000.dat'
-        dataChunks = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
-        metaData = metaData.drop_duplicates('segments.id')
-        for _, row in metaData.iterrows():
-            segBaseUrls = segmentUrls.loc[segmentUrls['segments.id'] == row['segments.id'],
-                                          'baseDataChunkUrl']
-            if segBaseUrls.empty:
+    def create_data_chunk_urls(meta_data, segment_urls, from_time=0, to_time=9e12):
+        chunk_pattern = '00000000000.dat'
+
+        data_chunks = []
+        meta_data = meta_data.drop_duplicates('segments.id').reset_index(drop=True)
+        for index in range(len(meta_data.index)):
+            row = meta_data.iloc[index]
+
+            seg_base_urls = segment_urls.loc[segment_urls['segments.id'] == row['segments.id'],
+                                             'baseDataChunkUrl']
+            if seg_base_urls.empty:
                 continue
-            segBaseUrl = segBaseUrls.iloc[0]
+            seg_base_url = seg_base_urls.iloc[0]
 
             chunk_period = row['channelGroups.chunkPeriod']
             num_chunks = int(np.ceil(row['segments.duration'] / chunk_period / 1000.))
             start_time = row['segments.startTime']
+
             for i in range(num_chunks):
                 chunk_start_time = chunk_period * 1000 * i + start_time
                 next_chunk_start_time = chunk_period * 1000 * (i + 1) + start_time
-                if (chunk_start_time <= toTime and next_chunk_start_time >= fromTime):
-                    dataChunkName = str(i).zfill(len(chunkPattern) - 4) + chunkPattern[-4:]
-                    dataChunk = pd.DataFrame(columns=['segments.id', 'dataChunks.url',
-                                                      'dataChunks.time'])
-                    dataChunk['dataChunks.url'] = [segBaseUrl.replace(chunkPattern, dataChunkName)]
-                    dataChunk['dataChunks.time'] = [chunk_start_time]
-                    dataChunk['segments.id'] = [row['segments.id']]
-                    dataChunks = dataChunks.append(dataChunk)
+                if (chunk_start_time <= to_time and next_chunk_start_time >= from_time):
+                    data_chunk_name = str(i).zfill(len(chunk_pattern) - 4) + chunk_pattern[-4:]
+                    data_chunk_url = seg_base_url.replace(chunk_pattern, data_chunk_name)
+                    data_chunk = [row['segments.id'], data_chunk_url, chunk_start_time]
+                    data_chunks.append(data_chunk)
 
-        return dataChunks.reset_index(drop=True)
+        return pd.DataFrame.from_records(data_chunks, columns=['segments.id', 'dataChunks.url',
+                                                               'dataChunks.time'])
 
-    def getLinks(self, allData, segmentUrls=None, threads=None,  # pylint:disable=too-many-arguments
-                 fromTime=0, toTime=9e12):
+    # pylint:disable=too-many-locals
+    def get_links(self, all_data, segment_urls=None,  # pylint:disable=too-many-arguments
+                  threads=None, from_time=0, to_time=9e12):
         """Download data chunks and stich them together in one dataframe
 
         Parameters
         ----------
-        allData : pandas DataFrame
-                Dataframe containing metadata required for downloading and
-                processing raw data
-
-        threads : number of threads to use. If > 1 then will use multiprocessing
-                    if None (default), it will use 1 on Windows and 5 on Linux/MacOS
+        all_data : pandas DataFrame
+                metadata required for downloading and processing raw data
+        segment_urls : list
+                if None, these will be retrieved for each segment i all_data
+        threads : int
+                number of threads to use. If > 1 then will use multiprocessing
+                if None (default), it will use 1 on Windows and 5 on Linux/MacOS
 
         Returns
         -------
         data : pandas DataFrame
-                dataframe containing studyID, channelGroupIDs, semgemtIDs, time, and raw data
-
-        Notes
-        -----
+                dataframe containing studyID, channelGroupIDs, semgmentIDs, time, and raw data
 
         Example
         -------
-        data = getLinks(allData.copy())
+        data = get_links(all_data.copy())
 
         """
         if threads is None:
@@ -528,19 +531,18 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             else:
                 threads = 5
 
-        if segmentUrls is None:
-            segmentIds = allData['segments.id'].unique().tolist()
-            segmentUrls = self.getSegmentUrls(segmentIds)
+        segment_ids = all_data['segments.id'].drop_duplicates().tolist()
 
-        dataQ = []
+        if segment_urls is None:
+            segment_urls = self.get_segment_urls(segment_ids)
 
-#        uniqueUrls = allData['dataChunks.url'].copy().drop_duplicates()
-        for segment_id in allData['segments.id'].copy().drop_duplicates().tolist():
-            meta_data = allData[allData['segments.id'] == segment_id].copy()
+        data_q = []
 
-            num_channels = len(meta_data['channels.id'].copy().drop_duplicates().tolist())
-            channel_names = meta_data['channels.name'].copy().drop_duplicates().tolist()
+        for segment_id in segment_ids:
+            meta_data = all_data[all_data['segments.id'] == segment_id]
 
+            num_channels = len(meta_data['channels.id'].drop_duplicates())
+            channel_names = meta_data['channels.name'].drop_duplicates().tolist()
             actual_channel_names = channel_names
             if len(channel_names) != num_channels:
                 actual_channel_names = ['Channel %s' % (i) for i in range(0, num_channels)]
@@ -550,8 +552,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             study_id = meta_data['id'].iloc[0]
             channel_groups_id = meta_data['channelGroups.id'].iloc[0]
 
-            data_chunks = self.createDataChunkUrls(meta_data, segmentUrls, fromTime=fromTime,
-                                                   toTime=toTime)
+            data_chunks = self.create_data_chunk_urls(meta_data, segment_urls, from_time=from_time,
+                                                      to_time=to_time)
             meta_data = meta_data.merge(data_chunks, how='left', left_on='segments.id',
                                         right_on='segments.id', suffixes=('', '_y'))
 
@@ -563,55 +565,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                    'channelGroups.signalMax', 'channelGroups.exponent']]
             meta_data = meta_data.drop_duplicates()
             meta_data = meta_data.dropna(axis=0, how='any', subset=['dataChunks.url'])
-            for r in range(meta_data.shape[0]):
-                dataQ.append([meta_data.iloc[r, :], study_id, channel_groups_id, segment_id,
-                              actual_channel_names])
+            for r in range(len(meta_data.index)):
+                data_q.append([meta_data.iloc[r], study_id, channel_groups_id, segment_id,
+                               actual_channel_names])
 
         if threads > 1:
             pool = Pool(processes=threads)
-            data_list = list(pool.map(downloadLink, dataQ))
+            data_list = list(pool.map(utils.downloadLink, data_q))
             pool.close()
             pool.join()
         else:
-#            dataList = list(map(downloadLink, dataQ))
-            data_list = [downloadLink(dataQ[i]) for i in range(len(dataQ))]
+            data_list = [utils.downloadLink(data_q_item) for data_q_item in data_q]
 
         if data_list:
             data = pd.concat(data_list)
-            data = data.loc[(data['time'] >= fromTime) & (data['time'] < toTime)]
+            data = data.loc[(data['time'] >= from_time) & (data['time'] < to_time)]
             data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0,
                                     ascending=True, na_position='last')
         else:
             data = None
 
         return data
-
-    @staticmethod
-    def makeLabel(label, times, timezone=None):
-        if timezone is None:
-            timezone = int(int(strftime("%z", gmtime()))/100)
-        labels = []
-        labelOn = 0
-        labelStart = 0.0
-        labelEnd = 0.0
-        for i in range(label.shape[0]):
-            if labelOn == 0 and label[i] > 0.5:
-                labelStart = times[i]
-                labelOn = 1
-            if labelOn == 1 and label[i] < 0.5:
-                labelEnd = times[i]
-                labelOn = 0
-                labels.append([labelStart, labelEnd - labelStart, timezone])
-        if labelOn == 1:
-            labels.append([labelStart, labelEnd - labelStart, timezone])
-        return labels
-
-    @staticmethod
-    def applyMovAvg(x, w):
-        if len(x.shape) == 1:
-            x = x.reshape(-1, 1)
-        wn = int(w / 2.0)
-        xn = np.zeros(x.shape, dtype=np.float32)
-        for i in range(wn, x.shape[0] - wn):
-            xn[i, :] = np.mean(np.abs(x[i-wn:i+wn, :]), axis=0)
-        return xn

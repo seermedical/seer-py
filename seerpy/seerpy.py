@@ -38,9 +38,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.api_url = api_url
         self.login(email, password)
 
-        self.lastQueryTime = time.time()
-        self.apiLimitExpire = 300
-        self.apiLimit = 240
+        self.last_query_time = time.time()
+        self.api_limit_expire = 300
+        self.api_limit = 240
 
     def login(self, email=None, password=None):
         self.seer_auth = SeerAuth(self.api_url, email, password)
@@ -54,7 +54,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 timeout=30
             )
         )
-        self.lastQueryTime = time.time()
+        self.last_query_time = time.time()
 
     def execute_query(self, query_string, invocations=0):
         rate_limit_errors = ['503 Server Error', '502 Server Error']
@@ -73,7 +73,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             if any(rate_limit_error in error_string for rate_limit_error in rate_limit_errors):
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(min(30 * (invocations+1)**2,
-                           max(self.lastQueryTime + self.apiLimitExpire - time.time(), 0)))
+                           max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
                 invocations += 1
                 self.login()
                 return self.execute_query(query_string, invocations=invocations)
@@ -87,7 +87,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             if 'Read timed out.' in str(e):
                 print(error_string + ' raised, trying again after a short break')
                 time.sleep(min(30 * (invocations+1)**2,
-                           max(self.lastQueryTime + self.apiLimitExpire - time.time(), 0)))
+                           max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
                 invocations += 1
                 self.login()
                 return self.execute_query(query_string, invocations=invocations)
@@ -232,18 +232,18 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
-    def get_studies_dataframe(self, limit=50, searchTerm=''):
-        studies = self.get_studies(limit, searchTerm)
+    def get_studies_dataframe(self, limit=50, search_term=''):
+        studies = self.get_studies(limit, search_term)
 
-        studyList = []
+        study_list = []
         for s in studies:
             study = {}
             study['id'] = s['id']
             study['name'] = s['name']
             if s['patient'] is not None:
                 study['patient.id'] = s['patient']['id']
-            studyList.append(study)
-        return pd.DataFrame(studyList)
+            study_list.append(study)
+        return pd.DataFrame(study_list)
 
     def get_study_ids_from_names_dataframe(self, study_names):
         if isinstance(study_names, str):
@@ -336,8 +336,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return pd.DataFrame(label_groups)
 
     def get_viewed_times(self, study_id):
-        queryString = graphql.get_viewed_times_query_string(study_id)
-        response = self.execute_query(queryString)
+        query_string = graphql.get_viewed_times_query_string(study_id)
+        response = self.execute_query(query_string)
         response = json_normalize(response['viewGroups'])
         views = pd.DataFrame(columns=['createdAt', 'duration', 'id', 'startTime', 'updatedAt',
                                       'user', 'viewTimes'])
@@ -574,11 +574,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         if threads > 1:
             pool = Pool(processes=threads)
-            data_list = list(pool.map(utils.downloadLink, data_q))
+            data_list = list(pool.map(utils.download_link, data_q))
             pool.close()
             pool.join()
         else:
-            data_list = [utils.downloadLink(data_q_item) for data_q_item in data_q]
+            data_list = [utils.download_link(data_q_item) for data_q_item in data_q]
 
         if data_list:
             data = pd.concat(data_list)

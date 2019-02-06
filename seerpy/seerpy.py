@@ -57,7 +57,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.last_query_time = time.time()
 
     def execute_query(self, query_string, invocations=0):
-        rate_limit_errors = ['503 Server Error', '502 Server Error']
+        resolvable_api_errors = ['503 Server Error', '502 Server Error', 'Read timed out.',
+                                 'NOT_AUTHENTICATED']
 
         try:
             time.sleep(max(0, ((self.api_limit_expire / self.api_limit)
@@ -65,32 +66,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             response = self.graphql_client.execute(gql(query_string))
             self.last_query_time = time.time()
             return response
-        except Exception as e:
+        except Exception as ex:
             if invocations > 4:
                 print('Too many failed query invocations. raising error')
                 raise
-            error_string = str(e)
-            if any(rate_limit_error in error_string for rate_limit_error in rate_limit_errors):
-                print(error_string + ' raised, trying again after a short break')
-                time.sleep(min(30 * (invocations+1)**2,
-                           max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
+            error_string = str(ex)
+            if any(api_error in error_string for api_error in resolvable_api_errors):
+                if 'NOT_AUTHENTICATED' in error_string:
+                    self.seer_auth.destroy_cookie()
+                else:
+                    print('"', error_string, '" raised, trying again after a short break')
+                    time.sleep(min(30 * (invocations+1)**2,
+                                   max(self.last_query_time + self.api_limit_expire - time.time(),
+                                       0)))
                 invocations += 1
                 self.login()
                 return self.execute_query(query_string, invocations=invocations)
 
-            if 'NOT_AUTHENTICATED' in str(e):
-                self.seer_auth.destroyCookie()
-                self.login()
-                invocations += 1
-                return self.execute_query(query_string, invocations=invocations)
-
-            if 'Read timed out.' in str(e):
-                print(error_string + ' raised, trying again after a short break')
-                time.sleep(min(30 * (invocations+1)**2,
-                           max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
-                invocations += 1
-                self.login()
-                return self.execute_query(query_string, invocations=invocations)
             raise
 
     def get_paginated_response(self, query_string, object_name, limit=250):
@@ -234,16 +226,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_studies_dataframe(self, limit=50, search_term=''):
         studies = self.get_studies(limit, search_term)
-
-        study_list = []
-        for s in studies:
-            study = {}
-            study['id'] = s['id']
-            study['name'] = s['name']
-            if s['patient'] is not None:
-                study['patient.id'] = s['patient']['id']
-            study_list.append(study)
-        return pd.DataFrame(study_list)
+        studies_dataframe = json_normalize(studies)
+        return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
     def get_study_ids_from_names_dataframe(self, study_names):
         if isinstance(study_names, str):
@@ -570,8 +554,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                    'channelGroups.signalMax', 'channelGroups.exponent']]
             meta_data = meta_data.drop_duplicates()
             meta_data = meta_data.dropna(axis=0, how='any', subset=['dataChunks.url'])
-            for r in range(len(meta_data.index)):
-                data_q.append([meta_data.iloc[r], study_id, channel_groups_id, segment_id,
+            for i in range(len(meta_data.index)):
+                data_q.append([meta_data.iloc[i], study_id, channel_groups_id, segment_id,
                                actual_channel_names])
 
         if threads > 1:

@@ -21,7 +21,7 @@ from seerpy.auth import SeerAuth
 class TestAuth:
 
     # if there is an existing cookie then readCookie will interfere with the test
-    @mock.patch.object(SeerAuth, "readCookie", autospec=True)
+    @mock.patch.object(SeerAuth, "read_cookie", autospec=True)
     def test_success(self, read_cookie, requests_post,  # pylint:disable=unused-argument
                      requests_get, email_input, password_getpass):  # pylint:disable=unused-argument
         requests_post.return_value.status_code = 200

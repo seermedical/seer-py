@@ -251,6 +251,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         studies = self.get_studies_dataframe()
         return studies[studies['name'].isin(study_names)][['name', 'id']].reset_index(drop=True)
 
+    def get_study_ids_from_names(self, study_names):
+        return self.get_study_ids_from_names_dataframe(study_names)['id'].tolist()
+
     def get_studies_by_id(self, study_ids, limit=50):
         if isinstance(study_ids, str):
             study_ids = [study_ids]
@@ -414,7 +417,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         study_ids = None
         if study_names:
-            study_ids = self.get_study_ids_from_names_dataframe(study_names)['id'].tolist()
+            study_ids = self.get_study_ids_from_names(study_names)
         return self.get_all_study_meta_data_by_ids(study_ids)
 
     def get_all_study_meta_data_by_ids(self, study_ids=None):
@@ -434,11 +437,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -------
         studies = get_all_study_meta_data_by_ids()['studies']
         """
-        if study_ids == []:  # treat empty list as asking for nothing, not everything
-            return {'studies' : []}
-
-        if not study_ids:
+        if study_ids is None:
             study_ids = self.get_study_ids()
+        elif not study_ids:  # treat empty list as asking for nothing, not everything
+            return {'studies' : []}
 
         result = [self.execute_query(graphql.get_study_with_data_query_string(study_id))['study']
                   for study_id in study_ids]
@@ -448,7 +450,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_all_study_meta_data_dataframe_by_names(self, study_names=None):
         study_ids = None
         if study_names:
-            study_ids = self.get_study_ids_from_names_dataframe(study_names)['id']
+            study_ids = self.get_study_ids_from_names(study_names)
         return self.get_all_study_meta_data_dataframe_by_ids(study_ids)
 
     def get_all_study_meta_data_dataframe_by_ids(self, study_ids=None):

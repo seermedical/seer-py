@@ -5,10 +5,10 @@ import requests
 # import time
 import gzip
 
-def downloadLink(dataQ):
+def download_link(data_q):
 
     try:
-        metaData, studyID, channelGroupsID, segmentsID, channelNames = dataQ
+        metaData, studyID, channelGroupsID, segmentsID, channelNames = data_q
 #                    t = time.time()
         data = requests.get(metaData['dataChunks.url'])
 #                    print('chunk download time: ',round(time.time()-t,2))

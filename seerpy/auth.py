@@ -9,28 +9,28 @@ import requests
 
 class SeerAuth:
 
-    def __init__(self, apiUrl, email=None, password=None):
-        self.apiUrl = apiUrl
+    def __init__(self, api_url, email=None, password=None):
+        self.api_url = api_url
         self.cookie = None
 
-        self.readCookie()
-        if self.verifyLogin() == 200:
+        self.read_cookie()
+        if self.verify_login() == 200:
             print('Login Successful')
             return
 
         self.email = email
         self.password = password
-        allowedAttempts = 3
+        allowed_attempts = 3
 
-        for i in range(allowedAttempts):
+        for i in range(allowed_attempts):
             if not self.email or not self.password:
-                self.loginDetails()
+                self.login_details()
             self.login()
-            response = self.verifyLogin()
+            response = self.verify_login()
             if response == requests.codes.ok:  # pylint: disable=maybe-no-member
                 print('Login Successful')
                 break
-            elif i < allowedAttempts - 1:
+            elif i < allowed_attempts - 1:
                 print('\nLogin error, please re-enter your email and password: \n')
                 self.cookie = None
                 self.password = None
@@ -42,67 +42,67 @@ class SeerAuth:
                 raise InterruptedError('Authentication Failed')
 
     def login(self):
-        apiUrl = self.apiUrl + '/api/auth/login'
+        login_url = self.api_url + '/api/auth/login'
         body = {'email': self.email, 'password': self.password}
-        r = requests.post(url=apiUrl, data=body)
-        print("login status_code", r.status_code)
-        if r.status_code == requests.codes.ok and r.cookies:  # pylint: disable=maybe-no-member
-            self.cookie = {'seer.sid' : r.cookies['seer.sid']}
+        response = requests.post(url=login_url, data=body)
+        print("login status_code", response.status_code)
+        if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
+                and response.cookies):
+            self.cookie = {'seer.sid' : response.cookies['seer.sid']}
         else:
             self.cookie = None
 
-    def verifyLogin(self):
+    def verify_login(self):
         if self.cookie is None:
             return 401
 
-        apiUrl = self.apiUrl + '/api/auth/verify'
-        r = requests.get(url=apiUrl, cookies=self.cookie)
-        if r.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
-            print("api verify call returned", r.status_code, "status code")
+        verify_url = self.api_url + '/api/auth/verify'
+        response = requests.get(url=verify_url, cookies=self.cookie)
+        if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
+            print("api verify call returned", response.status_code, "status code")
             return 401
 
-        json_response = r.json()
+        json_response = response.json()
         if not json_response or not json_response['session'] == "active":
             print("api verify call did not return an active session")
             return 401
 
-        self.writeCookie()
-        return r.status_code
+        self.write_cookie()
+        return response.status_code
 
-    def loginDetails(self):
+    def login_details(self):
         home = os.environ['HOME'] if 'HOME' in os.environ else '~'
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
-            f = open(pswdfile, 'r')
-            lines = f.readlines()
-            self.email = lines[0][:-1]
-            self.password = lines[1][:-1]
-            f.close()
+            with open(pswdfile, 'r') as f:
+                lines = f.readlines()
+                self.email = lines[0][:-1]
+                self.password = lines[1][:-1]
         else:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
 
-    def writeCookie(self):
+    def write_cookie(self):
         try:
             home = os.environ['HOME'] if 'HOME' in os.environ else '~'
-            cookieFile = home + '/.seerpy/cookie'
+            cookie_file = home + '/.seerpy/cookie'
             if not os.path.isdir(home + '/.seerpy'):
                 os.mkdir(home + '/.seerpy')
-            with open(cookieFile, 'w') as f:
+            with open(cookie_file, 'w') as f:
                 f.write(json.dumps(self.cookie))
         except Exception:  # pylint:disable=broad-except
             pass
 
-    def readCookie(self):
+    def read_cookie(self):
         home = os.environ['HOME'] if 'HOME' in os.environ else '~'
-        cookieFile = home + '/.seerpy/cookie'
-        if os.path.isfile(cookieFile):
-            with open(cookieFile, 'r') as f:
+        cookie_file = home + '/.seerpy/cookie'
+        if os.path.isfile(cookie_file):
+            with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
 
-    def destroyCookie(self):
+    def destroy_cookie(self):
         home = os.environ['HOME'] if 'HOME' in os.environ else '~'
-        cookieFile = home + '/.seerpy/cookie'
-        if os.path.isfile(cookieFile):
-            os.remove(cookieFile)
+        cookie_file = home + '/.seerpy/cookie'
+        if os.path.isfile(cookie_file):
+            os.remove(cookie_file)
         self.cookie = None

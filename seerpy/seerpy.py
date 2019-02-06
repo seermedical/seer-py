@@ -39,7 +39,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.apiUrl = apiUrl
         self.login(email, password)
 
-        self.lastQueryTime = 0
+        self.lastQueryTime = time.time()
         self.apiLimitExpire = 300
         self.apiLimit = 240
 
@@ -55,6 +55,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 timeout=30
             )
         )
+        self.lastQueryTime = time.time()
 
     def execute_query(self, queryString, invocations=0):
         rate_limit_errors = ['503 Server Error', '502 Server Error']
@@ -71,7 +72,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             error_string = str(e)
             if any(rate_limit_error in error_string for rate_limit_error in rate_limit_errors):
                 print(error_string + ' raised, trying again after a short break')
-                time.sleep(30 * (invocations+1)**2)
+                time.sleep(min(30 * (invocations+1)**2,
+                           max(self.lastQueryTime + self.apiLimitExpire - time.time(), 0)))
                 invocations += 1
                 self.login()
                 return self.execute_query(queryString, invocations=invocations)
@@ -84,7 +86,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             if 'Read timed out.' in str(e):
                 print(error_string + ' raised, trying again after a short break')
-                time.sleep(30 * (invocations+1)**2)
+                time.sleep(min(30 * (invocations+1)**2,
+                           max(self.lastQueryTime + self.apiLimitExpire - time.time(), 0)))
                 invocations += 1
                 self.login()
                 return self.execute_query(queryString, invocations=invocations)

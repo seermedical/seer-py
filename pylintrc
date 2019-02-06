@@ -140,7 +140,6 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         comprehension-escape,
-        invalid-name,  # temporary
         missing-docstring  # temporary
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -418,7 +417,8 @@ good-names=i,
            k,
            ex,
            Run,
-           _
+           _,
+           f
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no

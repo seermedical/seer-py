@@ -18,7 +18,7 @@ from seerpy.seerpy import SeerConnect
 # pylint:disable=too-few-public-methods
 
 
-test_data_dir = pathlib.Path(__file__).parent / "test_data"
+TEST_DATA_DIR = pathlib.Path(__file__).parent / "test_data"
 
 
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
@@ -54,11 +54,11 @@ class TestGetAllStudyMetaDataDataframeByIds:
     def test_single_study(self, seer_connect_init,  # pylint:disable=unused-argument
                           get_all_metadata):
         # setup
-        with open(test_data_dir / "study1_metadata.json", "r") as f:
+        with open(TEST_DATA_DIR / "study1_metadata.json", "r") as f:
             test_input = json.load(f)
         get_all_metadata.return_value = {'studies': [test_input['study']]}
 
-        expected_result = pd.read_csv(test_data_dir / "study1_metadata.csv", index_col=0)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "study1_metadata.csv", index_col=0)
 
         # run test
         result = SeerConnect().get_all_study_meta_data_dataframe_by_ids()
@@ -72,12 +72,12 @@ class TestGetAllStudyMetaDataDataframeByIds:
         studies = []
         for i in range(1, 5):
             filename = "study" + str(i) + "_metadata.json"
-            with open(test_data_dir / filename, "r") as f:
+            with open(TEST_DATA_DIR / filename, "r") as f:
                 studies.append(json.load(f)['study'])
 
         get_all_metadata.return_value = {'studies': studies}
 
-        expected_result = pd.read_csv(test_data_dir / "studies1-4_metadata.csv", index_col=0)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "studies1-4_metadata.csv", index_col=0)
 
         # run test
         result = SeerConnect().get_all_study_meta_data_dataframe_by_ids()
@@ -99,7 +99,7 @@ class TestGetAllStudyMetaDataByNames:
         side_effects = []
 
         # this is the call in getStudies()
-        with open(test_data_dir / "studies.json", "r") as f:
+        with open(TEST_DATA_DIR / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
         # this is the "no more data" response for getStudies()
         side_effects.append({'studies': []})
@@ -108,7 +108,7 @@ class TestGetAllStudyMetaDataByNames:
         expected_results = []
         for i in range(1, 5):
             filename = "study" + str(i) + "_metadata.json"
-            with open(test_data_dir / filename, "r") as f:
+            with open(TEST_DATA_DIR / filename, "r") as f:
                 study = json.load(f)
                 side_effects.append(study)
                 expected_results.append(study['study'])
@@ -129,14 +129,14 @@ class TestGetAllStudyMetaDataByNames:
         side_effects = []
 
         # this is the call in getStudies()
-        with open(test_data_dir / "studies.json", "r") as f:
+        with open(TEST_DATA_DIR / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
         # this is the "no more data" response for getStudies()
         side_effects.append({'studies': []})
 
         # these are the calls from the loop in getAllMetaData()
         expected_results = []
-        with open(test_data_dir / "study1_metadata.json", "r") as f:
+        with open(TEST_DATA_DIR / "study1_metadata.json", "r") as f:
             study = json.load(f)
             side_effects.append(study)
             expected_results = [study['study']]
@@ -157,7 +157,7 @@ class TestGetAllStudyMetaDataByNames:
         side_effects = []
 
         # this is the call in getStudies()
-        with open(test_data_dir / "studies.json", "r") as f:
+        with open(TEST_DATA_DIR / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
         # this is the "no more data" response for getStudies()
         side_effects.append({'studies': []})
@@ -181,10 +181,10 @@ class TestGetSegmentUrls:
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-        with open(test_data_dir / "segment_urls_1.json", "r") as f:
+        with open(TEST_DATA_DIR / "segment_urls_1.json", "r") as f:
             gql_client.return_value.execute.return_value = json.load(f)
 
-        expected_result = pd.read_csv(test_data_dir / "segment_urls_1.csv", index_col=0)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_1.csv", index_col=0)
 
         # run test
         result = SeerConnect().get_segment_urls(["segment-1-id", "segment-2-id"])
@@ -200,11 +200,11 @@ class TestGetSegmentUrls:
 
         side_effects = []
         for file_name in ["segment_urls_1.json", "segment_urls_2.json"]:
-            with open(test_data_dir / file_name, "r") as f:
+            with open(TEST_DATA_DIR / file_name, "r") as f:
                 side_effects.append(json.load(f))
         gql_client.return_value.execute.side_effect = side_effects
 
-        expected_result = pd.read_csv(test_data_dir / "segment_urls_2.csv", index_col=0)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_2.csv", index_col=0)
 
         # run test
         result = SeerConnect().get_segment_urls(["segment-1-id", "segment-2-id", "segment-3-id",
@@ -245,7 +245,7 @@ class TestGetSegmentUrls:
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-        with open(test_data_dir / "segment_urls_no_match.json", "r") as f:
+        with open(TEST_DATA_DIR / "segment_urls_no_match.json", "r") as f:
             gql_client.return_value.execute.return_value = json.load(f)
 
         # run test
@@ -263,10 +263,10 @@ class TestCreateDataChunkUrls:
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
         # setup
-        meta_data = pd.read_csv(test_data_dir / "study1_metadata_short_durations.csv", index_col=0)
-        segment_urls = pd.read_csv(test_data_dir / "segment_urls_3.csv", index_col=0)
+        meta_data = pd.read_csv(TEST_DATA_DIR / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(TEST_DATA_DIR / "segment_urls_3.csv", index_col=0)
 
-        expected_result = pd.read_csv(test_data_dir / "study1_data_chunk_urls.csv", index_col=0)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "study1_data_chunk_urls.csv", index_col=0)
 
         # run test
         result = SeerConnect().create_data_chunk_urls(meta_data, segment_urls)
@@ -279,8 +279,8 @@ class TestCreateDataChunkUrls:
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
         # setup
-        meta_data = pd.read_csv(test_data_dir / "empty_metadata.csv", index_col=0)
-        segment_urls = pd.read_csv(test_data_dir / "empty_segment_urls.csv", index_col=0)
+        meta_data = pd.read_csv(TEST_DATA_DIR / "empty_metadata.csv", index_col=0)
+        segment_urls = pd.read_csv(TEST_DATA_DIR / "empty_segment_urls.csv", index_col=0)
 
         expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
 
@@ -295,8 +295,8 @@ class TestCreateDataChunkUrls:
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
         # setup
-        meta_data = pd.read_csv(test_data_dir / "empty_metadata.csv", index_col=0)
-        segment_urls = pd.read_csv(test_data_dir / "segment_urls_3.csv", index_col=0)
+        meta_data = pd.read_csv(TEST_DATA_DIR / "empty_metadata.csv", index_col=0)
+        segment_urls = pd.read_csv(TEST_DATA_DIR / "segment_urls_3.csv", index_col=0)
 
         expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
 
@@ -311,8 +311,8 @@ class TestCreateDataChunkUrls:
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
         # setup
-        meta_data = pd.read_csv(test_data_dir / "study1_metadata_short_durations.csv", index_col=0)
-        segment_urls = pd.read_csv(test_data_dir / "empty_segment_urls.csv", index_col=0)
+        meta_data = pd.read_csv(TEST_DATA_DIR / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(TEST_DATA_DIR / "empty_segment_urls.csv", index_col=0)
 
         expected_result = pd.DataFrame(columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
 
@@ -334,17 +334,17 @@ class TestGetLabels:
 
         side_effects = []
 
-        with open(test_data_dir / "labels_1.json", "r") as f:
+        with open(TEST_DATA_DIR / "labels_1.json", "r") as f:
             side_effects.append(json.load(f))
-        with open(test_data_dir / "labels_2.json", "r") as f:
+        with open(TEST_DATA_DIR / "labels_2.json", "r") as f:
             side_effects.append(json.load(f))
         # this is the "no more data" response for getLabels()
-        with open(test_data_dir / "labels_1_empty.json", "r") as f:
+        with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
             side_effects.append(json.load(f))
 
         gql_client.return_value.execute.side_effect = side_effects
 
-        with open(test_data_dir / "labels_result.json", "r") as f:
+        with open(TEST_DATA_DIR / "labels_result.json", "r") as f:
             expected_result = json.load(f)
 
         # run test
@@ -365,17 +365,17 @@ class TestGetLabelsDataframe:
 
         side_effects = []
 
-        with open(test_data_dir / "labels_1.json", "r") as f:
+        with open(TEST_DATA_DIR / "labels_1.json", "r") as f:
             side_effects.append(json.load(f))
-        with open(test_data_dir / "labels_2.json", "r") as f:
+        with open(TEST_DATA_DIR / "labels_2.json", "r") as f:
             side_effects.append(json.load(f))
         # this is the "no more data" response for getLabels()
-        with open(test_data_dir / "labels_1_empty.json", "r") as f:
+        with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
             side_effects.append(json.load(f))
 
         gql_client.return_value.execute.side_effect = side_effects
 
-        expected_result = pd.read_csv(test_data_dir / "labels_1.csv", index_col=0)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "labels_1.csv", index_col=0)
 
         # run test
         result = SeerConnect().get_labels_dataframe("study-1-id", "label-group-1-id")

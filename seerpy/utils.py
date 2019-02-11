@@ -74,6 +74,7 @@ def plot_eeg(x, y=None, pred=None, squeeze=8.0, scaling_factor=None):
     y_bottom = -scaling_factor  # pylint: disable=invalid-unary-operand-type
     y_top = (channels) * scaling_factor
     ax2.set_ylim(y_bottom, y_top)
+    ax2.set_xlim(ticks.min(), ticks.max())
 
     segs = []
     for i in range(channels):
@@ -85,8 +86,6 @@ def plot_eeg(x, y=None, pred=None, squeeze=8.0, scaling_factor=None):
 
     lines = LineCollection(segs, offsets=offsets, transOffset=None, linewidths=(0.5))
     ax2.add_collection(lines)
-    empty_array = np.empty(ticks.shape)
-    ax2.fill_between(empty_array, -1000, 1000, alpha=0.0)
 
     if y is not None:
         if len(y.shape) > 1:

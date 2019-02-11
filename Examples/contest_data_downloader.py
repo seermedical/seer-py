@@ -67,7 +67,7 @@ def main():  # pylint:disable=too-many-locals
         print('  Retrieving metadata...')
 
         all_data = None
-        all_data = client.get_all_study_meta_data_dataframe_by_names(study)
+        all_data = client.get_all_study_metadata_dataframe_by_names(study)
 
         #return values in uV
         all_data['channelGroups.exponent'] = 0

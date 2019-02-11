@@ -61,7 +61,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
         expected_result = pd.read_csv(TEST_DATA_DIR / "study1_metadata.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_all_study_meta_data_dataframe_by_ids()
+        result = SeerConnect().get_all_study_metadata_dataframe_by_ids()
 
         # check result
         assert result.equals(expected_result)
@@ -80,7 +80,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
         expected_result = pd.read_csv(TEST_DATA_DIR / "studies1-4_metadata.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_all_study_meta_data_dataframe_by_ids()
+        result = SeerConnect().get_all_study_metadata_dataframe_by_ids()
 
         # check result
         assert result.equals(expected_result)
@@ -116,7 +116,7 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect().get_all_study_meta_data_by_names()
+        result = SeerConnect().get_all_study_metadata_by_names()
 
         # check result
         assert result == {'studies' : expected_results}
@@ -144,7 +144,7 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect().get_all_study_meta_data_by_names("Study 1")
+        result = SeerConnect().get_all_study_metadata_by_names("Study 1")
 
         # check result
         assert result == {'studies' : expected_results}
@@ -165,7 +165,7 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect().get_all_study_meta_data_by_names("Study 12")
+        result = SeerConnect().get_all_study_metadata_by_names("Study 12")
 
         # check result
         assert result == {'studies' : []}

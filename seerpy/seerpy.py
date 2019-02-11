@@ -382,8 +382,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups['id'] = patient_id
         return label_groups
 
-    def get_all_study_meta_data_by_names(self, study_names=None):
-        """Get all the meta data available about named studies
+    def get_all_study_metadata_by_names(self, study_names=None):
+        """Get all the metadata available about named studies
 
         Parameters
         ----------
@@ -397,15 +397,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Example
         -------
-        studies = get_all_study_meta_data_by_names()['studies']
+        studies = get_all_study_metadata_by_names()['studies']
         """
         study_ids = None
         if study_names:
             study_ids = self.get_study_ids_from_names(study_names)
-        return self.get_all_study_meta_data_by_ids(study_ids)
+        return self.get_all_study_metadata_by_ids(study_ids)
 
-    def get_all_study_meta_data_by_ids(self, study_ids=None):
-        """Get all the meta data available about studies with the suppled ids
+    def get_all_study_metadata_by_ids(self, study_ids=None):
+        """Get all the metadata available about studies with the suppled ids
 
         Parameters
         ----------
@@ -419,7 +419,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Example
         -------
-        studies = get_all_study_meta_data_by_ids()['studies']
+        studies = get_all_study_metadata_by_ids()['studies']
         """
         if study_ids is None:
             study_ids = self.get_study_ids()
@@ -431,15 +431,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return {'studies' : result}
 
-    def get_all_study_meta_data_dataframe_by_names(self, study_names=None):
+    def get_all_study_metadata_dataframe_by_names(self, study_names=None):
         study_ids = None
         if study_names:
             study_ids = self.get_study_ids_from_names(study_names)
-        return self.get_all_study_meta_data_dataframe_by_ids(study_ids)
+        return self.get_all_study_metadata_dataframe_by_ids(study_ids)
 
-    def get_all_study_meta_data_dataframe_by_ids(self, study_ids=None):
-        meta_data = self.get_all_study_meta_data_by_ids(study_ids)
-        all_data = json_normalize(meta_data['studies'])
+    def get_all_study_metadata_dataframe_by_ids(self, study_ids=None):
+        metadata = self.get_all_study_metadata_by_ids(study_ids)
+        all_data = json_normalize(metadata['studies'])
         channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
         channels = self.pandas_flatten(channel_groups, 'channelGroups.', 'channels')
         segments = self.pandas_flatten(channel_groups, 'channelGroups.', 'segments')
@@ -459,13 +459,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     # pylint:disable=too-many-locals
     @staticmethod
-    def create_data_chunk_urls(meta_data, segment_urls, from_time=0, to_time=9e12):
+    def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
         chunk_pattern = '00000000000.dat'
 
         data_chunks = []
-        meta_data = meta_data.drop_duplicates('segments.id').reset_index(drop=True)
-        for index in range(len(meta_data.index)):
-            row = meta_data.iloc[index]
+        metadata = metadata.drop_duplicates('segments.id').reset_index(drop=True)
+        for index in range(len(metadata.index)):
+            row = metadata.iloc[index]
 
             seg_base_urls = segment_urls.loc[segment_urls['segments.id'] == row['segments.id'],
                                              'baseDataChunkUrl']
@@ -528,34 +528,33 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data_q = []
 
         for segment_id in segment_ids:
-            meta_data = all_data[all_data['segments.id'] == segment_id]
+            metadata = all_data[all_data['segments.id'] == segment_id]
 
-            num_channels = len(meta_data['channels.id'].drop_duplicates())
-            channel_names = meta_data['channels.name'].drop_duplicates().tolist()
+            num_channels = len(metadata['channels.id'].drop_duplicates())
+            channel_names = metadata['channels.name'].drop_duplicates().tolist()
             actual_channel_names = channel_names
             if len(channel_names) != num_channels:
                 actual_channel_names = ['Channel %s' % (i) for i in range(0, num_channels)]
 
-            meta_data = meta_data.drop_duplicates('segments.id')
+            metadata = metadata.drop_duplicates('segments.id')
 
-            study_id = meta_data['id'].iloc[0]
-            channel_groups_id = meta_data['channelGroups.id'].iloc[0]
+            study_id = metadata['id'].iloc[0]
+            channel_groups_id = metadata['channelGroups.id'].iloc[0]
 
-            data_chunks = self.create_data_chunk_urls(meta_data, segment_urls, from_time=from_time,
+            data_chunks = self.create_data_chunk_urls(metadata, segment_urls, from_time=from_time,
                                                       to_time=to_time)
-            meta_data = meta_data.merge(data_chunks, how='left', left_on='segments.id',
-                                        right_on='segments.id', suffixes=('', '_y'))
+            metadata = metadata.merge(data_chunks, how='left', left_on='segments.id',
+                                      right_on='segments.id', suffixes=('', '_y'))
 
-            meta_data = meta_data[['dataChunks.url', 'dataChunks.time',
-                                   'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
-                                   'channelGroups.samplesPerRecord',
-                                   'channelGroups.recordsPerChunk',
-                                   'channelGroups.compression', 'channelGroups.signalMin',
-                                   'channelGroups.signalMax', 'channelGroups.exponent']]
-            meta_data = meta_data.drop_duplicates()
-            meta_data = meta_data.dropna(axis=0, how='any', subset=['dataChunks.url'])
-            for i in range(len(meta_data.index)):
-                data_q.append([meta_data.iloc[i], study_id, channel_groups_id, segment_id,
+            metadata = metadata[['dataChunks.url', 'dataChunks.time',
+                                 'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
+                                 'channelGroups.samplesPerRecord', 'channelGroups.recordsPerChunk',
+                                 'channelGroups.compression', 'channelGroups.signalMin',
+                                 'channelGroups.signalMax', 'channelGroups.exponent']]
+            metadata = metadata.drop_duplicates()
+            metadata = metadata.dropna(axis=0, how='any', subset=['dataChunks.url'])
+            for i in range(len(metadata.index)):
+                data_q.append([metadata.iloc[i], study_id, channel_groups_id, segment_id,
                                actual_channel_names])
 
         if threads > 1:
@@ -571,6 +570,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             data = data.loc[(data['time'] >= from_time) & (data['time'] < to_time)]
             data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0,
                                     ascending=True, na_position='last')
+            data = data.reset_index(drop=True)
         else:
             data = None
 

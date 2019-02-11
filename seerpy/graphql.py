@@ -1,6 +1,13 @@
 
-def get_study_with_data_query_string(studyId):
-    return '''
+
+def get_json_list(list_of_strings, include_brackets=True):
+    json_list = ', '.join('"%s"' % string for string in list_of_strings)
+    if include_brackets:
+        json_list = '[' + json_list + ']'
+    return json_list
+
+def get_study_with_data_query_string(study_id):
+    return """
         query {
             study (id: "%s") {
                 id
@@ -37,12 +44,12 @@ def get_study_with_data_query_string(studyId):
                     }
                 }
             }
-        }
-    ''' % (studyId)
+        }""" % study_id
 
-def get_labels_query_string(studyId, labelGroupId, fromTime,  # pylint:disable=too-many-arguments
-                            toTime, limit, offset):
-    return '''
+
+def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
+                            from_time, to_time, limit, offset):
+    return """
         query {
             study (id: "%s") {
                 id
@@ -78,17 +85,15 @@ def get_labels_query_string(studyId, labelGroupId, fromTime,  # pylint:disable=t
                     }
                 }
             }
-        }
-    ''' % (studyId, labelGroupId, limit, offset, fromTime, toTime)
+        }""" % (study_id, label_group_id, limit, offset, from_time, to_time)
 
 
 def get_label_groups_for_study_ids_paged_query_string(study_ids):
-
-    study_ids_string = ','.join(f'"{study_id}"' for study_id in study_ids)
+    study_ids_string = get_json_list(study_ids)
 
     return f"""
         query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, studyIds: [{study_ids_string}]) {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, studyIds: {study_ids_string}) {{{{
                 id
                 name
                 labelGroups {{{{
@@ -99,8 +104,8 @@ def get_label_groups_for_study_ids_paged_query_string(study_ids):
         }}}}"""
 
 
-def get_channel_groups_query_string(studyId):
-    return '''
+def get_channel_groups_query_string(study_id):
+    return """
         query {
             study(id: "%s") {
                 id
@@ -116,42 +121,26 @@ def get_channel_groups_query_string(studyId):
                     }
                 }
             }
-        }
-    ''' % (studyId)
+        }""" % study_id
 
 
 #    studyChannelGroupSegments
-def get_segment_urls_query_string(segmentIds):
-    return '''
+def get_segment_urls_query_string(segment_ids):
+    segment_ids_string = get_json_list(segment_ids)
+
+    return """
         query {
             studyChannelGroupSegments(segmentIds: %s) {
                 id
                 baseDataChunkUrl
             }
-        }
-    ''' % ('["' + '\",\"'.join(segmentIds) + '"]')
+        }""" % segment_ids_string
 
 
-def get_studies_by_search_term_paged_query_string(searchTerm):
-    return f'''
-        query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{searchTerm}") {{{{
-                id
-                name
-                patient {{{{
-                    id
-                }}}}
-            }}}}
-        }}}}'''
-
-
-def get_studies_by_study_id_paged_query_string(study_ids):
-
-    study_ids_string = ','.join(f'"{study_id}"' for study_id in study_ids)
-
+def get_studies_by_search_term_paged_query_string(search_term):
     return f"""
         query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, studyIds: [{study_ids_string}]) {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}") {{{{
                 id
                 name
                 patient {{{{
@@ -161,9 +150,24 @@ def get_studies_by_study_id_paged_query_string(study_ids):
         }}}}"""
 
 
-def get_string_from_dict(dictionary):
+def get_studies_by_study_id_paged_query_string(study_ids):
+    study_ids_string = get_json_list(study_ids)
+
+    return f"""
+        query {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, studyIds: {study_ids_string}) {{{{
+                id
+                name
+                patient {{{{
+                    id
+                }}}}
+            }}}}
+        }}}}"""
+
+
+def get_string_from_list_of_dicts(list_of_dicts):
     labels_string = ''
-    for d in dictionary:
+    for d in list_of_dicts:
         labels_string += ' {'
         for k in d.keys():
             if d[k] is None:
@@ -172,12 +176,10 @@ def get_string_from_dict(dictionary):
             if isinstance(d[k], str):
                 labels_string += '"' + d[k] + '",'
             elif isinstance(d[k], dict):
-                labels_string += get_string_from_dict(d[k])
+                labels_string += get_string_from_list_of_dicts(list(d[k]))
             elif isinstance(d[k], list):
                 if d[k]:
-                    labels_string += ('[' + ', '.join(f'"{element}"' for element in d[k]) + '],')
-                else:
-                    labels_string += '[],'
+                    labels_string += (get_json_list(d[k]) + ",")
             else:
                 labels_string += str(d[k]) + ','
         labels_string = labels_string[:-1] # remove last comma
@@ -186,22 +188,22 @@ def get_string_from_dict(dictionary):
     return labels_string
 
 
-def get_add_labels_mutation_string(groupId, labels):
+def get_add_labels_mutation_string(group_id, labels):
+    labels_string = get_string_from_list_of_dicts(labels)
 
-    labels_string = get_string_from_dict(labels)
-    return f'''
-        mutation {{
+    return """
+        mutation {
             addLabelsToLabelGroup(
-                groupId: "{groupId}",
-                labels: [{labels_string}]
-            ) {{
+                groupId: "%s",
+                labels: [%s]
+            ) {
                 id
-            }}
-        }}'''
+            }
+        }""" % (group_id, labels_string)
+
 
 def get_tag_id_query_string():
-
-    return '''
+    return """
         query {
           labelTags {
             id
@@ -214,111 +216,110 @@ def get_tag_id_query_string():
             forStudy
             forDiary
           }
-        }
-        '''
+        }"""
 
 
-def get_add_label_group_mutation_string(studyId, name, description, labelType):
-    if labelType is None:
-        labelTypeString = ''
+def get_add_label_group_mutation_string(study_id, name, description, label_type):
+    if label_type is None:
+        label_type_string = ''
     else:
-        labelTypeString = ', labelType: ' + labelType
-    return '''
+        label_type_string = ', labelType: "' + label_type + '"'
+
+    return """
         mutation {
             addLabelGroupToStudy(studyId: "%s", name: "%s", description: "%s"%s) {
                 id
             }
-        }
-    ''' % (studyId, name, description, labelTypeString)
+        }""" % (study_id, name, description, label_type_string)
 
-def get_remove_label_group_mutation_string(groupId):
-    return '''
+
+def get_remove_label_group_mutation_string(group_id):
+    return """
         mutation {
             removeLabelGroupFromStudy(groupId: "%s")
-        }
-    ''' % (groupId)
+        }""" % (group_id)
 
-def get_viewed_times_query_string(studyId):
-    return '''
+
+def get_viewed_times_query_string(study_id):
+    return """
         query {
             viewGroups(studyId: "%s") {
                 user {
-                  fullName
+                    fullName
                 }
                 views {
-                  id
-                  startTime
-                  duration
-                  createdAt
-                  updatedAt
+                    id
+                    startTime
+                    duration
+                    createdAt
+                    updatedAt
                 }
-              }
             }
-    ''' % (studyId)
+        }""" % study_id
+
 
 def get_organisations_query_string():
     return """
         query {
-          organisations {
-            id
-            partyId
-            ownerId
-            name
-            description
-            isPublic
-            isDeleted
-          }
-        }
-    """
+            organisations {
+                id
+                partyId
+                ownerId
+                name
+                description
+                isPublic
+                isDeleted
+            }
+        }"""
+
 
 def get_patients_query_string(party_id=""):
-    return f"""
-    query {{
-      patients (partyId: "{party_id}") {{
-        id
-        user {{
-          id
-          fullName
-          shortName
-          email
-        }}
-      }}
-    }}
-    """
+    return """
+        query {
+            patients (partyId: "%s") {
+                id
+                user {
+                    id
+                    fullName
+                    shortName
+                    email
+                }
+            }
+        }""" % party_id
+
 
 def get_diary_labels_query_string(patient_id):
-    return f"""
-    query {{
-      patient (id: "{patient_id}") {{
-        id
-        diary {{
-          id
-          labelGroups {{
-            id
-            labelType
-            labelSourceType
-            name
-            labels {{
-              id
-              startTime
-              timezone
-              duration
-              note
-              tags {{
+    return """
+        query {
+            patient (id: "%s") {
                 id
-                tagType {{
-                  id
-                  category  {{
+                diary {
                     id
-                    name
-                    description
-                  }}
-                  value
-                }}
-              }}
-            }}
-          }}
-        }}
-      }}
-    }}
-    """
+                    labelGroups {
+                        id
+                        labelType
+                        labelSourceType
+                        name
+                        labels {
+                            id
+                            startTime
+                            timezone
+                            duration
+                            note
+                            tags {
+                                id
+                                tagType {
+                                    id
+                                    category  {
+                                        id
+                                        name
+                                        description
+                                    }
+                                    value
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }""" % patient_id

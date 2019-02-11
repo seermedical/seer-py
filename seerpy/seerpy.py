@@ -250,20 +250,18 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return response['study']['channelGroups']
 
     def get_segment_urls(self, segment_ids, limit=10000):
-        # TODO: collect these in a list and create the dataframe at the end
-        segment_urls = pd.DataFrame()
+        segments = []
         counter = 0
         while int(counter * limit) < len(segment_ids):
             segment_ids_batch = segment_ids[int(counter * limit):int((counter + 1) * limit)]
             query_string = graphql.get_segment_urls_query_string(segment_ids_batch)
             response = self.execute_query(query_string)
-            response = response['studyChannelGroupSegments']
-            response = [i for i in response if i is not None]
-            response = pd.DataFrame(response)
-            segment_urls = segment_urls.append(response)
+            segments.extend([segment for segment in response['studyChannelGroupSegments']
+                             if segment is not None])
             counter += 1
+        segment_urls = pd.DataFrame(segments)
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
-        return segment_urls.reset_index(drop=True)
+        return segment_urls
 
     def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):

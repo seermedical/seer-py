@@ -51,8 +51,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
 
     # as we don't rely on anything in __init() I have mocked it for simplicity
 
-    def test_single_study(self, seer_connect_init,  # pylint:disable=unused-argument
-                          get_all_metadata):
+    def test_single_study(self, unused_seer_connect_init, get_all_metadata):
         # setup
         with open(TEST_DATA_DIR / "study1_metadata.json", "r") as f:
             test_input = json.load(f)
@@ -66,8 +65,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
         # check result
         assert result.equals(expected_result)
 
-    def test_four_studies(self, seer_connect_init,  # pylint:disable=unused-argument
-                          get_all_metadata):
+    def test_four_studies(self, unused_seer_connect_init, get_all_metadata):
         # setup
         studies = []
         for i in range(1, 5):
@@ -91,8 +89,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetAllStudyMetaDataByNames:
 
-    def test_no_study_param(self, seer_auth, gql_client,
-                            time_sleep):  # pylint:disable=unused-argument
+    def test_no_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -121,8 +118,7 @@ class TestGetAllStudyMetaDataByNames:
         # check result
         assert result == {'studies' : expected_results}
 
-    def test_existing_study_param(self, seer_auth, gql_client,
-                                  time_sleep):  # pylint:disable=unused-argument
+    def test_existing_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -149,8 +145,7 @@ class TestGetAllStudyMetaDataByNames:
         # check result
         assert result == {'studies' : expected_results}
 
-    def test_nonexistent_study_param(self, seer_auth, gql_client,
-                                     time_sleep):  # pylint:disable=unused-argument
+    def test_nonexistent_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -173,11 +168,12 @@ class TestGetAllStudyMetaDataByNames:
         assert gql_client.return_value.execute.call_count == 2
 
 
+@mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetSegmentUrls:
 
-    def test_success(self, seer_auth, gql_client):
+    def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -192,9 +188,7 @@ class TestGetSegmentUrls:
         # check result
         assert result.equals(expected_result)
 
-    @mock.patch('time.sleep', return_value=None)
-    def test_multiple_batches(self, time_sleep, seer_auth,  # pylint:disable=unused-argument
-                              gql_client):
+    def test_multiple_batches(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -213,7 +207,7 @@ class TestGetSegmentUrls:
         # check result
         assert result.equals(expected_result)
 
-    def test_none_segment_ids(self, seer_auth, gql_client):
+    def test_none_segment_ids(self, seer_auth, gql_client, unused_time_sleep):
         # TODO: should we check for none and make it an empty list???
 
         # setup
@@ -229,7 +223,7 @@ class TestGetSegmentUrls:
         # check result
         assert str(exception_info.value) == error_string
 
-    def test_empty_segment_ids(self, seer_auth, gql_client):  # pylint:disable=unused-argument
+    def test_empty_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -241,7 +235,7 @@ class TestGetSegmentUrls:
         # check result
         assert result.empty
 
-    def test_unmatched_segment_ids(self, seer_auth, gql_client):
+    def test_unmatched_segment_ids(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -328,7 +322,7 @@ class TestCreateDataChunkUrls:
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabels:
 
-    def test_success(self, seer_auth, gql_client, time_sleep):  # pylint:disable=unused-argument
+    def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -359,7 +353,7 @@ class TestGetLabels:
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabelsDataframe:
 
-    def test_success(self, seer_auth, gql_client, time_sleep):  # pylint:disable=unused-argument
+    def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 

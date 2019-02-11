@@ -45,7 +45,7 @@ class TestSeerConnect:
             SeerConnect()
 
 
-@mock.patch.object(SeerConnect, "get_all_study_meta_data_by_ids", autospec=True)
+@mock.patch.object(SeerConnect, "get_all_study_metadata_by_ids", autospec=True)
 @mock.patch.object(SeerConnect, "__init__", autospec=True, return_value=None)
 class TestGetAllStudyMetaDataDataframeByIds:
 

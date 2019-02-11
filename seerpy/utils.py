@@ -53,7 +53,7 @@ def download_link(data_q):
 
 
 # pylint:disable=too-many-locals
-def plot_eeg(x, y=None, pred=None, squeeze=2.0, scaling_factor=None):
+def plot_eeg(x, y=None, pred=None, squeeze=8.0, scaling_factor=None):
     if not isinstance(x, np.ndarray):
         x = np.asarray(x)
 
@@ -85,6 +85,8 @@ def plot_eeg(x, y=None, pred=None, squeeze=2.0, scaling_factor=None):
 
     lines = LineCollection(segs, offsets=offsets, transOffset=None, linewidths=(0.5))
     ax2.add_collection(lines)
+    empty_array = np.empty(ticks.shape)
+    ax2.fill_between(empty_array, -1000, 1000, alpha=0.0)
 
     if y is not None:
         if len(y.shape) > 1:

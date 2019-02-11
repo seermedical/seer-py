@@ -418,7 +418,9 @@ good-names=i,
            ex,
            Run,
            _,
-           f
+           f,  # for file
+           d,  # for dict
+           x, y  # for co-ordinates
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no

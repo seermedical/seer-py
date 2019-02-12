@@ -320,17 +320,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 label_groups.append(label_group)
         return pd.DataFrame(label_groups)
 
-    def get_viewed_times(self, study_id):
+    def get_viewed_times_dataframe(self, study_id):
         query_string = graphql.get_viewed_times_query_string(study_id)
         response = self.execute_query(query_string)
         response = json_normalize(response['viewGroups'])
-        views = pd.DataFrame(columns=['createdAt', 'duration', 'id', 'startTime', 'updatedAt',
-                                      'user', 'viewTimes'])
-        # TODO: can we use at[] here instead of loc[]?
+
+        views = []
         for i in range(len(response)):
-            view = json_normalize(response.loc[i, 'views'])
-            view['user'] = response.loc[i, 'user.fullName']
-            views = views.append(view)
+            view = json_normalize(response.at[i, 'views'])
+            view['user'] = response.at[i, 'user.fullName']
+            views.append(view)
+        views = pd.concat(views).reset_index(drop=True)
 
         views['createdAt'] = pd.to_datetime(views['createdAt'])
         views['updatedAt'] = pd.to_datetime(views['updatedAt'])

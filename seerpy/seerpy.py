@@ -556,7 +556,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                actual_channel_names])
 
         if threads > 1:
-            pool = Pool(processes=threads)
+            pool = Pool(processes=min(threads, len(data_q)))
             data_list = list(pool.map(utils.download_link, data_q))
             pool.close()
             pool.join()

@@ -207,21 +207,17 @@ class TestGetSegmentUrls:
         # check result
         assert result.equals(expected_result)
 
-    def test_none_segment_ids(self, seer_auth, gql_client, unused_time_sleep):
-        # TODO: should we check for none and make it an empty list???
-
+    def test_none_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-        error_string = ("object of type 'NoneType' has no len()")
-        gql_client.return_value.execute.side_effect = Exception(error_string)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_empty.csv", index_col=0)
 
         # run test
-        with pytest.raises(Exception) as exception_info:
-            SeerConnect().get_segment_urls(None)
+        result = SeerConnect().get_segment_urls(None)
 
         # check result
-        assert str(exception_info.value) == error_string
+        assert result.equals(expected_result)
 
     def test_empty_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
@@ -373,6 +369,30 @@ class TestGetLabelsDataframe:
 
         # run test
         result = SeerConnect().get_labels_dataframe("study-1-id", "label-group-1-id")
+
+        # check result
+        assert result.equals(expected_result)
+
+
+@mock.patch('time.sleep', return_value=None)
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetViewedTimesDataframe:
+
+    def test_success(self, seer_auth, gql_client, unused_time_sleep):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        with open(TEST_DATA_DIR / "view_groups.json", "r") as f:
+            gql_client.return_value.execute.return_value = json.load(f)
+
+        # need to set parse_dates and float_precision='round_trip' to make the comparison work
+        expected_result = pd.read_csv(TEST_DATA_DIR / "views.csv", index_col=0,
+                                      parse_dates=['createdAt', 'updatedAt'],
+                                      float_precision='round_trip')
+
+        # run test
+        result = SeerConnect().get_viewed_times_dataframe("study-1-id")
 
         # check result
         assert result.equals(expected_result)

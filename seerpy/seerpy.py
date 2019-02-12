@@ -526,7 +526,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data_q = []
 
         for segment_id in segment_ids:
-            metadata = all_data[all_data['segments.id'] == segment_id]
+            metadata = all_data[all_data['segments.id'].values == segment_id]
 
             num_channels = len(metadata['channels.id'].drop_duplicates())
             channel_names = metadata['channels.name'].drop_duplicates().tolist()

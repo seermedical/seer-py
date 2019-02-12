@@ -207,21 +207,17 @@ class TestGetSegmentUrls:
         # check result
         assert result.equals(expected_result)
 
-    def test_none_segment_ids(self, seer_auth, gql_client, unused_time_sleep):
-        # TODO: should we check for none and make it an empty list???
-
+    def test_none_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
-        error_string = ("object of type 'NoneType' has no len()")
-        gql_client.return_value.execute.side_effect = Exception(error_string)
+        expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_empty.csv", index_col=0)
 
         # run test
-        with pytest.raises(Exception) as exception_info:
-            SeerConnect().get_segment_urls(None)
+        result = SeerConnect().get_segment_urls(None)
 
         # check result
-        assert str(exception_info.value) == error_string
+        assert result.equals(expected_result)
 
     def test_empty_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup

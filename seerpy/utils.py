@@ -12,44 +12,56 @@ import requests
 
 def download_link(data_q):
     meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
-    data = requests.get(meta_data['dataChunks.url'])
-
     try:
-        if meta_data['channelGroups.compression'] == 'gzip':
-            data = gzip.decompress(data.content)
-        else:
+        data = requests.get(meta_data['dataChunks.url'])
+    
+        try:
+            if meta_data['channelGroups.compression'] == 'gzip':
+                data = gzip.decompress(data.content)
+            else:
+                data = data.content
+        except Exception:  # pylint: disable=broad-except
             data = data.content
-    except Exception:  # pylint: disable=broad-except
-        data = data.content
-
-    data_type = meta_data['channelGroups.sampleEncoding']
-    data = np.fromstring(data, dtype=np.dtype(data_type))
-    data = data.astype(np.float32)
-    data = data.reshape(-1, len(channel_names),
-                        int(meta_data['channelGroups.samplesPerRecord']))
-    data = np.transpose(data, (0, 2, 1))
-    data = data.reshape(-1, data.shape[2])
-    chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
-    chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
-    exponent = meta_data['channelGroups.exponent'].astype(np.float64)
-    chan_diff = chan_max - chan_min
-    dig_min = np.iinfo(data_type).min
-    dig_max = np.iinfo(data_type).max
-    dig_diff = abs(dig_min) + abs(dig_max)
-
-    with np.errstate(divide='ignore', invalid='ignore'):
-        data = (data - dig_min) / dig_diff * chan_diff + chan_min
-
-    data = data * 10.0 ** exponent
-    data = np.nan_to_num(data).astype(np.float32)
-    data = pd.DataFrame(data=data, index=None, columns=channel_names)
-    data['time'] = (np.arange(data.shape[0]) * (1000.0 / meta_data['channelGroups.sampleRate'])
-                    + meta_data['dataChunks.time'])
-    data['id'] = study_id
-    data['channelGroups.id'] = channel_groups_id
-    data['segments.id'] = segments_id
-    data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
-    return data
+    
+        data_type = meta_data['channelGroups.sampleEncoding']
+        data = np.frombuffer(data, dtype=np.dtype(data_type))
+        data = data.astype(np.float32)
+        data = data.reshape(-1, len(channel_names),
+                            int(meta_data['channelGroups.samplesPerRecord']))
+        data = np.transpose(data, (0, 2, 1))
+        data = data.reshape(-1, data.shape[2])
+        if 'int' in data_type:
+            data = data[~np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)]
+        ## TODO: what happens for floats?
+        chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
+        chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
+        exponent = meta_data['channelGroups.exponent'].astype(np.float64)
+        chan_diff = chan_max - chan_min
+        dig_min = np.iinfo(data_type).min
+        dig_max = np.iinfo(data_type).max
+        dig_diff = abs(dig_min) + abs(dig_max)
+    
+        with np.errstate(divide='ignore', invalid='ignore'):
+            data = (data - dig_min) / dig_diff * chan_diff + chan_min
+    
+        data = data * 10.0 ** exponent
+        data = np.nan_to_num(data).astype(np.float32)
+        data = pd.DataFrame(data=data, index=None, columns=channel_names)
+        data['time'] = (np.arange(data.shape[0]) * (1000.0 / meta_data['channelGroups.sampleRate'])
+                        + meta_data['dataChunks.time'])
+        data['id'] = study_id
+        data['channelGroups.id'] = channel_groups_id
+        data['segments.id'] = segments_id
+        data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
+        return data
+    except Exception as e:
+        print(e)
+        print(study_id)
+        print(channel_names)
+        print(meta_data['dataChunks.url'])
+        print('{0:.2f}'.format(meta_data['dataChunks.time']))
+        print(meta_data)
+        raise
 
 
 # pylint:disable=too-many-locals

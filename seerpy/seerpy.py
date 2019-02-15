@@ -569,7 +569,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if data_list:
             data = pd.concat(data_list)
             data = data.loc[(data['time'] >= from_time) & (data['time'] < to_time)]
-            data = data.sort_values(['id', 'channelGroups.id', 'segments.id', 'time'], axis=0,
+            data = data.sort_values(['id', 'channelGroups.id', 'time'], axis=0,
                                     ascending=True, na_position='last')
             data = data.reset_index(drop=True)
         else:

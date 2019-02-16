@@ -31,7 +31,15 @@ def download_link(data_q):
         data = np.transpose(data, (0, 2, 1))
         data = data.reshape(-1, data.shape[2])
         if 'int' in data_type:
-            data = data[~np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)]
+            nan_mask = np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)
+            if nan_mask[-1]:
+                nan_mask_corrected = np.ones(nan_mask.shape)
+                for i in range(len(nan_mask),-1,-1):
+                    if nan_mask[i]:
+                        nan_mask_corrected[i] = False
+                    else:
+                        break
+                data = data[nan_mask_corrected]
         ## TODO: what happens for floats?
         chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
         chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)

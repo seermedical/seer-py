@@ -34,7 +34,7 @@ def download_link(data_q):
             nan_mask = np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)
             if nan_mask[-1]:
                 nan_mask_corrected = np.ones(nan_mask.shape)
-                for i in range(len(nan_mask),-1,-1):
+                for i in range(len(nan_mask)-1,-1,-1):
                     if nan_mask[i]:
                         nan_mask_corrected[i] = False
                     else:

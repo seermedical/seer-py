@@ -44,13 +44,14 @@ def download_link(data_q):
         chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
         chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
         exponent = meta_data['channelGroups.exponent'].astype(np.float64)
-        chan_diff = chan_max - chan_min
-        dig_min = np.iinfo(data_type).min
-        dig_max = np.iinfo(data_type).max
-        dig_diff = abs(dig_min) + abs(dig_max)
-    
-        with np.errstate(divide='ignore', invalid='ignore'):
-            data = (data - dig_min) / dig_diff * chan_diff + chan_min
+        if 'int' in data_type:
+            chan_diff = chan_max - chan_min
+            dig_min = np.iinfo(data_type).min
+            dig_max = np.iinfo(data_type).max
+            dig_diff = abs(dig_min) + abs(dig_max)
+        
+            with np.errstate(divide='ignore', invalid='ignore'):
+                data = (data - dig_min) / dig_diff * chan_diff + chan_min
     
         data = data * 10.0 ** exponent
         data = np.nan_to_num(data).astype(np.float32)

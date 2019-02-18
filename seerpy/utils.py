@@ -40,6 +40,9 @@ def download_link(data_q):
                     else:
                         break
                 data = data[nan_mask_corrected]
+            
+            # fill missing values with nans
+            data[data[np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)]] = np.nan
         ## TODO: what happens for floats?
         chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
         chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
@@ -54,8 +57,8 @@ def download_link(data_q):
                 data = (data - dig_min) / dig_diff * chan_diff + chan_min
     
         data = data * 10.0 ** exponent
-        data = np.nan_to_num(data).astype(np.float32)
         data = pd.DataFrame(data=data, index=None, columns=channel_names)
+        data = data.fillna(method='ffill', axis='columns')
         data['time'] = (np.arange(data.shape[0]) * (1000.0 / meta_data['channelGroups.sampleRate'])
                         + meta_data['dataChunks.time'])
         data['id'] = study_id

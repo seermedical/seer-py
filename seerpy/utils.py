@@ -42,7 +42,7 @@ def download_link(data_q):
                 data = data[nan_mask_corrected]
             
             # fill missing values with nans
-            data[data[np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)]] = np.nan
+            data[np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)] = np.nan
         ## TODO: what happens for floats?
         chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
         chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)

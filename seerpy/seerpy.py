@@ -527,6 +527,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             segment_urls = self.get_segment_urls(segment_ids)
 
         data_q = []
+        data_list = []
 
         for segment_id in segment_ids:
             metadata = all_data[all_data['segments.id'].values == segment_id]
@@ -557,14 +558,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for i in range(len(metadata.index)):
                 data_q.append([metadata.iloc[i], study_id, channel_groups_id, segment_id,
                                actual_channel_names])
-
-        if threads > 1:
-            pool = Pool(processes=min(threads, len(data_q)))
-            data_list = list(pool.map(utils.download_link, data_q))
-            pool.close()
-            pool.join()
-        else:
-            data_list = [utils.download_link(data_q_item) for data_q_item in data_q]
+        
+        if data_q:
+            if threads > 1:
+                pool = Pool(processes=min(threads, len(data_q) + 1))
+                data_list = list(pool.map(utils.download_link, data_q))
+                pool.close()
+                pool.join()
+            else:
+                data_list = [utils.download_link(data_q_item) for data_q_item in data_q]
 
         if data_list:
             data = pd.concat(data_list)

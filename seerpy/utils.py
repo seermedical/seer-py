@@ -13,15 +13,15 @@ import requests
 def download_link(data_q):
     meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
     try:
-        data = requests.get(meta_data['dataChunks.url'])
+        raw_data = requests.get(meta_data['dataChunks.url'])
     
         try:
             if meta_data['channelGroups.compression'] == 'gzip':
-                data = gzip.decompress(data.content)
+                data = gzip.decompress(raw_data.content)
             else:
-                data = data.content
-        except Exception:  # pylint: disable=broad-except
-            data = data.content
+                data = raw_data.content
+        except OSError:  # pylint: disable=broad-except
+            data = raw_data.content
     
         data_type = meta_data['channelGroups.sampleEncoding']
         data = np.frombuffer(data, dtype=np.dtype(data_type))
@@ -42,7 +42,7 @@ def download_link(data_q):
                 data = data[nan_mask_corrected]
             
             # fill missing values with nans
-            data[np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)] = np.nan
+            data[np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1), :] = np.nan
         ## TODO: what happens for floats?
         chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
         chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
@@ -73,6 +73,7 @@ def download_link(data_q):
         print(meta_data['dataChunks.url'])
         print('{0:.2f}'.format(meta_data['dataChunks.time']))
         print(meta_data)
+        print(raw_data.headers)
         raise
 
 

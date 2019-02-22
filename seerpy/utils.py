@@ -59,6 +59,7 @@ def download_link(data_q):
         data = data * 10.0 ** exponent
         data = pd.DataFrame(data=data, index=None, columns=channel_names)
         data = data.fillna(method='ffill', axis='columns')
+        data = data.fillna(method='bfill', axis='columns')
         data['time'] = (np.arange(data.shape[0]) * (1000.0 / meta_data['channelGroups.sampleRate'])
                         + meta_data['dataChunks.time'])
         data['id'] = study_id

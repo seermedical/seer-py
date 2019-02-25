@@ -333,10 +333,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             view = json_normalize(response.at[i, 'views'])
             view['user'] = response.at[i, 'user.fullName']
             views.append(view)
-        views = pd.concat(views).reset_index(drop=True)
-
-        views['createdAt'] = pd.to_datetime(views['createdAt'])
-        views['updatedAt'] = pd.to_datetime(views['updatedAt'])
+        if views:
+            views = pd.concat(views).reset_index(drop=True)
+            views['createdAt'] = pd.to_datetime(views['createdAt'])
+            views['updatedAt'] = pd.to_datetime(views['updatedAt'])
+        else:
+            views = None
         return views
 
     def get_organisations(self):

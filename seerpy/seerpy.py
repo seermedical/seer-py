@@ -502,7 +502,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         all_data : pandas DataFrame
                 metadata required for downloading and processing raw data
         segment_urls : list
-                if None, these will be retrieved for each segment i all_data
+                if None, these will be retrieved for each segment in all_data
         threads : int
                 number of threads to use. If > 1 then will use multiprocessing
                 if None (default), it will use 1 on Windows and 5 on Linux/MacOS

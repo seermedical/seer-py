@@ -560,7 +560,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for i in range(len(metadata.index)):
                 data_q.append([metadata.iloc[i], study_id, channel_groups_id, segment_id,
                                actual_channel_names])
-        
+
         if data_q:
             if threads > 1:
                 pool = Pool(processes=min(threads, len(data_q) + 1))

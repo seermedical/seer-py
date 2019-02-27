@@ -10,19 +10,20 @@ import pandas as pd
 import requests
 
 
+# pylint:disable=too-many-locals,too-many-statements
 def download_link(data_q):
     meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
     try:
         raw_data = requests.get(meta_data['dataChunks.url'])
-    
+
         try:
             if meta_data['channelGroups.compression'] == 'gzip':
                 data = gzip.decompress(raw_data.content)
             else:
                 data = raw_data.content
-        except OSError:  # pylint: disable=broad-except
+        except OSError:
             data = raw_data.content
-    
+
         data_type = meta_data['channelGroups.sampleEncoding']
         data = np.frombuffer(data, dtype=np.dtype(data_type))
         data = data.astype(np.float32)
@@ -31,18 +32,18 @@ def download_link(data_q):
         data = np.transpose(data, (0, 2, 1))
         data = data.reshape(-1, data.shape[2])
         if 'int' in data_type:
-            nan_mask = np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1)
+            nan_mask = np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1)
             if nan_mask[-1]:
                 nan_mask_corrected = np.ones(nan_mask.shape, dtype=bool)
-                for i in range(len(nan_mask)-1,-1,-1):
+                for i in range(len(nan_mask) - 1, -1, -1):
                     if nan_mask[i]:
                         nan_mask_corrected[i] = False
                     else:
                         break
                 data = data[nan_mask_corrected]
-            
+
             # fill missing values with nans
-            data[np.all(data==np.iinfo(np.dtype(data_type)).min,axis=1), :] = np.nan
+            data[np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1), :] = np.nan
         ## TODO: what happens for floats?
         chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
         chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
@@ -52,10 +53,10 @@ def download_link(data_q):
             dig_min = np.iinfo(data_type).min
             dig_max = np.iinfo(data_type).max
             dig_diff = abs(dig_min) + abs(dig_max)
-        
+
             with np.errstate(divide='ignore', invalid='ignore'):
                 data = (data - dig_min) / dig_diff * chan_diff + chan_min
-    
+
         data = data * 10.0 ** exponent
         data = pd.DataFrame(data=data, index=None, columns=channel_names)
         data = data.fillna(method='ffill', axis='columns')
@@ -68,8 +69,8 @@ def download_link(data_q):
         data['segments.id'] = segments_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
         return data
-    except Exception as e:
-        print(e)
+    except Exception as ex:
+        print(ex)
         print(study_id)
         print(channel_names)
         print(meta_data['dataChunks.url'])

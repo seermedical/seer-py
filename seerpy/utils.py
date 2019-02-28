@@ -76,7 +76,10 @@ def download_link(data_q):
         print(meta_data['dataChunks.url'])
         print('{0:.2f}'.format(meta_data['dataChunks.time']))
         print(meta_data)
-        print(raw_data.headers)
+        try:
+            print(raw_data.headers)
+        except:  # pylint: disable=broad-except
+            pass
         raise
 
 

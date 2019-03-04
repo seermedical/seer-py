@@ -7,14 +7,13 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import requests
 
 
 # pylint:disable=too-many-locals,too-many-statements
-def download_link(data_q):
+def download_channel_data(data_q, download_function):
     meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
     try:
-        raw_data = requests.get(meta_data['dataChunks.url'])
+        raw_data = download_function(meta_data['dataChunks.url'])
 
         try:
             if meta_data['channelGroups.compression'] == 'gzip':
@@ -78,7 +77,7 @@ def download_link(data_q):
         print(meta_data)
         try:
             print(raw_data.headers)
-        except:  # pylint: disable=broad-except
+        except ex:  # pylint: disable=broad-except
             pass
         raise
 

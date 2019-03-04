@@ -1,5 +1,6 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 
+import functools
 from multiprocessing import Pool
 import os
 import time
@@ -9,6 +10,7 @@ from gql.transport.requests import RequestsHTTPTransport
 import numpy as np
 import pandas as pd
 from pandas.io.json import json_normalize
+import requests
 
 from .auth import SeerAuth
 from . import utils
@@ -493,8 +495,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                                                'dataChunks.time'])
 
     # pylint:disable=too-many-locals
-    def get_links(self, all_data, segment_urls=None,  # pylint:disable=too-many-arguments
-                  threads=None, from_time=0, to_time=9e12):
+    def get_channel_data(self, all_data, segment_urls=None,  # pylint:disable=too-many-arguments
+                         download_function=requests.get, threads=None, from_time=0, to_time=9e12):
         """Download data chunks and stich them together in one dataframe
 
         Parameters
@@ -514,7 +516,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Example
         -------
-        data = get_links(all_data.copy())
+        data = get_channel_data(all_data.copy())
 
         """
         if threads is None:
@@ -561,14 +563,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 data_q.append([metadata.iloc[i], study_id, channel_groups_id, segment_id,
                                actual_channel_names])
 
+        download_function = functools.partial(utils.download_channel_data,
+                                              download_function=download_function)
         if data_q:
             if threads > 1:
                 pool = Pool(processes=min(threads, len(data_q) + 1))
-                data_list = list(pool.map(utils.download_link, data_q))
+                data_list = list(pool.map(download_function, data_q))
                 pool.close()
                 pool.join()
             else:
-                data_list = [utils.download_link(data_q_item) for data_q_item in data_q]
+                data_list = [download_function(data_q_item) for data_q_item in data_q]
 
         if data_list:
             data = pd.concat(data_list)

@@ -101,8 +101,8 @@ def main():  # pylint:disable=too-many-locals
 
             ## Using threads>1 may speed up your downloads, but may also cause issues on Windows.
             ## Use with caution.
-            data = client.get_links(all_data[all_data['segments.startTime'] == start_time_ms],
-                                    threads=5)
+            data = client.get_channel_data(all_data[all_data['segments.startTime']
+                                                    == start_time_ms], threads=5)
 
             ######################
             # Change this section for saving data segments as different file formats

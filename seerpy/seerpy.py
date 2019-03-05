@@ -1,13 +1,9 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 
-import functools
-from multiprocessing import Pool
-import os
 import time
 
 from gql import gql, Client as GQLClient
 from gql.transport.requests import RequestsHTTPTransport
-import numpy as np
 import pandas as pd
 from pandas.io.json import json_normalize
 import requests
@@ -463,38 +459,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return all_data
 
     # pylint:disable=too-many-locals
-    @staticmethod
-    def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
-        chunk_pattern = '00000000000.dat'
-
-        data_chunks = []
-        metadata = metadata.drop_duplicates('segments.id').reset_index(drop=True)
-        for index in range(len(metadata.index)):
-            row = metadata.iloc[index]
-
-            seg_base_urls = segment_urls.loc[segment_urls['segments.id'] == row['segments.id'],
-                                             'baseDataChunkUrl']
-            if seg_base_urls.empty:
-                continue
-            seg_base_url = seg_base_urls.iloc[0]
-
-            chunk_period = row['channelGroups.chunkPeriod']
-            num_chunks = int(np.ceil(row['segments.duration'] / chunk_period / 1000.))
-            start_time = row['segments.startTime']
-
-            for i in range(num_chunks):
-                chunk_start_time = chunk_period * 1000 * i + start_time
-                next_chunk_start_time = chunk_period * 1000 * (i + 1) + start_time
-                if (chunk_start_time <= to_time and next_chunk_start_time >= from_time):
-                    data_chunk_name = str(i).zfill(len(chunk_pattern) - 4) + chunk_pattern[-4:]
-                    data_chunk_url = seg_base_url.replace(chunk_pattern, data_chunk_name)
-                    data_chunk = [row['segments.id'], data_chunk_url, chunk_start_time]
-                    data_chunks.append(data_chunk)
-
-        return pd.DataFrame.from_records(data_chunks, columns=['segments.id', 'dataChunks.url',
-                                                               'dataChunks.time'])
-
-    # pylint:disable=too-many-locals
     def get_channel_data(self, all_data, segment_urls=None,  # pylint:disable=too-many-arguments
                          download_function=requests.get, threads=None, from_time=0, to_time=9e12):
         """Download data chunks and stich them together in one dataframe
@@ -503,8 +467,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         ----------
         all_data : pandas DataFrame
                 metadata required for downloading and processing raw data
-        segment_urls : list
+        segment_urls : pandas DataFrame
+                columns=['segments.id', 'baseDataChunkUrl']
                 if None, these will be retrieved for each segment in all_data
+        download_function: function
+                the function used to download the channel data. defaults to requests.get
         threads : int
                 number of threads to use. If > 1 then will use multiprocessing
                 if None (default), it will use 1 on Windows and 5 on Linux/MacOS
@@ -516,71 +483,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Example
         -------
-        data = get_channel_data(all_data.copy())
+        data = get_channel_data(all_data)
 
         """
-        if threads is None:
-            if os.name != 'nt':
-                threads = 1
-            else:
-                threads = 5
-
-        segment_ids = all_data['segments.id'].drop_duplicates().tolist()
-
         if segment_urls is None:
+            segment_ids = all_data['segments.id'].drop_duplicates().tolist()
             segment_urls = self.get_segment_urls(segment_ids)
 
-        data_q = []
-        data_list = []
-
-        for segment_id in segment_ids:
-            metadata = all_data[all_data['segments.id'].values == segment_id]
-
-            num_channels = len(metadata['channels.id'].drop_duplicates())
-            channel_names = metadata['channels.name'].drop_duplicates().tolist()
-            actual_channel_names = channel_names
-            if len(channel_names) != num_channels:
-                actual_channel_names = ['Channel %s' % (i) for i in range(0, num_channels)]
-
-            metadata = metadata.drop_duplicates('segments.id')
-
-            study_id = metadata['id'].iloc[0]
-            channel_groups_id = metadata['channelGroups.id'].iloc[0]
-
-            data_chunks = self.create_data_chunk_urls(metadata, segment_urls, from_time=from_time,
-                                                      to_time=to_time)
-            metadata = metadata.merge(data_chunks, how='left', left_on='segments.id',
-                                      right_on='segments.id', suffixes=('', '_y'))
-
-            metadata = metadata[['dataChunks.url', 'dataChunks.time',
-                                 'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
-                                 'channelGroups.samplesPerRecord', 'channelGroups.recordsPerChunk',
-                                 'channelGroups.compression', 'channelGroups.signalMin',
-                                 'channelGroups.signalMax', 'channelGroups.exponent']]
-            metadata = metadata.drop_duplicates()
-            metadata = metadata.dropna(axis=0, how='any', subset=['dataChunks.url'])
-            for i in range(len(metadata.index)):
-                data_q.append([metadata.iloc[i], study_id, channel_groups_id, segment_id,
-                               actual_channel_names])
-
-        download_function = functools.partial(utils.download_channel_data,
-                                              download_function=download_function)
-        if data_q:
-            if threads > 1:
-                pool = Pool(processes=min(threads, len(data_q) + 1))
-                data_list = list(pool.map(download_function, data_q))
-                pool.close()
-                pool.join()
-            else:
-                data_list = [download_function(data_q_item) for data_q_item in data_q]
-
-        if data_list:
-            data = pd.concat(data_list)
-            data = data.loc[(data['time'] >= from_time) & (data['time'] < to_time)]
-            data = data.sort_values(['id', 'channelGroups.id', 'time'], axis=0,
-                                    ascending=True, na_position='last')
-            data = data.reset_index(drop=True)
-        else:
-            data = None
-
-        return data
+        return utils.get_channel_data(all_data, segment_urls, download_function, threads, from_time,
+                                      to_time)

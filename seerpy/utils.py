@@ -31,13 +31,14 @@ def downloadLink(dataQ):
         chanMin = metaData['channelGroups.signalMin'].astype(np.float64)
         chanMax = metaData['channelGroups.signalMax'].astype(np.float64)
         exponent = metaData['channelGroups.exponent'].astype(np.float64)
-        chanDiff = chanMax - chanMin
-        digMin = np.iinfo(dataType).min
-        digMax = np.iinfo(dataType).max
-        digDiff = abs(digMin) + abs(digMax)
-        with np.errstate(divide='ignore', invalid='ignore'):
-#                                data = np.where(data>0.0, data/np.nanmax(data, axis=0)*chanMax, data/np.nanmin(data, axis=0)*chanMin)
-            data = (data - digMin) / digDiff * chanDiff + chanMin
+        if 'int' in dataType:
+            chanDiff = chanMax - chanMin
+            digMin = np.iinfo(dataType).min
+            digMax = np.iinfo(dataType).max
+            digDiff = abs(digMin) + abs(digMax)
+            with np.errstate(divide='ignore', invalid='ignore'):
+    #                                data = np.where(data>0.0, data/np.nanmax(data, axis=0)*chanMax, data/np.nanmin(data, axis=0)*chanMin)
+                data = (data - digMin) / digDiff * chanDiff + chanMin
         data = data * 10.0 ** exponent
         data = np.nan_to_num(data).astype(np.float32)
         data = pd.DataFrame(data=data, index=None, columns=channelNames)

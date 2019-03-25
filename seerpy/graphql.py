@@ -240,14 +240,14 @@ def get_remove_label_group_mutation_string(group_id):
         }""" % (group_id)
 
 
-def get_viewed_times_query_string(study_id):
+def get_viewed_times_query_string(study_id, limit, offset):
     return """
         query {
             viewGroups(studyId: "%s") {
                 user {
                     fullName
                 }
-                views {
+                views (limit: %.0f, offset: %.0f) {
                     id
                     startTime
                     duration
@@ -255,7 +255,7 @@ def get_viewed_times_query_string(study_id):
                     updatedAt
                 }
             }
-        }""" % study_id
+        }""" % (study_id, limit, offset)
 
 
 def get_organisations_query_string():

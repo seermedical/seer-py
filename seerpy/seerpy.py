@@ -38,7 +38,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         self.last_query_time = time.time()
         self.api_limit_expire = 300
-        self.api_limit = 240
+        self.api_limit = 580
 
     def login(self, email=None, password=None):
         self.seer_auth = SeerAuth(self.api_url, email, password)

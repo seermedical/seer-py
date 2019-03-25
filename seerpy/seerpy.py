@@ -321,16 +321,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 label_groups.append(label_group)
         return pd.DataFrame(label_groups)
 
-    def get_viewed_times_dataframe(self, study_id):
-        query_string = graphql.get_viewed_times_query_string(study_id)
-        response = self.execute_query(query_string)
-        response = json_normalize(response['viewGroups'])
 
+    def get_viewed_times_dataframe(self, study_id, limit=250, offset=0):
         views = []
-        for i in range(len(response)):
-            view = json_normalize(response.at[i, 'views'])
-            view['user'] = response.at[i, 'user.fullName']
-            views.append(view)
+        while True:
+            query_string = graphql.get_viewed_times_query_string(study_id, limit, offset)
+            response = self.execute_query(query_string)
+            response = json_normalize(response['viewGroups'])
+            non_empty_views = False
+            for i in range(len(response)):
+                view = json_normalize(response.at[i, 'views'])
+                view['user'] = response.at[i, 'user.fullName']
+                if not view.empty:
+                    non_empty_views = True
+                views.append(view)
+            if not non_empty_views:
+                break
+            offset += limit
         if views:
             views = pd.concat(views).reset_index(drop=True)
             views['createdAt'] = pd.to_datetime(views['createdAt'])

@@ -137,10 +137,11 @@ def get_segment_urls_query_string(segment_ids):
         }""" % segment_ids_string
 
 
-def get_studies_by_search_term_paged_query_string(search_term):
+def get_studies_by_search_term_paged_query_string(search_term, party_id):
     return f"""
         query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}") {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}", 
+            partyId: "{party_id}") {{{{
                 id
                 name
                 patient {{{{

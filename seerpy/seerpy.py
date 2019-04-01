@@ -218,12 +218,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         studies = self.get_studies(limit, search_term)
         return [study['id'] for study in studies]
 
-    def get_studies(self, limit=50, search_term=''):
-        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
+    def get_studies(self, limit=50, search_term='', party_id=''):
+        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term, party_id)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
-    def get_studies_dataframe(self, limit=50, search_term=''):
-        studies = self.get_studies(limit, search_term)
+    def get_studies_dataframe(self, limit=50, search_term='', party_id=''):
+        studies = self.get_studies(limit, search_term, party_id)
         studies_dataframe = json_normalize(studies)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 

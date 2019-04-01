@@ -13,6 +13,9 @@ def get_study_with_data_query_string(study_id):
                 id
                 patient {
                     id
+                    user {
+                        fullName
+                        }
                 }
                 name
                 channelGroups {
@@ -146,6 +149,9 @@ def get_studies_by_search_term_paged_query_string(search_term, party_id):
                 name
                 patient {{{{
                     id
+                    user {{{{
+                        fullName
+                        }}}}
                 }}}}
             }}}}
         }}}}"""
@@ -161,6 +167,9 @@ def get_studies_by_study_id_paged_query_string(study_ids):
                 name
                 patient {{{{
                     id
+                    user {{{{
+                        fullName
+                        }}}}
                 }}}}
             }}}}
         }}}}"""

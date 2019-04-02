@@ -95,13 +95,13 @@ class TestGetAllStudyMetaDataByNames:
 
         side_effects = []
 
-        # this is the call in getStudies()
+        # this is the call in get_studies()
         with open(TEST_DATA_DIR / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
-        # this is the "no more data" response for getStudies()
+        # this is the "no more data" response for get_studies()
         side_effects.append({'studies': []})
 
-        # these are the calls from the loop in getAllMetaData()
+        # these are the calls from the loop in get_all_study_metadata_by_ids()
         expected_results = []
         for i in range(1, 5):
             filename = "study" + str(i) + "_metadata.json"
@@ -124,13 +124,13 @@ class TestGetAllStudyMetaDataByNames:
 
         side_effects = []
 
-        # this is the call in getStudies()
+        # this is the call in get_studies()
         with open(TEST_DATA_DIR / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
-        # this is the "no more data" response for getStudies()
+        # this is the "no more data" response for get_studies()
         side_effects.append({'studies': []})
 
-        # these are the calls from the loop in getAllMetaData()
+        # these are the calls from the loop in get_all_study_metadata_by_ids()
         expected_results = []
         with open(TEST_DATA_DIR / "study1_metadata.json", "r") as f:
             study = json.load(f)
@@ -151,10 +151,10 @@ class TestGetAllStudyMetaDataByNames:
 
         side_effects = []
 
-        # this is the call in getStudies()
+        # this is the call in get_studies()
         with open(TEST_DATA_DIR / "studies.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
-        # this is the "no more data" response for getStudies()
+        # this is the "no more data" response for get_studies()
         side_effects.append({'studies': []})
 
         gql_client.return_value.execute.side_effect = side_effects
@@ -260,7 +260,7 @@ class TestGetLabels:
             side_effects.append(json.load(f))
         with open(TEST_DATA_DIR / "labels_2.json", "r") as f:
             side_effects.append(json.load(f))
-        # this is the "no more data" response for getLabels()
+        # this is the "no more data" response for get_labels()
         with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
             side_effects.append(json.load(f))
 
@@ -291,7 +291,7 @@ class TestGetLabelsDataframe:
             side_effects.append(json.load(f))
         with open(TEST_DATA_DIR / "labels_2.json", "r") as f:
             side_effects.append(json.load(f))
-        # this is the "no more data" response for getLabels()
+        # this is the "no more data" response for get_labels()
         with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
             side_effects.append(json.load(f))
 
@@ -315,8 +315,15 @@ class TestGetViewedTimesDataframe:
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
+        side_effects = []
+
         with open(TEST_DATA_DIR / "view_groups.json", "r") as f:
-            gql_client.return_value.execute.return_value = json.load(f)
+            side_effects.append(json.load(f))
+        # this is the "no more data" response for get_viewed_times_dataframe()
+        with open(TEST_DATA_DIR / "view_groups_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
 
         # need to set parse_dates and float_precision='round_trip' to make the comparison work
         expected_result = pd.read_csv(TEST_DATA_DIR / "views.csv", index_col=0,

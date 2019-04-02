@@ -18,13 +18,7 @@ def download_channel_data(data_q, download_function):
     meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
     try:
         raw_data = download_function(meta_data['dataChunks.url'])
-
-        # requests.get will have the actual data in the content attribute. if not present, an
-        # alternative download function has been used which return the actual data at the top level.
-        if hasattr(raw_data, 'content'):
-            data = raw_data.content
-        else:
-            data = raw_data
+        data = raw_data.content
 
         try:
             if meta_data['channelGroups.compression'] == 'gzip':

@@ -219,7 +219,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return [study['id'] for study in studies]
 
     def get_studies(self, limit=50, search_term='', party_id=''):
-        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term, party_id)
+        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term,
+                                                                                     party_id)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
     def get_studies_dataframe(self, limit=50, search_term='', party_id=''):
@@ -334,7 +335,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 view['user'] = response.at[i, 'user.fullName']
                 if not view.empty:
                     non_empty_views = True
-                views.append(view)
+                    views.append(view)
             if not non_empty_views:
                 break
             offset += limit

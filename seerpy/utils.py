@@ -32,6 +32,7 @@ def download_channel_data(data_q, download_function):
         except OSError:
             pass
 
+        print('data', data)
         data_type = meta_data['channelGroups.sampleEncoding']
         data = np.frombuffer(data, dtype=np.dtype(data_type))
         data = data.astype(np.float32)

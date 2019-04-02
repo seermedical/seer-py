@@ -19,13 +19,18 @@ def download_channel_data(data_q, download_function):
     try:
         raw_data = download_function(meta_data['dataChunks.url'])
 
+        # requests.get will have the actual data in the content attribute. if not present, an
+        # alternative download function has been used which return the actual data at the top level.
+        if hasattr(raw_data, 'content'):
+            data = raw_data.content
+        else:
+            data = raw_data
+
         try:
             if meta_data['channelGroups.compression'] == 'gzip':
-                data = gzip.decompress(raw_data.content)
-            else:
-                data = raw_data.content
+                data = gzip.decompress(data)
         except OSError:
-            data = raw_data.content
+            pass
 
         data_type = meta_data['channelGroups.sampleEncoding']
         data = np.frombuffer(data, dtype=np.dtype(data_type))
@@ -81,7 +86,7 @@ def download_channel_data(data_q, download_function):
         print(meta_data)
         try:
             print(raw_data.headers)
-        except ex:  # pylint: disable=broad-except
+        except Exception as ex:  # pylint: disable=broad-except
             pass
         raise
 
@@ -142,7 +147,7 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
 
     Example
     -------
-    data = get_channel_data(all_data. segment_urls)
+    data = get_channel_data(all_data, segment_urls)
 
     """
     if threads is None:

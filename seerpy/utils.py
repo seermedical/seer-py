@@ -157,13 +157,7 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
 
     for segment_id in segment_ids:
         metadata = all_data[all_data['segments.id'].values == segment_id]
-
-        num_channels = len(metadata['channels.id'].drop_duplicates())
-        channel_names = metadata['channels.name'].drop_duplicates().tolist()
-        actual_channel_names = channel_names
-        if len(channel_names) != num_channels:
-            actual_channel_names = ['Channel %s' % (i) for i in range(0, num_channels)]
-
+        actual_channel_names = get_channel_names_or_ids(metadata)
         metadata = metadata.drop_duplicates('segments.id')
 
         study_id = metadata['id'].iloc[0]
@@ -206,6 +200,32 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
         data = None
 
     return data
+
+
+def get_channel_names_or_ids(metadata):
+    """Get a list of unique channel names, or ids where name is null or duplicated.
+
+    Parameters
+    ----------
+    metadata : pandas DataFrame
+            a dataframe containing a 'channels.name' and 'channels.id' column
+
+    Returns
+    -------
+    actual_channel_names : list
+            a list of unique channels names or ids.
+    """
+    actual_channel_names = []
+    unique_ids = metadata.drop_duplicates(subset='channels.id')
+    name_value_counts = unique_ids['channels.name'].value_counts()
+    for index in range(len(unique_ids.index)):
+        row = unique_ids.iloc[index]
+        channel_name = row['channels.name']
+        if not channel_name or name_value_counts[channel_name] > 1:
+            actual_channel_names.append(row['channels.id'])
+        else:
+            actual_channel_names.append(channel_name)
+    return actual_channel_names
 
 
 # pylint:disable=too-many-locals

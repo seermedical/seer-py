@@ -229,7 +229,7 @@ def get_channel_names_or_ids(metadata):
 
 
 # pylint:disable=too-many-locals
-def plot_eeg(x, y=None, pred=None, squeeze=8.0, scaling_factor=None):
+def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
     if not isinstance(x, np.ndarray):
         x = np.asarray(x)
 
@@ -241,7 +241,7 @@ def plot_eeg(x, y=None, pred=None, squeeze=8.0, scaling_factor=None):
     has_pred = 1 if pred is not None else 0
     grid_spec = gridspec.GridSpec(2, 1, height_ratios=[channels, 1])
     ticks = np.arange(x.shape[0]).astype(np.float32)
-    fig = plt.figure(figsize=(14, (channels + has_pred) * 0.4))
+    fig = plt.figure(figsize=(14, (channels + has_pred) * 2))
     fig.tight_layout()
     ticklocs = []
     ax2 = fig.add_subplot(grid_spec[0])
@@ -270,8 +270,7 @@ def plot_eeg(x, y=None, pred=None, squeeze=8.0, scaling_factor=None):
                 y_ticks[y[:, i].reshape(-1) == 0] = np.nan
                 ax2.fill_between(y_ticks, -1000, 1000, alpha=0.1)
         else:
-            if y != 1:
-                ticks[:] = np.nan
+            ticks[y == 0] = np.nan
             ax2.fill_between(ticks, -1000, 1000, alpha=0.1)
 
     if pred is not None:

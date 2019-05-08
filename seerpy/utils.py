@@ -29,9 +29,6 @@ def download_channel_data(data_q, download_function):
         data_type = meta_data['channelGroups.sampleEncoding']
         data = np.frombuffer(data, dtype=np.dtype(data_type))
         data = data.astype(np.float32)
-        print('download_channel_data data.shape', data.shape)
-        print('download_channel_data data', data)
-        print('download_channel_data channel_names', channel_names)
         data = data.reshape(-1, len(channel_names),
                             int(meta_data['channelGroups.samplesPerRecord']))
         data = np.transpose(data, (0, 2, 1))

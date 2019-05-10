@@ -1,0 +1,70 @@
+{
+    "viewGroups": [
+        {
+            "user": {
+                "fullName": "user name 1"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 2"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 3"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 4"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 5"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 6"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 7"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 8"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 9"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 10"
+            },
+            "views": []
+        },
+        {
+            "user": {
+                "fullName": "user name 11"
+            },
+            "views": []
+        }
+    ]
+}

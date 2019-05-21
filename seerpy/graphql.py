@@ -143,7 +143,7 @@ def get_segment_urls_query_string(segment_ids):
 def get_studies_by_search_term_paged_query_string(search_term, party_id):
     return f"""
         query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}", 
+            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}",
             partyId: "{party_id}") {{{{
                 id
                 name
@@ -233,7 +233,7 @@ def get_add_label_group_mutation_string(study_id, name, description, label_type)
     if label_type is None:
         label_type_string = ''
     else:
-        label_type_string = ', labelType: "' + label_type + '"'
+        label_type_string = ', labelType: ' + label_type
 
     return """
         mutation {

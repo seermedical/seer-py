@@ -68,6 +68,7 @@ def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many
                         startTime
                         duration
                         timezone
+                        confidence
                         createdBy {
                             fullName
                         }

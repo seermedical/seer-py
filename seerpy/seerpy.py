@@ -369,6 +369,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return patients
         return json_normalize(patients)
 
+    def get_documents_for_studies(self, study_ids, limit=50):
+        if isinstance(study_ids, str):
+            study_ids = [study_ids]
+        documents_query_string = graphql.get_documents_for_study_ids_paged_query_string(study_ids)
+        return self.get_paginated_response(documents_query_string, 'studies', limit)
+
+    def get_documents_for_studies_dataframe(self, study_ids, limit=50):
+        documents = []
+        for study in self.get_documents_for_studies(study_ids, limit):
+            for document in study['documents']:
+                document['document.id'] = document.pop('id')
+                document['document.name'] = document.pop('name')
+                document['id'] = study['id']
+                document['name'] = study['name']
+                documents.append(document)
+        return pd.DataFrame(documents)
+
     def get_diary_labels(self, patient_id):
         query_string = graphql.get_diary_labels_query_string(patient_id)
         response = self.execute_query(query_string)['patient']['diary']['labelGroups']

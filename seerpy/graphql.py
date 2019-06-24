@@ -334,3 +334,22 @@ def get_diary_labels_query_string(patient_id):
                 }
             }
         }""" % patient_id
+
+
+def get_documents_for_study_ids_paged_query_string(study_ids):
+    study_ids_string = get_json_list(study_ids)
+
+    return f"""
+        query {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, studyIds: {study_ids_string}) {{{{
+                id
+                name
+                documents {{{{
+                    id
+                    name
+                    uploaded
+                    fileSize
+                    downloadFileUrl
+                }}}}
+            }}}}
+        }}}}"""

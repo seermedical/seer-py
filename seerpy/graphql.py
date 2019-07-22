@@ -141,11 +141,10 @@ def get_segment_urls_query_string(segment_ids):
         }""" % segment_ids_string
 
 
-def get_studies_by_search_term_paged_query_string(search_term, party_id):
+def get_studies_by_search_term_paged_query_string(search_term):
     return f"""
         query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}",
-            partyId: "{party_id}") {{{{
+            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}") {{{{
                 id
                 name
                 patient {{{{
@@ -284,10 +283,10 @@ def get_organisations_query_string():
         }"""
 
 
-def get_patients_query_string(party_id=""):
+def get_patients_query_string():
     return """
         query {
-            patients (partyId: "%s") {
+            patients {
                 id
                 user {
                     id
@@ -296,7 +295,7 @@ def get_patients_query_string(party_id=""):
                     email
                 }
             }
-        }""" % party_id
+        }"""
 
 
 def get_diary_labels_query_string(patient_id):

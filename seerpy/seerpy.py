@@ -107,7 +107,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         child_list = []
         for i in range(len(parent)):
             parent_id = parent[parent_name+'id'][i]
-            child = json_normalize(parent[parent_name+child_name][i])
+            child = json_normalize(parent[parent_name+child_name][i]).sort_index(axis=1)
             child.columns = [child_name+'.' + str(col) for col in child.columns]
             child[parent_name+'id'] = parent_id
             child_list.append(child)
@@ -218,7 +218,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_tag_ids_dataframe(self):
         tag_ids = self.get_tag_ids()
-        tag_ids = json_normalize(tag_ids)
+        tag_ids = json_normalize(tag_ids).sort_index(axis=1)
         return tag_ids
 
     def get_study_ids(self, limit=50, search_term=''):
@@ -231,7 +231,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_studies_dataframe(self, limit=50, search_term='', party_id=None):
         studies = self.get_studies(limit, search_term, party_id)
-        studies_dataframe = json_normalize(studies)
+        studies_dataframe = json_normalize(studies).sort_index(axis=1)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
     def get_study_ids_from_names_dataframe(self, study_names, party_id=None):
@@ -298,7 +298,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
             return label_results
-        label_group = json_normalize(label_results)
+        label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
@@ -334,10 +334,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         while True:
             query_string = graphql.get_viewed_times_query_string(study_id, limit, offset)
             response = self.execute_query(query_string)
-            response = json_normalize(response['viewGroups'])
+            response = json_normalize(response['viewGroups']).sort_index(axis=1)
             non_empty_views = False
             for i in range(len(response)):
-                view = json_normalize(response.at[i, 'views'])
+                view = json_normalize(response.at[i, 'views']).sort_index(axis=1)
                 view['user'] = response.at[i, 'user.fullName']
                 if not view.empty:
                     non_empty_views = True
@@ -373,7 +373,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patients = self.get_patients(party_id)
         if patients is None:
             return patients
-        return json_normalize(patients)
+        return json_normalize(patients).sort_index(axis=1)
 
     def get_documents_for_studies(self, study_ids, limit=50):
         if isinstance(study_ids, str):
@@ -402,7 +402,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if label_results is None:
             return label_results
 
-        label_groups = json_normalize(label_results)
+        label_groups = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_groups, '', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
@@ -472,7 +472,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_all_study_metadata_dataframe_by_ids(self, study_ids=None):
         metadata = self.get_all_study_metadata_by_ids(study_ids)
-        all_data = json_normalize(metadata['studies'])
+        all_data = json_normalize(metadata['studies']).sort_index(axis=1)
         channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
         channels = self.pandas_flatten(channel_groups, 'channelGroups.', 'channels')
         segments = self.pandas_flatten(channel_groups, 'channelGroups.', 'segments')

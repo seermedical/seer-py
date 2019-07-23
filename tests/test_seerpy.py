@@ -63,7 +63,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
         result = SeerConnect().get_all_study_metadata_dataframe_by_ids()
 
         # check result
-        assert result.equals(expected_result)
+        pd.testing.assert_frame_equal(result, expected_result)
 
     def test_four_studies(self, unused_seer_connect_init, get_all_metadata):
         # setup
@@ -81,7 +81,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
         result = SeerConnect().get_all_study_metadata_dataframe_by_ids()
 
         # check result
-        assert result.equals(expected_result)
+        pd.testing.assert_frame_equal(result, expected_result)
 
 
 @mock.patch('time.sleep', return_value=None)
@@ -186,7 +186,7 @@ class TestGetSegmentUrls:
         result = SeerConnect().get_segment_urls(["segment-1-id", "segment-2-id"])
 
         # check result
-        assert result.equals(expected_result)
+        pd.testing.assert_frame_equal(result, expected_result)
 
     def test_multiple_batches(self, seer_auth, gql_client, unused_time_sleep):
         # setup
@@ -205,7 +205,7 @@ class TestGetSegmentUrls:
                                                  "segment-4-id"], 2)
 
         # check result
-        assert result.equals(expected_result)
+        pd.testing.assert_frame_equal(result, expected_result)
 
     def test_none_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
@@ -217,7 +217,7 @@ class TestGetSegmentUrls:
         result = SeerConnect().get_segment_urls(None)
 
         # check result
-        assert result.equals(expected_result)
+        pd.testing.assert_frame_equal(result, expected_result)
 
     def test_empty_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
@@ -303,7 +303,7 @@ class TestGetLabelsDataframe:
         result = SeerConnect().get_labels_dataframe("study-1-id", "label-group-1-id")
 
         # check result
-        assert result.equals(expected_result)
+        pd.testing.assert_frame_equal(result, expected_result)
 
 
 @mock.patch('time.sleep', return_value=None)
@@ -334,4 +334,4 @@ class TestGetViewedTimesDataframe:
         result = SeerConnect().get_viewed_times_dataframe("study-1-id")
 
         # check result
-        assert result.equals(expected_result)
+        pd.testing.assert_frame_equal(result, expected_result)

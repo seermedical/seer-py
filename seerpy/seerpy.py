@@ -44,24 +44,30 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.seer_auth = SeerAuth(self.api_url, email, password)
         cookie = self.seer_auth.cookie
         header = {'Cookie': list(cookie.keys())[0] + '=' + cookie['seer.sid']}
-        self.graphql_client = GQLClient(
-            transport=RequestsHTTPTransport(
-                url=self.api_url + '/api/graphql',
-                headers=header,
-                use_json=True,
-                timeout=30
+
+        def graphql_client(party_id=None):
+            url_suffix = '?partyId=' + party_id if party_id else ''
+            url = self.api_url + '/api/graphql' + url_suffix
+            return GQLClient(
+                transport=RequestsHTTPTransport(
+                    url=url,
+                    headers=header,
+                    use_json=True,
+                    timeout=30
+                )
             )
-        )
+
+        self.graphql_client = graphql_client
         self.last_query_time = time.time()
 
-    def execute_query(self, query_string, invocations=0):
+    def execute_query(self, query_string, party_id=None, invocations=0):
         resolvable_api_errors = ['503 Server Error', '502 Server Error', 'Read timed out.',
                                  'NOT_AUTHENTICATED']
 
         try:
             time.sleep(max(0, ((self.api_limit_expire / self.api_limit)
                                - (time.time() - self.last_query_time))))
-            response = self.graphql_client.execute(gql(query_string))
+            response = self.graphql_client(party_id).execute(gql(query_string))
             self.last_query_time = time.time()
             return response
         except Exception as ex:
@@ -79,16 +85,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                        0)))
                 invocations += 1
                 self.login()
-                return self.execute_query(query_string, invocations=invocations)
+                return self.execute_query(query_string, party_id, invocations=invocations)
 
             raise
 
-    def get_paginated_response(self, query_string, object_name, limit=250):
+    def get_paginated_response(self, query_string, object_name, limit=250, party_id=None):
         offset = 0
         objects = []
         while True:
             formatted_query_string = query_string.format(limit=limit, offset=offset)
-            response = self.execute_query(formatted_query_string)[object_name]
+            response = self.execute_query(formatted_query_string, party_id)[object_name]
             if not response:
                 break
             else:
@@ -101,7 +107,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         child_list = []
         for i in range(len(parent)):
             parent_id = parent[parent_name+'id'][i]
-            child = json_normalize(parent[parent_name+child_name][i])
+            child = json_normalize(parent[parent_name+child_name][i]).sort_index(axis=1)
             child.columns = [child_name+'.' + str(col) for col in child.columns]
             child[parent_name+'id'] = parent_id
             child_list.append(child)
@@ -113,7 +119,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             child = pd.DataFrame(columns=columns)
         return child
 
-    def add_label_group(self, study_id, name, description, label_type=None):
+    def add_label_group(self, study_id, name, description, label_type=None, party_id=None):
         """Add Label Group to study
 
         Parameters
@@ -124,8 +130,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 name of label
         description : string
                 description of label
-        label_type : string
+        label_type (Optional) : string
                 Seer label type ID
+        party_id (Optional) : string, the party id of the context for the query (e.g. organisation)
 
         Returns
         -------
@@ -142,7 +149,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         query_string = graphql.get_add_label_group_mutation_string(study_id, name, description,
                                                                    label_type)
-        response = self.execute_query(query_string)
+        response = self.execute_query(query_string, party_id)
         return response['addLabelGroupToStudy']['id']
 
     def del_label_group(self, group_id):
@@ -211,31 +218,30 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_tag_ids_dataframe(self):
         tag_ids = self.get_tag_ids()
-        tag_ids = json_normalize(tag_ids)
+        tag_ids = json_normalize(tag_ids).sort_index(axis=1)
         return tag_ids
 
     def get_study_ids(self, limit=50, search_term=''):
         studies = self.get_studies(limit, search_term)
         return [study['id'] for study in studies]
 
-    def get_studies(self, limit=50, search_term='', party_id=''):
-        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term,
-                                                                                     party_id)
-        return self.get_paginated_response(studies_query_string, 'studies', limit)
+    def get_studies(self, limit=50, search_term='', party_id=None):
+        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
+        return self.get_paginated_response(studies_query_string, 'studies', limit, party_id)
 
-    def get_studies_dataframe(self, limit=50, search_term='', party_id=''):
+    def get_studies_dataframe(self, limit=50, search_term='', party_id=None):
         studies = self.get_studies(limit, search_term, party_id)
-        studies_dataframe = json_normalize(studies)
+        studies_dataframe = json_normalize(studies).sort_index(axis=1)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
-    def get_study_ids_from_names_dataframe(self, study_names):
+    def get_study_ids_from_names_dataframe(self, study_names, party_id=None):
         if isinstance(study_names, str):
             study_names = [study_names]
-        studies = self.get_studies_dataframe()
+        studies = self.get_studies_dataframe(party_id=party_id)
         return studies[studies['name'].isin(study_names)][['name', 'id']].reset_index(drop=True)
 
-    def get_study_ids_from_names(self, study_names):
-        return self.get_study_ids_from_names_dataframe(study_names)['id'].tolist()
+    def get_study_ids_from_names(self, study_names, party_id=None):
+        return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()
 
     def get_studies_by_id(self, study_ids, limit=50):
         if isinstance(study_ids, str):
@@ -292,7 +298,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
             return label_results
-        label_group = json_normalize(label_results)
+        label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
@@ -328,10 +334,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         while True:
             query_string = graphql.get_viewed_times_query_string(study_id, limit, offset)
             response = self.execute_query(query_string)
-            response = json_normalize(response['viewGroups'])
+            response = json_normalize(response['viewGroups']).sort_index(axis=1)
             non_empty_views = False
             for i in range(len(response)):
-                view = json_normalize(response.at[i, 'views'])
+                view = json_normalize(response.at[i, 'views']).sort_index(axis=1)
                 view['user'] = response.at[i, 'user.fullName']
                 if not view.empty:
                     non_empty_views = True
@@ -358,16 +364,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return orgs
         return pd.DataFrame(orgs)
 
-    def get_patients(self, party_id=""):
-        query_string = graphql.get_patients_query_string(party_id)
-        response = self.execute_query(query_string)['patients']
+    def get_patients(self, party_id=None):
+        query_string = graphql.get_patients_query_string()
+        response = self.execute_query(query_string, party_id)['patients']
         return response
 
-    def get_patients_dataframe(self, party_id=""):
+    def get_patients_dataframe(self, party_id=None):
         patients = self.get_patients(party_id)
         if patients is None:
             return patients
-        return json_normalize(patients)
+        return json_normalize(patients).sort_index(axis=1)
 
     def get_documents_for_studies(self, study_ids, limit=50):
         if isinstance(study_ids, str):
@@ -396,7 +402,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if label_results is None:
             return label_results
 
-        label_groups = json_normalize(label_results)
+        label_groups = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_groups, '', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
@@ -408,13 +414,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups['id'] = patient_id
         return label_groups
 
-    def get_all_study_metadata_by_names(self, study_names=None):
+    def get_all_study_metadata_by_names(self, study_names=None, party_id=None):
         """Get all the metadata available about named studies
 
         Parameters
         ----------
         study_names (Optional) : a list of study names. If not provided, data will be returned for
         all studies
+        party_id (Optional) : string, the party id of the context for the query (e.g. organisation)
 
         Returns
         -------
@@ -427,7 +434,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         study_ids = None
         if study_names:
-            study_ids = self.get_study_ids_from_names(study_names)
+            study_ids = self.get_study_ids_from_names(study_names, party_id)
         return self.get_all_study_metadata_by_ids(study_ids)
 
     def get_all_study_metadata_by_ids(self, study_ids=None):
@@ -465,7 +472,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_all_study_metadata_dataframe_by_ids(self, study_ids=None):
         metadata = self.get_all_study_metadata_by_ids(study_ids)
-        all_data = json_normalize(metadata['studies'])
+        all_data = json_normalize(metadata['studies']).sort_index(axis=1)
         channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
         channels = self.pandas_flatten(channel_groups, 'channelGroups.', 'channels')
         segments = self.pandas_flatten(channel_groups, 'channelGroups.', 'segments')

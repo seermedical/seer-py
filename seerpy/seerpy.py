@@ -1,5 +1,6 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 
+import math
 import time
 
 from gql import gql, Client as GQLClient
@@ -175,6 +176,45 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         query_string = graphql.get_remove_label_group_mutation_string(group_id)
         return self.execute_query(query_string)
+
+    def add_labels_batched(self, label_group_id, labels, batch_size=500):
+        """Add labels to label group in batches
+
+        Parameters
+        ----------
+        label_group_id : string
+                Seer label group ID
+
+        labels: list of:
+                note: string
+                        label note
+                startTime : float
+                        label start time in epoch time
+                duration : float
+                        duration of event in milliseconds
+                timezone : float
+                        local UTC timezone (eg. Melbourne = 11.0)
+                tagIds: [String!]
+                        list of tag ids
+                confidence: float
+                        Confidence given to label between 0 and 1
+
+        batch_size: int
+                number of labels to add in a batch. Optional, defaults to 500.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+
+        """
+        number_of_batches = math.ceil(len(labels) / batch_size)
+        for i in range(number_of_batches):
+            start = i * batch_size
+            end = start + batch_size
+            self.add_labels(label_group_id, labels[start:end])
 
     def add_labels(self, group_id, labels):
         """Add labels to label group

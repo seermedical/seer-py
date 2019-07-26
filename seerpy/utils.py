@@ -145,7 +145,7 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
 
     """
     if threads is None:
-        if os.name != 'nt':
+        if os.name == 'nt':
             threads = 1
         else:
             threads = 5
@@ -191,7 +191,9 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
             data_list = [download_function(data_q_item) for data_q_item in data_q]
 
     if data_list:
-        data = pd.concat(data_list)
+        # sort=False to silence deprecation warning. This comes into play when we are processing
+        # segments across multiple channel groups which have different channels.
+        data = pd.concat(data_list, sort=False)
         data = data.loc[(data['time'] >= from_time) & (data['time'] < to_time)]
         data = data.sort_values(['id', 'channelGroups.id', 'time'], axis=0,
                                 ascending=True, na_position='last')

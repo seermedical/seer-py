@@ -103,6 +103,7 @@ def get_label_groups_for_study_ids_paged_query_string(study_ids):
                 labelGroups {{{{
                     id
                     name
+                    labelType
                 }}}}
             }}}}
         }}}}"""

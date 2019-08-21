@@ -363,11 +363,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for label_group in study['labelGroups']:
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')
+                label_group['labelGroup.labelType'] = label_group.pop('labelType')
                 label_group['id'] = study['id']
                 label_group['name'] = study['name']
                 label_groups.append(label_group)
         return pd.DataFrame(label_groups)
-
 
     def get_viewed_times_dataframe(self, study_id, limit=250, offset=0):
         views = []

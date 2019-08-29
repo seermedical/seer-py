@@ -353,3 +353,30 @@ def get_documents_for_study_ids_paged_query_string(study_ids):
                 }}}}
             }}}}
         }}}}"""
+
+
+def get_add_document_mutation_string(study_id, document):
+    return """
+        mutation {
+            createStudyDocuments(
+                studyId: "%s",
+                documents: [{name: "%s"}]
+            ) {
+                id
+                name
+                uploadFileUrl
+            }
+        }""" % (study_id, document)
+
+def get_confirm_document_mutation_string(study_id, document_id):
+    return """
+        mutation {
+            confirmStudyDocuments(
+                studyId: "%s",
+                documentIds: ["%s"]
+            ) {
+                id
+                name
+                downloadFileUrl
+            }
+        }""" % (study_id, document_id)

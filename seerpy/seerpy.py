@@ -261,8 +261,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         tag_ids = json_normalize(tag_ids).sort_index(axis=1)
         return tag_ids
 
-    def get_study_ids(self, limit=50, search_term=''):
-        studies = self.get_studies(limit, search_term)
+    def get_study_ids(self, limit=50, search_term='', party_id=None):
+        studies = self.get_studies(limit, search_term, party_id)
         return [study['id'] for study in studies]
 
     def get_studies(self, limit=50, search_term='', party_id=None):
@@ -364,6 +364,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')
                 label_group['labelGroup.labelType'] = label_group.pop('labelType')
+                label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
                 label_group['id'] = study['id']
                 label_group['name'] = study['name']
                 label_groups.append(label_group)

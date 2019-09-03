@@ -36,6 +36,7 @@ def get_study_with_data_query_string(study_id):
                         id
                         startTime
                         duration
+                        timezone
                     }
                     channels {
                         id
@@ -62,6 +63,7 @@ def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many
                     name
                     labelType
                     description
+                    numberOfLabels
                     labels (limit: %.0f, offset: %.0f, fromTime: %.0f, toTime: %.0f) {
                         id
                         note
@@ -104,6 +106,7 @@ def get_label_groups_for_study_ids_paged_query_string(study_ids):
                     id
                     name
                     labelType
+                    numberOfLabels
                 }}}}
             }}}}
         }}}}"""

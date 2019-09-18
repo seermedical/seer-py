@@ -367,4 +367,4 @@ class TestGetDocumentsForStudiesDataframe:
         result = SeerConnect().get_documents_for_studies_dataframe("study-1-id")
 
         # check result
-        pd.testing.assert_frame_equal(result, expected_result)
+        pd.testing.assert_frame_equal(result, expected_result, check_like=True)

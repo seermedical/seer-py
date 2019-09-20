@@ -250,6 +250,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             labels = labels.to_dict('records')
         query_string = graphql.get_add_labels_mutation_string(group_id, labels)
         return self.execute_query(query_string)
+    
+    def add_document(self, study_id, document_name, document_path):
+        query_string = graphql.get_add_document_mutation_string(study_id, document_name)
+        response_add = self.execute_query(query_string)['createStudyDocuments'][0]
+        with open(document_path, 'rb') as f:
+            response_put = requests.put(response_add['uploadFileUrl'], data=f)
+        if response_put.status_code == 200:
+            query_string = graphql.get_confirm_document_mutation_string(study_id, 
+                                                                    response_add['id'])
+            response_confirm = self.execute_query(query_string)
+            return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
+        else:
+            raise RuntimeError('Error uploading document: status code ' + 
+                               str(response_put.status_code))
 
     def get_tag_ids(self):
         query_string = graphql.get_tag_id_query_string()

@@ -71,7 +71,7 @@ class SeerAuth:
         return response.status_code
 
     def login_details(self):
-        home = os.environ['HOME'] if 'HOME' in os.environ else '~'
+        home = os.path.expanduser('~')
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
             with open(pswdfile, 'r') as f:
@@ -84,7 +84,7 @@ class SeerAuth:
 
     def write_cookie(self):
         try:
-            home = os.environ['HOME'] if 'HOME' in os.environ else '~'
+            home = os.path.expanduser('~')
             cookie_file = home + '/.seerpy/cookie'
             if not os.path.isdir(home + '/.seerpy'):
                 os.mkdir(home + '/.seerpy')
@@ -94,14 +94,14 @@ class SeerAuth:
             pass
 
     def read_cookie(self):
-        home = os.environ['HOME'] if 'HOME' in os.environ else '~'
+        home = os.path.expanduser('~')
         cookie_file = home + '/.seerpy/cookie'
         if os.path.isfile(cookie_file):
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
 
     def destroy_cookie(self):
-        home = os.environ['HOME'] if 'HOME' in os.environ else '~'
+        home = os.path.expanduser('~')
         cookie_file = home + '/.seerpy/cookie'
         if os.path.isfile(cookie_file):
             os.remove(cookie_file)

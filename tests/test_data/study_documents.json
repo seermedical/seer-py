@@ -1,0 +1,24 @@
+{
+  "studies": [
+    {
+      "documents": [
+        {
+          "downloadFileUrl": "https://doc_1_url",
+          "fileSize": 906463,
+          "id": "doc_1_id",
+          "name": "study_1 Report",
+          "uploaded": 1557811713589
+        },
+        {
+          "downloadFileUrl": "https://doc_2_url",
+          "fileSize": 30947,
+          "id": "doc_2_id",
+          "name": "Referral_Info_study_1.pdf",
+          "uploaded": 1567398020178
+        }
+      ],
+      "id": "study-1-id",
+      "name": "study_1"
+    }
+  ]
+}

@@ -335,3 +335,36 @@ class TestGetViewedTimesDataframe:
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
+
+
+@mock.patch('time.sleep', return_value=None)
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetDocumentsForStudiesDataframe:
+
+    def test_success(self, seer_auth, gql_client, unused_time_sleep):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "study_documents.json", "r") as f:
+            side_effects.append(json.load(f))
+        # # this is the "no more data" response for get_documents_for_studies_dataframe()
+        with open(TEST_DATA_DIR / "study_documents_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+        side_effects.append({'studies': []}) # this is the "no more data" response for get_studies()
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        # need to set parse_dates and float_precision='round_trip' to make the comparison work
+        expected_result = pd.read_csv(TEST_DATA_DIR / "study_documents.csv", index_col=0,
+                                      parse_dates=['uploaded'],
+                                      float_precision='round_trip')
+        expected_result['uploaded'] = expected_result['uploaded'].astype(int)
+
+        # run test
+        result = SeerConnect().get_documents_for_studies_dataframe("study-1-id")
+
+        # check result
+        pd.testing.assert_frame_equal(result, expected_result, check_like=True)

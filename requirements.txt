@@ -3,6 +3,5 @@ requests
 matplotlib
 numpy
 pandas
-H5py
 scipy
 -e .

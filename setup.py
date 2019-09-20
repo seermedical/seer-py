@@ -23,7 +23,8 @@ setup(
         'requests',
         'matplotlib',
         'numpy',
-        'pandas'
+        'pandas',
+        'scipy'
     ],
     tests_require=[
         'pytest'

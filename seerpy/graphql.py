@@ -415,6 +415,7 @@ def get_bookings_query_string(organisation_id, start_time, end_time):
                                 fullName
                             }
                             studies {
+                                id
                                 name
                             }
                         }

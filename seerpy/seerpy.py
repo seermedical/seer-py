@@ -594,4 +594,4 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         bookings = bookings.drop('equipmentItems', errors='ignore', axis='columns')
         bookings = bookings.merge(studies, how='left', on='patient.id')
         bookings = bookings.merge(equipment, how='left', on='id')
-        return bookings
+        return bookings.drop_duplicates().reset_index(drop=True)

@@ -419,6 +419,10 @@ def get_bookings_query_string(organisation_id, start_time, end_time):
                                 name
                             }
                         }
+                        location {
+                                name
+                                suburb
+                                }
                     }
                 }
             }""" % (organisation_id, start_time, end_time)

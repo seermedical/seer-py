@@ -291,8 +291,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_study_ids_from_names_dataframe(self, study_names, party_id=None):
         if isinstance(study_names, str):
             study_names = [study_names]
-        studies = self.get_studies_dataframe(party_id=party_id)
-        return studies[studies['name'].isin(study_names)][['name', 'id']].reset_index(drop=True)
+
+        studies = pd.concat([
+            self.get_studies_dataframe(search_term=study_name, party_id=party_id) \
+                for study_name in study_names
+        ], join='outer')
+
+        if studies.empty:
+            return studies
+
+        return studies[['name', 'id']].reset_index(drop=True)
 
     def get_study_ids_from_names(self, study_names, party_id=None):
         return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()

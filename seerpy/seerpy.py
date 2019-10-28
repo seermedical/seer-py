@@ -298,7 +298,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         ], join='outer')
 
         if studies.empty:
-            return studies
+            return studies.assign(id=None)
 
         return studies[['name', 'id']].reset_index(drop=True)
 

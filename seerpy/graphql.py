@@ -94,6 +94,25 @@ def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many
         }""" % (study_id, label_group_id, limit, offset, from_time, to_time)
 
 
+def get_labels_string_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
+                            from_time, to_time):
+    return """
+        query {
+            study (id: "%s") {
+                id
+                name
+                labelGroup (labelGroupId: "%s") {
+                    id
+                    name
+                    labelType
+                    description
+                    numberOfLabels
+                    labelString (fromTime: %.0f, toTime: %.0f)
+                }
+            }
+        }""" % (study_id, label_group_id, from_time, to_time)
+
+
 def get_label_groups_for_study_ids_paged_query_string(study_ids):
     study_ids_string = get_json_list(study_ids)
 

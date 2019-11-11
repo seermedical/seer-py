@@ -1,0 +1,5 @@
+[style]
+COLUMN_LIMIT=100
+DEDENT_CLOSING_BRACKETS=False
+based_on_style = pep8
+SPLIT_BEFORE_NAMED_ASSIGNS=False

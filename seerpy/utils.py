@@ -120,13 +120,9 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
 
 
 # pylint:disable=too-many-locals
-def get_channel_data(
-        all_data,
-        segment_urls,  # pylint:disable=too-many-arguments
-        download_function=requests.get,
-        threads=None,
-        from_time=0,
-        to_time=9e12):
+# pylint:disable=too-many-arguments
+def get_channel_data(all_data, segment_urls, download_function=requests.get, threads=None,
+                     from_time=0, to_time=9e12):
     """Download data chunks and stich them together in one dataframe
 
     Parameters

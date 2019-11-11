@@ -35,8 +35,7 @@ def download_channel_data(data_q, download_function):
         data = np.transpose(data, (0, 2, 1))
         data = data.reshape(-1, data.shape[2])
         if 'int' in data_type:
-            nan_mask = np.all(data == np.iinfo(np.dtype(data_type)).min,
-                              axis=1)
+            nan_mask = np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1)
             if nan_mask[-1]:
                 nan_mask_corrected = np.ones(nan_mask.shape, dtype=bool)
                 for i in range(len(nan_mask) - 1, -1, -1):
@@ -47,8 +46,7 @@ def download_channel_data(data_q, download_function):
                 data = data[nan_mask_corrected]
 
             # fill missing values with nans
-            data[np.all(data ==
-                        np.iinfo(np.dtype(data_type)).min, axis=1), :] = np.nan
+            data[np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1), :] = np.nan
         ## TODO: what happens for floats?
         chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
         chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
@@ -73,8 +71,7 @@ def download_channel_data(data_q, download_function):
         data['id'] = study_id
         data['channelGroups.id'] = channel_groups_id
         data['segments.id'] = segments_id
-        data = data[['time', 'id', 'channelGroups.id', 'segments.id'] +
-                    channel_names]
+        data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
         return data
     except Exception as ex:
         print(ex)
@@ -100,34 +97,26 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
         row = metadata.iloc[index]
 
         seg_base_urls = segment_urls.loc[segment_urls['segments.id'] ==
-                                         row['segments.id'],
-                                         'baseDataChunkUrl']
+                                         row['segments.id'], 'baseDataChunkUrl']
         if seg_base_urls.empty:
             continue
         seg_base_url = seg_base_urls.iloc[0]
 
         chunk_period = row['channelGroups.chunkPeriod']
-        num_chunks = int(
-            np.ceil(row['segments.duration'] / chunk_period / 1000.))
+        num_chunks = int(np.ceil(row['segments.duration'] / chunk_period / 1000.))
         start_time = row['segments.startTime']
 
         for i in range(num_chunks):
             chunk_start_time = chunk_period * 1000 * i + start_time
             next_chunk_start_time = chunk_period * 1000 * (i + 1) + start_time
-            if (chunk_start_time <= to_time
-                    and next_chunk_start_time >= from_time):
-                data_chunk_name = str(i).zfill(len(chunk_pattern) -
-                                               4) + chunk_pattern[-4:]
-                data_chunk_url = seg_base_url.replace(chunk_pattern,
-                                                      data_chunk_name)
-                data_chunk = [
-                    row['segments.id'], data_chunk_url, chunk_start_time
-                ]
+            if (chunk_start_time <= to_time and next_chunk_start_time >= from_time):
+                data_chunk_name = str(i).zfill(len(chunk_pattern) - 4) + chunk_pattern[-4:]
+                data_chunk_url = seg_base_url.replace(chunk_pattern, data_chunk_name)
+                data_chunk = [row['segments.id'], data_chunk_url, chunk_start_time]
                 data_chunks.append(data_chunk)
 
-    return pd.DataFrame.from_records(
-        data_chunks,
-        columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
+    return pd.DataFrame.from_records(data_chunks,
+                                     columns=['segments.id', 'dataChunks.url', 'dataChunks.time'])
 
 
 # pylint:disable=too-many-locals
@@ -192,21 +181,16 @@ def get_channel_data(
                                   suffixes=('', '_y'))
 
         metadata = metadata[[
-            'dataChunks.url', 'dataChunks.time',
-            'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
-            'channelGroups.samplesPerRecord', 'channelGroups.recordsPerChunk',
-            'channelGroups.compression', 'channelGroups.signalMin',
+            'dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding',
+            'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',
+            'channelGroups.recordsPerChunk', 'channelGroups.compression', 'channelGroups.signalMin',
             'channelGroups.signalMax', 'channelGroups.exponent'
         ]]
         metadata = metadata.drop_duplicates()
-        metadata = metadata.dropna(axis=0,
-                                   how='any',
-                                   subset=['dataChunks.url'])
+        metadata = metadata.dropna(axis=0, how='any', subset=['dataChunks.url'])
         for i in range(len(metadata.index)):
-            data_q.append([
-                metadata.iloc[i], study_id, channel_groups_id, segment_id,
-                actual_channel_names
-            ])
+            data_q.append(
+                [metadata.iloc[i], study_id, channel_groups_id, segment_id, actual_channel_names])
 
     download_function = functools.partial(download_channel_data,
                                           download_function=download_function)
@@ -217,9 +201,7 @@ def get_channel_data(
             pool.close()
             pool.join()
         else:
-            data_list = [
-                download_function(data_q_item) for data_q_item in data_q
-            ]
+            data_list = [download_function(data_q_item) for data_q_item in data_q]
 
     if data_list:
         # sort=False to silence deprecation warning. This comes into play when we are processing
@@ -295,10 +277,7 @@ def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
     offsets = np.zeros((channels, 2), dtype=float)
     offsets[:, 1] = ticklocs
 
-    lines = LineCollection(segs,
-                           offsets=offsets,
-                           transOffset=None,
-                           linewidths=(0.5))
+    lines = LineCollection(segs, offsets=offsets, transOffset=None, linewidths=(0.5))
     ax2.add_collection(lines)
 
     if y is not None:
@@ -324,10 +303,7 @@ def butter_bandstop(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
-    sos = butter(order, [low, high],
-                 analog=False,
-                 btype='bandstop',
-                 output='sos')
+    sos = butter(order, [low, high], analog=False, btype='bandstop', output='sos')
     return sos
 
 
@@ -341,10 +317,7 @@ def butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
-    sos = butter(order, [low, high],
-                 analog=False,
-                 btype='bandpass',
-                 output='sos')
+    sos = butter(order, [low, high], analog=False, btype='bandpass', output='sos')
     return sos
 
 

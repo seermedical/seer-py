@@ -260,8 +260,7 @@ def get_tag_id_query_string():
         }"""
 
 
-def get_add_label_group_mutation_string(study_id, name, description,
-                                        label_type):
+def get_add_label_group_mutation_string(study_id, name, description, label_type):
     if label_type is None:
         label_type_string = ''
     else:

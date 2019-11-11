@@ -9,7 +9,6 @@ from scipy.io import savemat  # pylint: disable=unused-import
 
 import seerpy
 
-
 ######################
 # Change this section for different studies / segment filters
 
@@ -27,7 +26,7 @@ import seerpy
 SEGMENT_MIN = 1
 SEGMENT_MAX = 5
 
-GMT_OFFSET = 11 # Melb time
+GMT_OFFSET = 11  # Melb time
 
 ## studies to download
 ## pick from ['Pat1Test', 'Pat1Train', 'Pat2Test', 'Pat2Train', 'Pat3Test', 'Pat3Train']
@@ -36,7 +35,7 @@ STUDIES = ['Pat1Test']
 
 ## include a path to save downloaded data segments to file
 # OUTPUT_PATH = 'D:/KAGGLE/data/ecosystem/test_download/' # replace with preferred path
-OUTPUT_PATH = './test_download/' # replace with preferred path
+OUTPUT_PATH = './test_download/'  # replace with preferred path
 
 
 def main():  # pylint:disable=too-many-locals
@@ -44,7 +43,7 @@ def main():  # pylint:disable=too-many-locals
     base_date_time = datetime(2010, 1, 1, 0, 0, tzinfo=timezone.utc) + timedelta(hours=-GMT_OFFSET)
     try:
         min_date_time = (base_date_time + timedelta(hours=SEGMENT_MIN)).timestamp() * 1000
-        max_date_time = (base_date_time + timedelta(hours=SEGMENT_MAX+1)).timestamp() * 1000
+        max_date_time = (base_date_time + timedelta(hours=SEGMENT_MAX + 1)).timestamp() * 1000
     except NameError:
         print('No segment filter provided (downloading all data)')
         min_date_time = None
@@ -59,7 +58,7 @@ def main():  # pylint:disable=too-many-locals
         if not os.path.exists(directory):
             try:
                 os.makedirs(directory)
-            except OSError as ex: # Guard against race condition
+            except OSError as ex:  # Guard against race condition
                 if ex.errno != errno.EEXIST:
                     raise
 
@@ -84,7 +83,7 @@ def main():  # pylint:disable=too-many-locals
 
         for start_time_ms in unique_start_times:
 
-            start_date_time = datetime.fromtimestamp(start_time_ms/1000, tz=timezone.utc)
+            start_date_time = datetime.fromtimestamp(start_time_ms / 1000, tz=timezone.utc)
             hour = (start_date_time - base_date_time).total_seconds() / 3600
             minute = start_date_time.minute
             if minute >= 30:
@@ -101,8 +100,8 @@ def main():  # pylint:disable=too-many-locals
 
             ## Using threads>1 may speed up your downloads, but may also cause issues on Windows.
             ## Use with caution.
-            data = client.get_channel_data(all_data[all_data['segments.startTime']
-                                                    == start_time_ms], threads=5)
+            data = client.get_channel_data(
+                all_data[all_data['segments.startTime'] == start_time_ms], threads=5)
 
             ######################
             # Change this section for saving data segments as different file formats

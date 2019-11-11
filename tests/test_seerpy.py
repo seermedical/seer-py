@@ -9,7 +9,6 @@ import pandas as pd
 
 from seerpy.seerpy import SeerConnect
 
-
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
 # pylint complains that the methods could be a function. this disables that warning.
 # pylint:disable=no-self-use
@@ -17,13 +16,11 @@ from seerpy.seerpy import SeerConnect
 # not really a problem for these test classes
 # pylint:disable=too-few-public-methods
 
-
 TEST_DATA_DIR = pathlib.Path(__file__).parent / "test_data"
 
 
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestSeerConnect:
-
     def test_success(self, seer_auth):
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
@@ -88,7 +85,6 @@ class TestGetAllStudyMetaDataDataframeByIds:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetAllStudyMetaDataByNames:
-
     def test_no_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -116,7 +112,7 @@ class TestGetAllStudyMetaDataByNames:
         result = SeerConnect().get_all_study_metadata_by_names()
 
         # check result
-        assert result == {'studies' : expected_results}
+        assert result == {'studies': expected_results}
 
     def test_existing_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
@@ -143,7 +139,7 @@ class TestGetAllStudyMetaDataByNames:
         result = SeerConnect().get_all_study_metadata_by_names("Study 1")
 
         # check result
-        assert result == {'studies' : expected_results}
+        assert result == {'studies': expected_results}
 
     def test_nonexistent_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
@@ -163,7 +159,7 @@ class TestGetAllStudyMetaDataByNames:
         result = SeerConnect().get_all_study_metadata_by_names("Study 12")
 
         # check result
-        assert result == {'studies' : []}
+        assert result == {'studies': []}
         # the only call will be in getStudies()
         assert gql_client.return_value.execute.call_count == 2
 
@@ -172,7 +168,6 @@ class TestGetAllStudyMetaDataByNames:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetSegmentUrls:
-
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -201,8 +196,8 @@ class TestGetSegmentUrls:
         expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_2.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_segment_urls(["segment-1-id", "segment-2-id", "segment-3-id",
-                                                 "segment-4-id"], 2)
+        result = SeerConnect().get_segment_urls(
+            ["segment-1-id", "segment-2-id", "segment-3-id", "segment-4-id"], 2)
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
@@ -249,7 +244,6 @@ class TestGetSegmentUrls:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabels:
-
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -280,7 +274,6 @@ class TestGetLabels:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabelsDataframe:
-
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -310,7 +303,6 @@ class TestGetLabelsDataframe:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetViewedTimesDataframe:
-
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -327,8 +319,8 @@ class TestGetViewedTimesDataframe:
 
         # need to set parse_dates and float_precision='round_trip' to make the comparison work
         expected_result = pd.read_csv(TEST_DATA_DIR / "views.csv", index_col=0,
-                                      parse_dates=['createdAt', 'updatedAt'],
-                                      float_precision='round_trip')
+                                      parse_dates=['createdAt',
+                                                   'updatedAt'], float_precision='round_trip')
 
         # run test
         result = SeerConnect().get_viewed_times_dataframe("study-1-id")
@@ -341,7 +333,6 @@ class TestGetViewedTimesDataframe:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetDocumentsForStudiesDataframe:
-
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -353,14 +344,14 @@ class TestGetDocumentsForStudiesDataframe:
         # # this is the "no more data" response for get_documents_for_studies_dataframe()
         with open(TEST_DATA_DIR / "study_documents_empty.json", "r") as f:
             side_effects.append(json.load(f))
-        side_effects.append({'studies': []}) # this is the "no more data" response for get_studies()
+        side_effects.append({'studies':
+                             []})  # this is the "no more data" response for get_studies()
 
         gql_client.return_value.execute.side_effect = side_effects
 
         # need to set parse_dates and float_precision='round_trip' to make the comparison work
         expected_result = pd.read_csv(TEST_DATA_DIR / "study_documents.csv", index_col=0,
-                                      parse_dates=['uploaded'],
-                                      float_precision='round_trip')
+                                      parse_dates=['uploaded'], float_precision='round_trip')
         expected_result['uploaded'] = expected_result['uploaded'].astype(int)
 
         # run test

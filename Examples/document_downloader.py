@@ -1,8 +1,5 @@
-
-
 import seerpy
 import requests
-
 
 client = seerpy.SeerConnect()
 
@@ -14,8 +11,8 @@ documents_metadata = client.get_documents_for_studies_dataframe(studies['id'].un
 for doc in range(len(documents_metadata)):
     url = documents_metadata.loc[doc, 'downloadFileUrl']
     study_id = documents_metadata.loc[doc, 'id']
-    
+
     with open(study_id + '.pdf', 'wb') as f:
         f.write(requests.get(url).content)
-    
-    break ## download just the first one in this example
+
+    break  ## download just the first one in this example

@@ -6,7 +6,6 @@ import pandas as pd
 
 from seerpy import utils
 
-
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
 # pylint complains that the methods could be a function. this disables that warning.
 # pylint:disable=no-self-use
@@ -14,12 +13,10 @@ from seerpy import utils
 # not really a problem for these test classes
 # pylint:disable=too-few-public-methods
 
-
 TEST_DATA_DIR = pathlib.Path(__file__).parent / "test_data"
 
 
 class TestCreateDataChunkUrls:
-
     def test_success(self):
         # setup
         meta_data = pd.read_csv(TEST_DATA_DIR / "study1_metadata_short_durations.csv", index_col=0)

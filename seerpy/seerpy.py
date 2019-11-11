@@ -322,14 +322,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
         return segment_urls
 
-    def get_labels(
-            self,
-            study_id,
-            label_group_id,
-            from_time=0,  # pylint:disable=too-many-arguments
-            to_time=9e12,
-            limit=200,
-            offset=0):
+    def get_labels(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200, offset=0):  # pylint:disable=too-many-arguments
         label_results = None
 
         while True:
@@ -349,14 +342,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-    def get_labels_dataframe(
-            self,
-            study_id,
-            label_group_id,  # pylint:disable=too-many-arguments
-            from_time=0,
-            to_time=9e12,
-            limit=200,
-            offset=0):
+    def get_labels_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200,
+                             offset=0):  # pylint:disable=too-many-arguments
 
         label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
@@ -379,15 +366,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)['study']
         return response
 
-    def get_labels_string_dataframe(
-            self,
-            study_id,
-            label_group_id,
-            from_time=0,  # pylint:disable=too-many-arguments
-            to_time=9e12):
-        label_results = self.get_labels_string(study_id,
-                                               label_group_id,
-                                               from_time=from_time,
+    def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12):  # pylint:disable=too-many-arguments
+        label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time,
                                                to_time=to_time)
         if label_results is None:
             return label_results
@@ -577,31 +557,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
         channel_groups = channel_groups.drop(['channelGroups.segments', 'channelGroups.channels'],
-                                             errors='ignore',
-                                             axis='columns')
+                                             errors='ignore', axis='columns')
         all_data = all_data.drop(['channelGroups', 'labelGroups'], errors='ignore', axis='columns')
 
-        channel_groups = channel_groups.merge(segments,
-                                              how='left',
-                                              on='channelGroups.id',
+        channel_groups = channel_groups.merge(segments, how='left', on='channelGroups.id',
                                               suffixes=('', '_y'))
-        channel_groups = channel_groups.merge(channels,
-                                              how='left',
-                                              on='channelGroups.id',
+        channel_groups = channel_groups.merge(channels, how='left', on='channelGroups.id',
                                               suffixes=('', '_y'))
         all_data = all_data.merge(channel_groups, how='left', on='id', suffixes=('', '_y'))
 
         return all_data
 
     # pylint:disable=too-many-locals
-    def get_channel_data(
-            self,
-            all_data,
-            segment_urls=None,  # pylint:disable=too-many-arguments
-            download_function=requests.get,
-            threads=None,
-            from_time=0,
-            to_time=9e12):
+    def get_channel_data(self, all_data, segment_urls=None, download_function=requests.get,
+                         threads=None, from_time=0, to_time=9e12):  # pylint:disable=too-many-arguments
         """Download data chunks and stich them together in one dataframe
 
         Parameters

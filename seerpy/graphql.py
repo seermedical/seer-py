@@ -51,13 +51,7 @@ def get_study_with_data_query_string(study_id):
         }""" % study_id
 
 
-def get_labels_query_string(
-        study_id,
-        label_group_id,  # pylint:disable=too-many-arguments
-        from_time,
-        to_time,
-        limit,
-        offset):
+def get_labels_query_string(study_id, label_group_id, from_time, to_time, limit, offset):  # pylint:disable=too-many-arguments
     return """
         query {
             study (id: "%s") {
@@ -99,11 +93,7 @@ def get_labels_query_string(
         }""" % (study_id, label_group_id, limit, offset, from_time, to_time)
 
 
-def get_labels_string_query_string(
-        study_id,
-        label_group_id,  # pylint:disable=too-many-arguments
-        from_time,
-        to_time):
+def get_labels_string_query_string(study_id, label_group_id, from_time, to_time):  # pylint:disable=too-many-arguments
     return """
         query {
             study (id: "%s") {

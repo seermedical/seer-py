@@ -170,15 +170,10 @@ def get_channel_data(
         study_id = metadata['id'].iloc[0]
         channel_groups_id = metadata['channelGroups.id'].iloc[0]
 
-        data_chunks = create_data_chunk_urls(metadata,
-                                             segment_urls,
-                                             from_time=from_time,
+        data_chunks = create_data_chunk_urls(metadata, segment_urls, from_time=from_time,
                                              to_time=to_time)
-        metadata = metadata.merge(data_chunks,
-                                  how='left',
-                                  left_on='segments.id',
-                                  right_on='segments.id',
-                                  suffixes=('', '_y'))
+        metadata = metadata.merge(data_chunks, how='left', left_on='segments.id',
+                                  right_on='segments.id', suffixes=('', '_y'))
 
         metadata = metadata[[
             'dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding',
@@ -208,9 +203,7 @@ def get_channel_data(
         # segments across multiple channel groups which have different channels.
         data = pd.concat(data_list, sort=False)
         data = data.loc[(data['time'] >= from_time) & (data['time'] < to_time)]
-        data = data.sort_values(['id', 'channelGroups.id', 'time'],
-                                axis=0,
-                                ascending=True,
+        data = data.sort_values(['id', 'channelGroups.id', 'time'], axis=0, ascending=True,
                                 na_position='last')
         data = data.reset_index(drop=True)
     else:

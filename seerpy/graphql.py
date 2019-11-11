@@ -1,10 +1,9 @@
-
-
 def get_json_list(list_of_strings, include_brackets=True):
     json_list = ', '.join('"%s"' % string for string in list_of_strings)
     if include_brackets:
         json_list = '[' + json_list + ']'
     return json_list
+
 
 def get_study_with_data_query_string(study_id):
     return """
@@ -52,8 +51,13 @@ def get_study_with_data_query_string(study_id):
         }""" % study_id
 
 
-def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
-                            from_time, to_time, limit, offset):
+def get_labels_query_string(
+        study_id,
+        label_group_id,  # pylint:disable=too-many-arguments
+        from_time,
+        to_time,
+        limit,
+        offset):
     return """
         query {
             study (id: "%s") {
@@ -95,8 +99,11 @@ def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many
         }""" % (study_id, label_group_id, limit, offset, from_time, to_time)
 
 
-def get_labels_string_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
-                            from_time, to_time):
+def get_labels_string_query_string(
+        study_id,
+        label_group_id,  # pylint:disable=too-many-arguments
+        from_time,
+        to_time):
     return """
         query {
             study (id: "%s") {
@@ -216,9 +223,9 @@ def get_string_from_list_of_dicts(list_of_dicts):
                     labels_string += (get_json_list(d[k]) + ",")
             else:
                 labels_string += str(d[k]) + ','
-        labels_string = labels_string[:-1] # remove last comma
+        labels_string = labels_string[:-1]  # remove last comma
         labels_string += '},'
-    labels_string = labels_string[:-1] # remove last comma
+    labels_string = labels_string[:-1]  # remove last comma
     return labels_string
 
 
@@ -253,7 +260,8 @@ def get_tag_id_query_string():
         }"""
 
 
-def get_add_label_group_mutation_string(study_id, name, description, label_type):
+def get_add_label_group_mutation_string(study_id, name, description,
+                                        label_type):
     if label_type is None:
         label_type_string = ''
     else:
@@ -390,6 +398,7 @@ def get_add_document_mutation_string(study_id, document):
                 uploadFileUrl
             }
         }""" % (study_id, document)
+
 
 def get_confirm_document_mutation_string(study_id, document_id):
     return """

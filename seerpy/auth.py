@@ -8,7 +8,6 @@ import requests
 
 
 class SeerAuth:
-
     def __init__(self, api_url, email=None, password=None):
         self.api_url = api_url
         self.cookie = None
@@ -31,12 +30,15 @@ class SeerAuth:
                 print('Login Successful')
                 break
             elif i < allowed_attempts - 1:
-                print('\nLogin error, please re-enter your email and password: \n')
+                print(
+                    '\nLogin error, please re-enter your email and password: \n'
+                )
                 self.cookie = None
                 self.password = None
             else:
-                print('Login failed. please check your username and password or go to',
-                      'app.seermedical.com to reset your password')
+                print(
+                    'Login failed. please check your username and password or go to',
+                    'app.seermedical.com to reset your password')
                 self.cookie = None
                 self.password = None
                 raise InterruptedError('Authentication Failed')
@@ -48,7 +50,7 @@ class SeerAuth:
         print("login status_code", response.status_code)
         if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
                 and response.cookies):
-            self.cookie = {'seer.sid' : response.cookies['seer.sid']}
+            self.cookie = {'seer.sid': response.cookies['seer.sid']}
         else:
             self.cookie = None
 
@@ -59,7 +61,8 @@ class SeerAuth:
         verify_url = self.api_url + '/api/auth/verify'
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
-            print("api verify call returned", response.status_code, "status code")
+            print("api verify call returned", response.status_code,
+                  "status code")
             return 401
 
         json_response = response.json()

@@ -258,12 +258,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         with open(document_path, 'rb') as f:
             response_put = requests.put(response_add['uploadFileUrl'], data=f)
         if response_put.status_code == 200:
-            query_string = graphql.get_confirm_document_mutation_string(study_id, 
+            query_string = graphql.get_confirm_document_mutation_string(study_id,
                                                                     response_add['id'])
             response_confirm = self.execute_query(query_string)
             return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
         else:
-            raise RuntimeError('Error uploading document: status code ' + 
+            raise RuntimeError('Error uploading document: status code ' +
                                str(response_put.status_code))
 
     def get_tag_ids(self):
@@ -292,8 +292,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_study_ids_from_names_dataframe(self, study_names, party_id=None):
         if isinstance(study_names, str):
             study_names = [study_names]
-        studies = self.get_studies_dataframe(party_id=party_id)
-        return studies[studies['name'].isin(study_names)][['name', 'id']].reset_index(drop=True)
+
+        studies = pd.concat([
+            self.get_studies_dataframe(search_term=study_name, party_id=party_id) \
+                for study_name in study_names
+        ], join='outer')
+
+        if studies.empty:
+            return studies.assign(id=None)
+
+        return studies[['name', 'id']].reset_index(drop=True)
 
     def get_study_ids_from_names(self, study_names, party_id=None):
         return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()
@@ -370,10 +378,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                                            to_time)
         response = self.execute_query(query_string)['study']
         return response
-    
+
     def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12):
-        label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time, 
+        label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time,
                                                to_time=to_time)
         if label_results is None:
             return label_results
@@ -384,7 +392,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_group = label_group.drop('labelGroup.labelString', errors='ignore', axis='columns')
         label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
         label_group=label_group.rename(columns = {'labelString.d': 'labels.duration',
-                                                  'labelString.id': 'labels.id', 
+                                                  'labelString.id': 'labels.id',
                                                   'labelString.s': 'labels.startTime'})
         return label_group
 

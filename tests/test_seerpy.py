@@ -125,7 +125,7 @@ class TestGetAllStudyMetaDataByNames:
         side_effects = []
 
         # this is the call in get_studies()
-        with open(TEST_DATA_DIR / "studies.json", "r") as f:
+        with open(TEST_DATA_DIR / "studies_filtered.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
         # this is the "no more data" response for get_studies()
         side_effects.append({'studies': []})
@@ -151,10 +151,7 @@ class TestGetAllStudyMetaDataByNames:
 
         side_effects = []
 
-        # this is the call in get_studies()
-        with open(TEST_DATA_DIR / "studies.json", "r") as f:
-            side_effects.append({'studies': json.load(f)})
-        # this is the "no more data" response for get_studies()
+        # this is the call in get_studies() when no objects are found
         side_effects.append({'studies': []})
 
         gql_client.return_value.execute.side_effect = side_effects
@@ -165,7 +162,7 @@ class TestGetAllStudyMetaDataByNames:
         # check result
         assert result == {'studies' : []}
         # the only call will be in getStudies()
-        assert gql_client.return_value.execute.call_count == 2
+        assert gql_client.return_value.execute.call_count == 1
 
 
 @mock.patch('time.sleep', return_value=None)

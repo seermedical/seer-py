@@ -294,8 +294,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             study_names = [study_names]
 
         studies = json_normalize([
-            x for study_name in study_names
-            for x in self.get_studies(search_term=study_name, party_id=party_id)
+            study for study_name in study_names
+            for study in self.get_studies(search_term=study_name, party_id=party_id)
         ])
 
         if studies.empty:

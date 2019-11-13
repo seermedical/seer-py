@@ -161,8 +161,6 @@ class TestGetAllStudyMetaDataByNames:
             side_effects.append({'studies': json.load(f)})
         # this is the "no more data" response for get_studies()
         side_effects.append({'studies': []})
-        # this is the "no more data" response for get_studies()
-        side_effects.append({'studies': []})
 
         # Build up the expected results from file
         expected_results = []

@@ -125,7 +125,7 @@ class TestGetAllStudyMetaDataByNames:
         side_effects = []
 
         # this is the call in get_studies()
-        with open(TEST_DATA_DIR / "studies_filtered.json", "r") as f:
+        with open(TEST_DATA_DIR / "studies_filtered1.json", "r") as f:
             side_effects.append({'studies': json.load(f)})
         # this is the "no more data" response for get_studies()
         side_effects.append({'studies': []})
@@ -144,6 +144,41 @@ class TestGetAllStudyMetaDataByNames:
 
         # check result
         assert result == {'studies' : expected_results}
+
+    def test_getting_multiple_study_ids_by_name(self, seer_auth, gql_client, unused_time_sleep):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+
+        # this is the call in get_studies()
+        with open(TEST_DATA_DIR / "studies_filtered1.json", "r") as f:
+            side_effects.append({'studies': json.load(f)})
+        # this is the "no more data" response for get_studies()
+        side_effects.append({'studies': []})
+
+        with open(TEST_DATA_DIR / "studies_filtered2.json", "r") as f:
+            side_effects.append({'studies': json.load(f)})
+        # this is the "no more data" response for get_studies()
+        side_effects.append({'studies': []})
+        # this is the "no more data" response for get_studies()
+        side_effects.append({'studies': []})
+
+        # Build up the expected results from file
+        expected_results = []
+        with open(TEST_DATA_DIR / "study1_metadata.json", "r") as f:
+            with open(TEST_DATA_DIR / "study2_metadata.json", "r") as g:
+                study1 = json.load(f)
+                study2 = json.load(g)
+                expected_results = [study1['study']['id'], study2['study']['id']]
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        # run test
+        result = SeerConnect().get_study_ids_from_names(["Study 1", "Study 2"])
+
+        # check result
+        assert result == expected_results
 
     def test_nonexistent_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup

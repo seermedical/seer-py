@@ -293,10 +293,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if isinstance(study_names, str):
             study_names = [study_names]
 
-        studies = pd.concat([
-            self.get_studies_dataframe(search_term=study_name, party_id=party_id) \
-                for study_name in study_names
-        ], join='outer')
+        studies = json_normalize([
+            x for study_name in study_names
+            for x in self.get_studies(search_term=study_name, party_id=party_id)
+        ])
 
         if studies.empty:
             return studies.assign(id=None)

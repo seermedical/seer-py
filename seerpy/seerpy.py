@@ -326,6 +326,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
         return segment_urls
 
+    def get_data_chunk_urls(self, data_chunks, s3_urls=True, limit=10000):
+        if not data_chunks:
+            return pd.DataFrame(columns=['baseDataChunkUrl', 'segments.id'])
+
+        chunks = []
+        counter = 0
+        while int(counter * limit) < len(data_chunks):
+            data_chunks_batch = data_chunks[int(counter * limit):int((counter + 1) * limit)]
+            query_string = graphql.get_data_chunk_urls_query_string(data_chunks_batch, s3_urls)
+            response = self.execute_query(query_string)
+            chunks.extend([chunk for chunk in response['studyChannelGroupSegments']
+                           if chunk is not None])
+            counter += 1
+        data_chunk_urls = pd.DataFrame(chunks)
+        data_chunk_urls = data_chunk_urls.rename(columns={'id': 'data_chunk.id'})
+        return data_chunk_urls
+
     def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
         label_results = None

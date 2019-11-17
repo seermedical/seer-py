@@ -193,8 +193,10 @@ def get_data_chunk_urls_query_string(data_chunks, s3_urls=True):
     s3_urls = 'true' if s3_urls else 'false'
     return """
         query {
-            studyChannelGroupDataChunkUrls(chunkKeys: [%s], 
-            s3Urls: %s)
+            studyChannelGroupDataChunkUrls(
+                    chunkKeys: [%s],
+                    s3Urls: %s
+                    )
         }""" % (chunk_keys, s3_urls)
 
 

@@ -333,9 +333,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                          'chunk_url'])
         
         study_metadata = study_metadata.drop_duplicates('segments.id')
-        study_metadata = study_metadata[study_metadata['segments.startTime'] >= from_time]
+        study_metadata = study_metadata[study_metadata['segments.startTime'] <= to_time]
         study_metadata = study_metadata[study_metadata['segments.startTime'] + 
-                                        study_metadata['segments.duration'] <= to_time]
+                                        study_metadata['segments.duration'] >= from_time]
         
         data_chunks = []
         chunk_metadata = []

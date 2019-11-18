@@ -250,19 +250,19 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             labels = labels.to_dict('records')
         query_string = graphql.get_add_labels_mutation_string(group_id, labels)
         return self.execute_query(query_string)
-    
+
     def add_document(self, study_id, document_name, document_path):
         query_string = graphql.get_add_document_mutation_string(study_id, document_name)
         response_add = self.execute_query(query_string)['createStudyDocuments'][0]
         with open(document_path, 'rb') as f:
             response_put = requests.put(response_add['uploadFileUrl'], data=f)
         if response_put.status_code == 200:
-            query_string = graphql.get_confirm_document_mutation_string(study_id, 
+            query_string = graphql.get_confirm_document_mutation_string(study_id,
                                                                     response_add['id'])
             response_confirm = self.execute_query(query_string)
             return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
         else:
-            raise RuntimeError('Error uploading document: status code ' + 
+            raise RuntimeError('Error uploading document: status code ' +
                                str(response_put.status_code))
 
     def get_tag_ids(self):
@@ -447,24 +447,52 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 documents.append(document)
         return pd.DataFrame(documents)
 
-    def get_diary_labels(self, patient_id):
-        query_string = graphql.get_diary_labels_query_string(patient_id)
+    def get_diary_labels(self, patient_id, offset=0, limit=100):
+        query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
         response = self.execute_query(query_string)['patient']['diary']['labelGroups']
         return response
 
     def get_diary_labels_dataframe(self, patient_id):
-        label_results = self.get_diary_labels(patient_id)
+
+        limit = 100
+        offset = 0
+
+        label_results = self.get_diary_labels(patient_id, offset, limit)
         if label_results is None:
             return label_results
 
         label_groups = json_normalize(label_results).sort_index(axis=1)
-        labels = self.pandas_flatten(label_groups, '', 'labels')
-        tags = self.pandas_flatten(labels, 'labels.', 'tags')
+        all_labels = self.pandas_flatten(label_groups, '', 'labels')
+        all_tags = self.pandas_flatten(all_labels, 'labels.', 'tags')
+
+        total_count = 0
+        n_groups = label_groups.shape[0]
+        for i in range(0, n_groups):
+            total_count += label_groups.loc[i]['numberOfLabels']
+        if total_count == 0:
+            return label_groups
+
+        if 'numberOfLabels' in label_groups:
+            max_count = max(label_groups['numberOfLabels'])
+            if max_count == 0:
+                return label_groups
+        else:
+            max_count = 0
+
+        if max_count > limit:
+            while offset < max_count:
+                offset += limit
+                response = self.get_diary_labels(patient_id, offset, limit)
+                new_label_groups = json_normalize(response).sort_index(axis=1)
+                labels = self.pandas_flatten(new_label_groups, '', 'labels')
+                tags = self.pandas_flatten(labels, 'labels.', 'tags')
+                all_labels = pd.concat([all_labels, labels])
+                all_tags = pd.concat([all_tags, tags])
 
         label_groups = label_groups.drop('labels', errors='ignore', axis='columns')
-        labels = labels.drop('labels.tags', errors='ignore', axis='columns')
-        label_groups = label_groups.merge(labels, how='left', on='id', suffixes=('', '_y'))
-        label_groups = label_groups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+        all_labels = all_labels.drop('labels.tags', errors='ignore', axis='columns')
+        label_groups = label_groups.merge(all_labels, how='left', on='id', suffixes=('', '_y'))
+        label_groups = label_groups.merge(all_tags, how='left', on='labels.id', suffixes=('', '_y'))
         label_groups = label_groups.rename({'id':'labelGroups.id'})
         label_groups['id'] = patient_id
         return label_groups

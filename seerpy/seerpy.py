@@ -339,15 +339,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         
         data_chunks = []
         chunk_metadata = []
-        for idx, row in study_metadata.iterrows():
-            chunk_period = row['channelGroups.chunkPeriod']
-            num_chunks = int(math.ceil(row['segments.duration'] / chunk_period / 1000.))
+        for row in zip(study_metadata['channelGroups.chunkPeriod'], 
+                       study_metadata['segments.duration'], study_metadata['segments.startTime'], 
+                       study_metadata['segments.id']):
+            chunk_period = row[0]
+            num_chunks = int(math.ceil(row[1] / chunk_period / 1000.))
             for i in range(num_chunks):
-                chunk_start = row['segments.startTime'] + chunk_period * i
+                chunk_start = row[2] + chunk_period * i
                 chunk_end = chunk_start + chunk_period
                 if chunk_start >= from_time and chunk_end <= to_time:
-                    data_chunks.append({'segmentId': row['segments.id'], 'chunkIndex': i})
-                    chunk_metadata.append({'segments.id': row['segments.id'], 'chunkIndex': i,
+                    data_chunks.append({'segmentId': row[3], 'chunkIndex': i})
+                    chunk_metadata.append({'segments.id': row[3], 'chunkIndex': i,
                                            'chunk_start': chunk_start, 'chunk_end': chunk_end})
         if not data_chunks:
             return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',

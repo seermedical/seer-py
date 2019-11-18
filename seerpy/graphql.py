@@ -302,7 +302,7 @@ def get_patients_query_string():
         }"""
 
 
-def get_diary_labels_query_string(patient_id):
+def get_diary_labels_query_string(patient_id, limit, offset):
     return """
         query {
             patient (id: "%s") {
@@ -314,7 +314,8 @@ def get_diary_labels_query_string(patient_id):
                         labelType
                         labelSourceType
                         name
-                        labels {
+                        numberOfLabels
+                        labels(limit: %.0f, offset: %.0f) {
                             id
                             startTime
                             timezone
@@ -336,7 +337,7 @@ def get_diary_labels_query_string(patient_id):
                     }
                 }
             }
-        }""" % patient_id
+        }""" % (patient_id, limit, offset)
 
 
 def get_documents_for_study_ids_paged_query_string(study_ids):

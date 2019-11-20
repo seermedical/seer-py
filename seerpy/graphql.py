@@ -415,3 +415,48 @@ def get_confirm_document_mutation_string(study_id, document_id):
                 downloadFileUrl
             }
         }""" % (study_id, document_id)
+
+def get_bookings_query_string(organisation_id, start_time, end_time):
+    return """query {
+                organisation(id: "%s") {
+                    bookings(startTime: %.0f, endTime: %.0f) {
+                        id
+                        equipmentItems {
+                            name
+                            equipmentType {
+                                type
+                            }
+                        }
+                        bookingTemplate {
+                            name
+                        }
+                        referral {
+                            id
+                        }
+                        startTime {
+                            datetime
+                            timezone
+                        }
+                        endTime {
+                            datetime
+                            timezone
+                        }
+                        patient {
+                            id
+                            user {
+                                fullName
+                            }
+                            studies {
+                                id
+                                name
+                            }
+                        }
+                        location {
+                                name
+                                suburb
+                                }
+                    }
+                }
+            }""" % (organisation_id, start_time, end_time)
+
+

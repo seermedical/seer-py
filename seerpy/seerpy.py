@@ -653,3 +653,19 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return utils.get_channel_data(all_data, segment_urls, download_function, threads, from_time,
                                       to_time)
+
+    def get_all_bookings(self, organisation_id, start_time, end_time):
+        query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
+        response = self.execute_query(query_string)
+        return response['organisation']['bookings']
+    
+    def get_all_bookings_dataframe(self, organisation_id, start_time, end_time):
+        bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
+        bookings = json_normalize(bookings_response).sort_index(axis=1)
+        studies = self.pandas_flatten(bookings, 'patient.', 'studies')
+        equipment = self.pandas_flatten(bookings, '', 'equipmentItems')
+        bookings = bookings.drop('patient.studies', errors='ignore', axis='columns')
+        bookings = bookings.drop('equipmentItems', errors='ignore', axis='columns')
+        bookings = bookings.merge(studies, how='left', on='patient.id')
+        bookings = bookings.merge(equipment, how='left', on='id')
+        return bookings.drop_duplicates().reset_index(drop=True)

@@ -22,9 +22,9 @@ def get_string_from_list_of_dicts(list_of_dicts):
                     labels_string += (get_json_list(d[k]) + ",")
             else:
                 labels_string += str(d[k]) + ','
-        labels_string = labels_string[:-1] # remove last comma
+        labels_string = labels_string[:-1]  # remove last comma
         labels_string += '},'
-    labels_string = labels_string[:-1] # remove last comma
+    labels_string = labels_string[:-1]  # remove last comma
     return labels_string
 
 
@@ -185,6 +185,7 @@ def get_segment_urls_query_string(segment_ids):
                 baseDataChunkUrl
             }
         }""" % segment_ids_string
+
 
 def get_data_chunk_urls_query_string(data_chunks, s3_urls=True):
     chunk_keys = get_string_from_list_of_dicts(data_chunks)

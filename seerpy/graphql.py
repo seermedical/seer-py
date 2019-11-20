@@ -6,6 +6,30 @@ def get_json_list(list_of_strings, include_brackets=True):
         json_list = '[' + json_list + ']'
     return json_list
 
+
+def get_string_from_list_of_dicts(list_of_dicts):
+    labels_string = ''
+    for d in list_of_dicts:
+        labels_string += ' {'
+        for k in d.keys():
+            if d[k] is None:
+                continue
+            labels_string += ' ' + k + ': '
+            if isinstance(d[k], str):
+                labels_string += '"' + d[k] + '",'
+            elif isinstance(d[k], dict):
+                labels_string += get_string_from_list_of_dicts(list(d[k]))
+            elif isinstance(d[k], list):
+                if d[k]:
+                    labels_string += (get_json_list(d[k]) + ",")
+            else:
+                labels_string += str(d[k]) + ','
+        labels_string = labels_string[:-1] # remove last comma
+        labels_string += '},'
+    labels_string = labels_string[:-1] # remove last comma
+    return labels_string
+
+
 def get_study_with_data_query_string(study_id):
     return """
         query {
@@ -164,6 +188,17 @@ def get_segment_urls_query_string(segment_ids):
             }
         }""" % segment_ids_string
 
+def get_data_chunk_urls_query_string(data_chunks, s3_urls=True):
+    chunk_keys = get_string_from_list_of_dicts(data_chunks)
+    s3_urls = 'true' if s3_urls else 'false'
+    return """
+        query {
+            studyChannelGroupDataChunkUrls(
+                    chunkKeys: [%s],
+                    s3Urls: %s
+                    )
+        }""" % (chunk_keys, s3_urls)
+
 
 def get_studies_by_search_term_paged_query_string(search_term):
     return f"""
@@ -197,29 +232,6 @@ def get_studies_by_study_id_paged_query_string(study_ids):
                 }}}}
             }}}}
         }}}}"""
-
-
-def get_string_from_list_of_dicts(list_of_dicts):
-    labels_string = ''
-    for d in list_of_dicts:
-        labels_string += ' {'
-        for k in d.keys():
-            if d[k] is None:
-                continue
-            labels_string += ' ' + k + ': '
-            if isinstance(d[k], str):
-                labels_string += '"' + d[k] + '",'
-            elif isinstance(d[k], dict):
-                labels_string += get_string_from_list_of_dicts(list(d[k]))
-            elif isinstance(d[k], list):
-                if d[k]:
-                    labels_string += (get_json_list(d[k]) + ",")
-            else:
-                labels_string += str(d[k]) + ','
-        labels_string = labels_string[:-1] # remove last comma
-        labels_string += '},'
-    labels_string = labels_string[:-1] # remove last comma
-    return labels_string
 
 
 def get_add_labels_mutation_string(group_id, labels):

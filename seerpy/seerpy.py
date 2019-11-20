@@ -326,6 +326,48 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
         return segment_urls
 
+    def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12, 
+                            limit=10000):
+        if study_metadata.empty:
+            return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
+                                         'chunk_url'])
+        
+        study_metadata = study_metadata.drop_duplicates('segments.id')
+        study_metadata = study_metadata[study_metadata['segments.startTime'] <= to_time]
+        study_metadata = study_metadata[study_metadata['segments.startTime'] + 
+                                        study_metadata['segments.duration'] >= from_time]
+        
+        data_chunks = []
+        chunk_metadata = []
+        for row in zip(study_metadata['channelGroups.chunkPeriod'], 
+                       study_metadata['segments.duration'], study_metadata['segments.startTime'], 
+                       study_metadata['segments.id']):
+            chunk_period = row[0]
+            num_chunks = int(math.ceil(row[1] / chunk_period / 1000.))
+            for i in range(num_chunks):
+                chunk_start = row[2] + chunk_period * i
+                chunk_end = chunk_start + chunk_period
+                if chunk_start >= from_time and chunk_end <= to_time:
+                    data_chunks.append({'segmentId': row[3], 'chunkIndex': i})
+                    chunk_metadata.append({'segments.id': row[3], 'chunkIndex': i,
+                                           'chunk_start': chunk_start, 'chunk_end': chunk_end})
+        if not data_chunks:
+            return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
+                                         'chunk_url'])
+        chunks = []
+        counter = 0
+        while int(counter * limit) < len(data_chunks):
+            data_chunks_batch = data_chunks[int(counter * limit):int((counter + 1) * limit)]
+            query_string = graphql.get_data_chunk_urls_query_string(data_chunks_batch, s3_urls)
+            response = self.execute_query(query_string)
+            chunks.extend([chunk for chunk in response['studyChannelGroupDataChunkUrls']
+                           if chunk is not None])
+            counter += 1
+        data_chunk_urls = pd.DataFrame(chunk_metadata)
+        data_chunk_urls['chunk_url'] = chunks
+        
+        return data_chunk_urls
+
     def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
         label_results = None

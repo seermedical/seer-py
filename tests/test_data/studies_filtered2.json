@@ -1,0 +1,9 @@
+[
+    {
+        "id": "study-2-id",
+        "name": "Study 2",
+        "patient": {
+            "id": "patient-2-id"
+        }
+    }
+]

@@ -1,5 +1,6 @@
 gql
 requests
+jupyterlab
 matplotlib
 numpy
 pandas

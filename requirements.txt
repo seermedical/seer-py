@@ -1,4 +1,4 @@
-gql
+git+https://github.com/graphql-python/gql.git@609b3fc8c0b439a5b8af656a740f7668bad0224b
 requests
 matplotlib
 numpy

@@ -334,21 +334,21 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
         return segment_urls
 
-    def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12, 
+    def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12,
                             limit=10000):
         if study_metadata.empty:
             return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
                                          'chunk_url'])
-        
+
         study_metadata = study_metadata.drop_duplicates('segments.id')
         study_metadata = study_metadata[study_metadata['segments.startTime'] <= to_time]
-        study_metadata = study_metadata[study_metadata['segments.startTime'] + 
+        study_metadata = study_metadata[study_metadata['segments.startTime'] +
                                         study_metadata['segments.duration'] >= from_time]
-        
+
         data_chunks = []
         chunk_metadata = []
-        for row in zip(study_metadata['channelGroups.chunkPeriod'], 
-                       study_metadata['segments.duration'], study_metadata['segments.startTime'], 
+        for row in zip(study_metadata['channelGroups.chunkPeriod'],
+                       study_metadata['segments.duration'], study_metadata['segments.startTime'],
                        study_metadata['segments.id']):
             chunk_period = row[0]
             num_chunks = int(math.ceil(row[1] / chunk_period / 1000.))
@@ -373,7 +373,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             counter += 1
         data_chunk_urls = pd.DataFrame(chunk_metadata)
         data_chunk_urls['chunk_url'] = chunks
-        
+
         return data_chunk_urls
 
     def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
@@ -658,7 +658,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
         response = self.execute_query(query_string)
         return response['organisation']['bookings']
-    
+
     def get_all_bookings_dataframe(self, organisation_id, start_time, end_time):
         bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
         bookings = json_normalize(bookings_response).sort_index(axis=1)
@@ -669,3 +669,92 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         bookings = bookings.merge(studies, how='left', on='patient.id')
         bookings = bookings.merge(equipment, how='left', on='id')
         return bookings.drop_duplicates().reset_index(drop=True)
+
+    # FITBIT ANALYSIS
+
+    def get_diary_study_label_groups(self, patient_id, limit=20, offset=0):
+        # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
+        query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
+        response = self.execute_query(query_string)['patient']['diaryStudy']
+        label_groups = response['labelGroups']
+        return label_groups
+
+    def get_diary_study_label_groups_dataframe(self, patient_id, limit=20, offset=0):
+        """Get a list of label groups present in a patient's diary study
+
+        Parameters
+        ----------
+        patient_id : The patient ID (string)
+
+        Returns
+        -------
+        label_groups : pandas DataFrame
+                dataframe containing labelGroupID, labelGroupName, numberOfLabels in labelGroup
+
+        Example
+        -------
+        label_groups = get_diary_study_label_groups_dataframe("some_id")
+
+        """
+        label_group_results = self.get_diary_study_label_groups(patient_id, limit, offset)
+        if label_group_results is None:
+            return label_group_results
+        label_groups = json_normalize(label_group_results).sort_index(axis=1)
+        return label_groups
+
+    def get_diary_study_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
+                   to_time=9e12, limit=200, offset=0):
+        label_results = None
+
+        while True:
+            query_string = graphql.get_labels_for_diary_study_query_string(patient_id, label_group_id, from_time,
+                                                           to_time, limit, offset)
+            response = self.execute_query(query_string)['patient']['diaryStudy']
+            labels = response['labelGroup']['labels']
+            if not labels:
+                break
+
+            if label_results is None:
+                label_results = response
+            else:
+                label_results['labelGroup']['labels'].extend(labels)
+
+            offset += limit
+
+        return label_results
+
+    def get_diary_study_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
+                             from_time=0, to_time=9e12, limit=200, offset=0):
+        """Get labels from a patient's diary study
+
+        Parameters
+        ----------
+        patient_id : The patient ID (string)
+        label_group_id: The label group ID
+        from_time: min start time for labels (UTC time in milliseconds)
+        to_time: max start time for labels (UTC time in milliseconds)
+
+        Returns
+        -------
+        label_group : pandas DataFrame
+                dataframe containing labelGroup info, labels (startTime, timeZone, duration) and tags
+
+        Example
+        -------
+        label_groups = get_diary_study_labels_dataframe(patient_id, label_group_id)
+
+        """
+        label_results = self.get_diary_study_labels(patient_id, label_group_id, from_time, to_time, limit, offset)
+        if label_results is None:
+            return label_results
+        label_group = json_normalize(label_results).sort_index(axis=1)
+        labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
+        tags = self.pandas_flatten(labels, 'labels.', 'tags')
+
+        label_group = label_group.drop('labelGroup.labels', errors='ignore', axis='columns')
+        labels = labels.drop('labels.tags', errors='ignore', axis='columns')
+
+        label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+        label_group = label_group.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+
+        return label_group

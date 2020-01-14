@@ -496,7 +496,6 @@ def get_labels_for_diary_study_query_string(patient_id, label_group_id,  # pylin
                             timezone
                             duration
                             tags {
-                                id
                                 tagType {
                                     value
                                 }

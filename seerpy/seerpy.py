@@ -334,21 +334,21 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
         return segment_urls
 
-    def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12, 
+    def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12,
                             limit=10000):
         if study_metadata.empty:
             return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
                                          'chunk_url'])
-        
+
         study_metadata = study_metadata.drop_duplicates('segments.id')
         study_metadata = study_metadata[study_metadata['segments.startTime'] <= to_time]
-        study_metadata = study_metadata[study_metadata['segments.startTime'] + 
+        study_metadata = study_metadata[study_metadata['segments.startTime'] +
                                         study_metadata['segments.duration'] >= from_time]
-        
+
         data_chunks = []
         chunk_metadata = []
-        for row in zip(study_metadata['channelGroups.chunkPeriod'], 
-                       study_metadata['segments.duration'], study_metadata['segments.startTime'], 
+        for row in zip(study_metadata['channelGroups.chunkPeriod'],
+                       study_metadata['segments.duration'], study_metadata['segments.startTime'],
                        study_metadata['segments.id']):
             chunk_period = row[0]
             num_chunks = int(math.ceil(row[1] / chunk_period / 1000.))
@@ -373,7 +373,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             counter += 1
         data_chunk_urls = pd.DataFrame(chunk_metadata)
         data_chunk_urls['chunk_url'] = chunks
-        
+
         return data_chunk_urls
 
     def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
@@ -522,54 +522,56 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return pd.DataFrame(documents)
 
     def get_diary_labels(self, patient_id, offset=0, limit=100):
-        query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
-        response = self.execute_query(query_string)['patient']['diary']['labelGroups']
-        return response
+        label_results = None
+        # set true if we need to fetch labels
+        query_flag = 1
+
+        while True:
+            if not query_flag:
+                break
+
+            query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
+            response = self.execute_query(query_string)['patient']['diary']
+            label_groups = response['labelGroups']
+
+            query_flag = None
+            for idx, group in enumerate(label_groups):
+                labels = group['labels']
+
+                if not labels:
+                    continue
+
+                # we need to fetch more labels
+                if len(labels) >= limit:
+                    query_flag = 1
+
+                if label_results is None:
+                    label_results = response
+                else:
+                    label_results['labelGroups'][idx]['labels'].extend(labels)
+
+                offset += limit
+
+        return label_results
 
     def get_diary_labels_dataframe(self, patient_id):
 
-        limit = 100
-        offset = 0
-
-        label_results = self.get_diary_labels(patient_id, offset, limit)
+        label_results = self.get_diary_labels(patient_id)
         if label_results is None:
             return label_results
 
-        label_groups = json_normalize(label_results).sort_index(axis=1)
-        all_labels = self.pandas_flatten(label_groups, '', 'labels')
-        all_tags = self.pandas_flatten(all_labels, 'labels.', 'tags')
-
-        total_count = 0
-        n_groups = label_groups.shape[0]
-        for i in range(0, n_groups):
-            total_count += label_groups.loc[i]['numberOfLabels']
-        if total_count == 0:
-            return label_groups
-
-        if 'numberOfLabels' in label_groups:
-            max_count = max(label_groups['numberOfLabels'])
-            if max_count == 0:
-                return label_groups
-        else:
-            max_count = 0
-
-        if max_count > limit:
-            while offset < max_count:
-                offset += limit
-                response = self.get_diary_labels(patient_id, offset, limit)
-                new_label_groups = json_normalize(response).sort_index(axis=1)
-                labels = self.pandas_flatten(new_label_groups, '', 'labels')
-                tags = self.pandas_flatten(labels, 'labels.', 'tags')
-                all_labels = pd.concat([all_labels, labels])
-                all_tags = pd.concat([all_tags, tags])
+        label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)
+        labels = self.pandas_flatten(label_groups, '', 'labels')
+        tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
         label_groups = label_groups.drop('labels', errors='ignore', axis='columns')
-        all_labels = all_labels.drop('labels.tags', errors='ignore', axis='columns')
-        label_groups = label_groups.merge(all_labels, how='left', on='id', suffixes=('', '_y'))
-        label_groups = label_groups.merge(all_tags, how='left', on='labels.id', suffixes=('', '_y'))
+        labels = labels.drop('labels.tags', errors='ignore', axis='columns')
+        label_groups = label_groups.merge(labels, how='left', on='id', suffixes=('', '_y'))
+        label_groups = label_groups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
         label_groups = label_groups.rename({'id':'labelGroups.id'})
         label_groups['id'] = patient_id
         return label_groups
+
 
     def get_all_study_metadata_by_names(self, study_names=None, party_id=None):
         """Get all the metadata available about named studies
@@ -686,7 +688,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
         response = self.execute_query(query_string)
         return response['organisation']['bookings']
-    
+
     def get_all_bookings_dataframe(self, organisation_id, start_time, end_time):
         bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
         bookings = json_normalize(bookings_response).sort_index(axis=1)

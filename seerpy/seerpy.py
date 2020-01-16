@@ -524,7 +524,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_labels(self, patient_id, offset=0, limit=100):
         label_results = None
         # set true if we need to fetch labels
-        query_flag = 1
+        query_flag = True
 
         while True:
             if not query_flag:
@@ -534,7 +534,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             response = self.execute_query(query_string)['patient']['diary']
             label_groups = response['labelGroups']
 
-            query_flag = None
+            query_flag = False
             for idx, group in enumerate(label_groups):
                 labels = group['labels']
 
@@ -543,7 +543,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
                 # we need to fetch more labels
                 if len(labels) >= limit:
-                    query_flag = 1
+                    query_flag = True
 
                 if label_results is None:
                     label_results = response

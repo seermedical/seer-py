@@ -16,12 +16,12 @@ for n in range(len(patients)):
     if patient_email == 'pip@seermedical.com':
         
 #        Get available label groups
-        diary_study_groups = seer_client.get_diary_study_label_groups_dataframe(patient_id)
+        diary_data_groups = seer_client.get_diary_data_groups_dataframe(patient_id)
         
-        for group in range(len(diary_study_groups)):
-            group_name = diary_study_groups.loc[group]['name']
+        for group in range(len(diary_data_groups)):
+            group_name = diary_data_groups.loc[group]['name']
     
 #            get the label group for fitbit sleep labels
             if  group_name == fitbit_sleep_name:
-                label_group_id = diary_study_groups.loc[group]['id']
-                sleep_labels = seer_client.get_diary_study_labels_dataframe(patient_id, label_group_id)
+                group_id = diary_data_groups.loc[group]['id']
+                sleep_labels = seer_client.get_diary_data_labels_dataframe(patient_id, group_id)

@@ -670,16 +670,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         bookings = bookings.merge(equipment, how='left', on='id')
         return bookings.drop_duplicates().reset_index(drop=True)
 
-    # FITBIT ANALYSIS
-
-    def get_diary_study_label_groups(self, patient_id, limit=20, offset=0):
+    # DIARY STUDY (FITBIT) ANALYSIS
+    def get_diary_data_groups(self, patient_id, limit=20, offset=0):
         # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
         query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
         response = self.execute_query(query_string)['patient']['diaryStudy']
         label_groups = response['labelGroups']
         return label_groups
 
-    def get_diary_study_label_groups_dataframe(self, patient_id, limit=20, offset=0):
+    def get_diary_data_groups_dataframe(self, patient_id, limit=20, offset=0):
         """Get a list of label groups present in a patient's diary study
 
         Parameters
@@ -696,13 +695,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = get_diary_study_label_groups_dataframe("some_id")
 
         """
-        label_group_results = self.get_diary_study_label_groups(patient_id, limit, offset)
+        label_group_results = self.get_diary_data_groups(patient_id, limit, offset)
         if label_group_results is None:
             return label_group_results
         label_groups = json_normalize(label_group_results).sort_index(axis=1)
         return label_groups
 
-    def get_diary_study_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
+    def get_diary_data_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
         label_results = None
 
@@ -723,7 +722,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-    def get_diary_study_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
+    def get_diary_data_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
         """Get labels from a patient's diary study
 
@@ -744,7 +743,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = get_diary_study_labels_dataframe(patient_id, label_group_id)
 
         """
-        label_results = self.get_diary_study_labels(patient_id, label_group_id, from_time, to_time, limit, offset)
+        label_results = self.get_diary_data_labels(patient_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
@@ -758,3 +757,28 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_group = label_group.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
 
         return label_group
+
+
+    def get_diary_channel_groups(self, patient_id, from_time=0, to_time=90000000000000):
+        query_string = graphql.get_diary_study_channel_groups_query_string(patient_id, from_time, to_time)
+        response = self.execute_query(query_string)
+        return response['patient']['diaryStudy']['channelGroups']
+
+    def get_diary_channel_groups_dataframe(self, patient_id):
+        metadata = self.get_diary_channel_groups(patient_id)
+        channel_groups = json_normalize(metadata).sort_index(axis=1)
+        # channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
+        segments = self.pandas_flatten(channel_groups, '', 'segments')
+        data_chunks = self.pandas_flatten(segments, 'segments.', 'dataChunks')
+
+        channel_groups = channel_groups.drop('segments', errors='ignore', axis='columns')
+        segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
+
+        channel_groups = channel_groups.merge(segments, how='left', on='id', suffixes=('', '_y'))
+        channel_groups = channel_groups.merge(data_chunks, how='left', on='segments.id', suffixes=('', '_y'))
+
+        return channel_groups
+
+
+    def get_diary_data(self, segment_url):
+        return utils.get_diary_data(segment_url)

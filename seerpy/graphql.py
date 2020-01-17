@@ -490,7 +490,7 @@ def get_labels_for_diary_study_query_string(patient_id, label_group_id,  # pylin
                 diaryStudy {
                     labelGroup (labelGroupId: "%s") {
                         id
-                        labels (limit: %.0f, offset: %.0f, fromTime: %.0f, toTime: %.0f) {
+                        labels (limit: %.0f, offset: %.0f, from: %.0f, to: %.0f) {
                             id
                             startTime
                             timezone
@@ -505,3 +505,31 @@ def get_labels_for_diary_study_query_string(patient_id, label_group_id,  # pylin
                 }
             }
         }""" % (patient_id, label_group_id, limit, offset, from_time, to_time)
+
+
+def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
+
+    return """
+        query {
+            patient(id: "%s") {
+                id
+                diaryStudy {
+                    channelGroups {
+                        id
+                        name
+                        recordsPerChunk
+                        sampleEncoding
+                        compression
+                        segments (fromTime: %.0f, toTime: %.0f) {
+                            id
+                            startTime
+                            duration
+                            timezone
+                            dataChunks {
+                                url
+                            }
+                        }
+                    }
+                }
+            }
+        }""" % (patient_id, from_time, to_time)

@@ -521,17 +521,46 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 documents.append(document)
         return pd.DataFrame(documents)
 
-    def get_diary_labels(self, patient_id):
-        query_string = graphql.get_diary_labels_query_string(patient_id)
-        response = self.execute_query(query_string)['patient']['diary']['labelGroups']
-        return response
+    def get_diary_labels(self, patient_id, offset=0, limit=100):
+        label_results = None
+        # set true if we need to fetch labels
+        query_flag = True
+
+        while True:
+            if not query_flag:
+                break
+
+            query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
+            response = self.execute_query(query_string)['patient']['diary']
+            label_groups = response['labelGroups']
+
+            query_flag = False
+            for idx, group in enumerate(label_groups):
+                labels = group['labels']
+
+                if not labels:
+                    continue
+
+                # we need to fetch more labels
+                if len(labels) >= limit:
+                    query_flag = True
+
+                if label_results is None:
+                    label_results = response
+                else:
+                    label_results['labelGroups'][idx]['labels'].extend(labels)
+
+                offset += limit
+
+        return label_results
 
     def get_diary_labels_dataframe(self, patient_id):
+
         label_results = self.get_diary_labels(patient_id)
         if label_results is None:
             return label_results
 
-        label_groups = json_normalize(label_results).sort_index(axis=1)
+        label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)
         labels = self.pandas_flatten(label_groups, '', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
@@ -542,6 +571,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = label_groups.rename({'id':'labelGroups.id'})
         label_groups['id'] = patient_id
         return label_groups
+
 
     def get_all_study_metadata_by_names(self, study_names=None, party_id=None):
         """Get all the metadata available about named studies

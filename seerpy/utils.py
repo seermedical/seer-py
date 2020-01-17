@@ -331,4 +331,7 @@ def get_diary_data(data_url):
     # print(data)
 
     # data = gzip.decompress(data)
+    data_type = 'float'
+    data = np.frombuffer(data, dtype=np.dtype(data_type))
+    data = data.astype(np.float32)
     return data

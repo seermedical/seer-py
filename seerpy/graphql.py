@@ -120,7 +120,8 @@ def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many
 
 
 def get_labels_string_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
-                            from_time, to_time):
+                            from_time, to_time, with_tags=True):
+    with_tags = 'true' if with_tags else 'false'
     return """
         query {
             study (id: "%s") {
@@ -132,10 +133,10 @@ def get_labels_string_query_string(study_id, label_group_id,  # pylint:disable=t
                     labelType
                     description
                     numberOfLabels
-                    labelString (fromTime: %.0f, toTime: %.0f)
+                    labelString (fromTime: %.0f, toTime: %.0f, withTags: %s)
                 }
             }
-        }""" % (study_id, label_group_id, from_time, to_time)
+        }""" % (study_id, label_group_id, from_time, to_time, with_tags)
 
 
 def get_label_groups_for_study_ids_paged_query_string(study_ids):

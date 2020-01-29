@@ -15,9 +15,9 @@ for patient_id in patient_ids:
     diary_df = seer_client.get_diary_labels_dataframe(patient_id)
 
 #    Limit label groups to people with an epilepsy diary (where the default labelType is seizure)
-    if diary_df is not None and \
-        'labelType' in diary_df.columns \
-            and not diary_df.loc[diary_df['labelType'] == 'seizure'].empty:
+    if (diary_df is not None
+        and 'labelType' in diary_df.columns
+            and not diary_df.loc[diary_df['labelType'] == 'seizure'].empty):
 
         n_events = diary_df.loc[diary_df['labelType']
                                 == 'seizure'].iloc[0]['numberOfLabels']

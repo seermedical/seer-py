@@ -521,7 +521,7 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
                         recordsPerChunk
                         sampleEncoding
                         compression
-                        segments (fromTime: %.0f, toTime: %.0f) {
+                        segments (ranges: [{ from: %.0f, to: %.0f }]) {
                             id
                             startTime
                             duration

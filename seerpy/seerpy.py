@@ -827,7 +827,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         data_list = []
         for idx, url in enumerate(segment_urls):
-            new_data = utils.get_diary_data(url)
+            new_data = utils.get_diary_fitbit_data(url)
             new_data['timestamp'] = new_data['timestamp'] + start_times[idx]
             new_data['name'] = group_names[idx]
             data_list.append(new_data)

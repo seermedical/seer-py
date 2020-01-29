@@ -325,7 +325,7 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     return y
 
 
-def get_diary_data(data_url):
+def get_diary_fitbit_data(data_url):
     raw_data = requests.get(data_url)
     data = raw_data.content
 

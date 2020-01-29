@@ -328,10 +328,14 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
 def get_diary_data(data_url):
     raw_data = requests.get(data_url)
     data = raw_data.content
-    # print(data)
 
-    # data = gzip.decompress(data)
-    data_type = 'float'
+    # Hardcoded here as in the database the sample encoding for Fitbit channel groups
+    # is saved as 'int16' but float32 is correct
+    data_type = 'float32'
     data = np.frombuffer(data, dtype=np.dtype(data_type))
     data = data.astype(np.float32)
+
+    # Fitbit data is currently always in alternating digits (time stamp, value)
+    data = data.reshape(int(len(data)/2), 2)
+    data = pd.DataFrame(data=data, columns=['timestamp', 'value'])
     return data

@@ -63,8 +63,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.last_query_time = time.time()
 
     def execute_query(self, query_string, party_id=None, invocations=0):
-        resolvable_api_errors = ['503 Server Error', '502 Server Error', 'Read timed out.',
-                                 'NOT_AUTHENTICATED']
+        resolvable_api_errors = ['502 Server Error', '503 Server Error', '504 Server Error'
+                                 'Read timed out.', 'NOT_AUTHENTICATED']
 
         try:
             time.sleep(max(0, ((self.api_limit_expire / self.api_limit)

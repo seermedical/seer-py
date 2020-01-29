@@ -789,15 +789,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_group
 
 
-    def get_diary_channel_groups(self, patient_id, from_time=0, to_time=90000000000000):
+    def get_diary_channel_groups(self, patient_id, from_time, to_time):
         query_string = graphql.get_diary_study_channel_groups_query_string(patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
-    def get_diary_channel_groups_dataframe(self, patient_id):
-        metadata = self.get_diary_channel_groups(patient_id)
+    def get_diary_channel_groups_dataframe(self, patient_id, from_time=0, to_time=90000000000000):
+        metadata = self.get_diary_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
-        # channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
         segments = self.pandas_flatten(channel_groups, '', 'segments')
         data_chunks = self.pandas_flatten(segments, 'segments.', 'dataChunks')
 
@@ -810,5 +809,32 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return channel_groups
 
 
-    def get_diary_data(self, segment_url):
-        return utils.get_diary_data(segment_url)
+    def get_diary_fitbit_data(self, segments):
+        """Get fitbit data from a patient's diary study
+
+        Parameters
+        ----------
+        segments: pandas DataFrame as returned by get_diary_channel_groups_dataframe
+
+        Returns
+        -------
+        data: pandas DataFrame containing timestamp (adjusted), value, and group name
+
+        """
+        segment_urls = segments['dataChunks.url']
+        group_names = segments['name']
+        start_times = segments['segments.startTime']
+
+        data_list = []
+        for idx, url in enumerate(segment_urls):
+            new_data = utils.get_diary_data(url)
+            new_data['timestamp'] = new_data['timestamp'] + start_times[idx]
+            new_data['name'] = group_names[idx]
+            data_list.append(new_data)
+
+        if data_list:
+            data = pd.concat(data_list)
+        else:
+            data = None
+
+        return data

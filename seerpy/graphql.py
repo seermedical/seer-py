@@ -24,9 +24,9 @@ def get_string_from_list_of_dicts(list_of_dicts):
                     labels_string += (get_json_list(d[k]) + ",")
             else:
                 labels_string += str(d[k]) + ','
-        labels_string = labels_string[:-1] # remove last comma
+        labels_string = labels_string[:-1]  # remove last comma
         labels_string += '},'
-    labels_string = labels_string[:-1] # remove last comma
+    labels_string = labels_string[:-1]  # remove last comma
     return labels_string
 
 
@@ -189,6 +189,7 @@ def get_segment_urls_query_string(segment_ids):
             }
         }""" % segment_ids_string
 
+
 def get_data_chunk_urls_query_string(data_chunks, s3_urls=True):
     chunk_keys = get_string_from_list_of_dicts(data_chunks)
     s3_urls = 'true' if s3_urls else 'false'
@@ -335,7 +336,7 @@ def get_patients_query_string():
         }"""
 
 
-def get_diary_labels_query_string(patient_id):
+def get_diary_labels_query_string(patient_id, limit, offset):
     return """
         query {
             patient (id: "%s") {
@@ -347,7 +348,8 @@ def get_diary_labels_query_string(patient_id):
                         labelType
                         labelSourceType
                         name
-                        labels {
+                        numberOfLabels
+                        labels(limit: %.0f, offset: %.0f) {
                             id
                             startTime
                             timezone
@@ -369,7 +371,7 @@ def get_diary_labels_query_string(patient_id):
                     }
                 }
             }
-        }""" % patient_id
+        }""" % (patient_id, limit, offset)
 
 
 def get_documents_for_study_ids_paged_query_string(study_ids):
@@ -404,6 +406,7 @@ def get_add_document_mutation_string(study_id, document):
             }
         }""" % (study_id, document)
 
+
 def get_confirm_document_mutation_string(study_id, document_id):
     return """
         mutation {
@@ -416,6 +419,7 @@ def get_confirm_document_mutation_string(study_id, document_id):
                 downloadFileUrl
             }
         }""" % (study_id, document_id)
+
 
 def get_bookings_query_string(organisation_id, start_time, end_time):
     return """query {
@@ -461,3 +465,73 @@ def get_bookings_query_string(organisation_id, start_time, end_time):
             }""" % (organisation_id, start_time, end_time)
 
 
+def get_diary_study_label_groups_string(patient_id, limit, offset):
+
+    return """
+        query {
+            patient (id: "%s") {
+                id
+                diaryStudy {
+                    labelGroups(limit: %.0f, offset: %.0f) {
+                        id
+                        name
+                        numberOfLabels
+                    }
+                }
+            }
+        }
+    """ % (patient_id, limit, offset)
+
+
+def get_labels_for_diary_study_query_string(patient_id, label_group_id,  # pylint:disable=too-many-arguments
+                                            from_time, to_time, limit, offset):
+    return """
+        query {
+            patient (id: "%s") {
+                id
+                diaryStudy {
+                    labelGroup (labelGroupId: "%s") {
+                        id
+                        labels (limit: %.0f, offset: %.0f, from: %.0f, to: %.0f) {
+                            id
+                            startTime
+                            timezone
+                            duration
+                            tags {
+                                tagType {
+                                    value
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }""" % (patient_id, label_group_id, limit, offset, from_time, to_time)
+
+
+def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
+
+    return """
+        query {
+            patient(id: "%s") {
+                id
+                diaryStudy {
+                    channelGroups {
+                        id
+                        name
+                        recordsPerChunk
+                        sampleEncoding
+                        compression
+                        segments (ranges: [{ from: %.0f, to: %.0f }]) {
+                            id
+                            startTime
+                            duration
+                            timezone
+                            dataChunks {
+                                url
+                            }
+                        }
+                    }
+                }
+            }
+        }""" % (patient_id, from_time, to_time)

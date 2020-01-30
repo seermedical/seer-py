@@ -418,31 +418,32 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_labels_string(self, study_id, label_group_id, from_time=0, to_time=9e12,
                           with_tags=True):
         query_string = graphql.get_labels_string_query_string(study_id, label_group_id, from_time,
-                                                           to_time, with_tags)
+                                                              to_time, with_tags)
         response = self.execute_query(query_string)['study']
         return response
 
     def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                   to_time=9e12, with_tags=True):
+                                    to_time=9e12, with_tags=True):
         label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time,
                                                to_time=to_time, with_tags=with_tags)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
         label_group['labelGroup.labelString'] = (label_group['labelGroup.labelString']
-                                                    .apply(json.loads))
+                                                 .apply(json.loads))
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labelString')
         label_group = label_group.drop('labelGroup.labelString', errors='ignore', axis='columns')
         label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
         label_group = label_group.rename(columns={'labelString.d': 'labels.duration',
                                                   'labelString.id': 'labels.id',
-                                                  'labelString.s': 'labels.startTime',})
+                                                  'labelString.s': 'labels.startTime',
+                                                  'labelString.c': 'labels.confidence',})
         if with_tags and 'labelString.t' in label_group.columns:
             label_group = label_group.rename(columns={'labelString.t': 'labels.tags'})
             tags = (label_group[['labels.tags', 'labels.id']]
-                        .set_index('labels.id')['labels.tags']
-                        .apply(pd.Series)
-                        .stack())
+                    .set_index('labels.id')['labels.tags']
+                    .apply(pd.Series)
+                    .stack())
             tags = tags.reset_index()
             tags.columns = ['labels.id', 'level_1', 'tags.id']
             del tags['level_1']
@@ -451,7 +452,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             tag_id = self.get_tag_ids_dataframe()[['id', 'value']]
             tag_id.columns = ['tags.id', 'tags.name']
             label_group = label_group.merge(tag_id, how='left', on='tags.id')
-            
+
         return label_group
 
     def get_label_groups_for_studies(self, study_ids, limit=50):

@@ -398,3 +398,28 @@ class TestGetDocumentsForStudiesDataframe:
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result, check_like=True)
+
+
+@mock.patch('time.sleep', return_value=None)
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestStudyCohorts:
+
+    def test_get_study_ids_in_study_cohort(self, seer_auth, gql_client, unused_time_sleep):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "study_cohorts_1_get.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "study_cohorts_2_get.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = ['study1', 'study2']
+
+        # run test and check result
+        result = SeerConnect().get_study_ids_in_study_cohort('cohort1')
+        assert result == expected_result

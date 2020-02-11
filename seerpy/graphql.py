@@ -534,3 +534,75 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
                 }
             }
         }""" % (patient_id, from_time, to_time)
+
+
+def get_study_ids_in_study_cohort_query_string(study_cohort_id, limit, offset):
+    return """
+        query {
+            studyCohort(id: "%s") {
+                id
+                name
+                studies(limit: %0.f, offset: %0.f) {
+                    id
+                }
+            }
+        }
+    """ % (study_cohort_id, limit, offset)
+
+
+def create_study_cohort_mutation_string(name, description=None, key=None, study_ids=None):
+    args = [('name', name)]
+
+    if description is not None:
+        args.append(('description', description))
+
+    if key is not None:
+        args.append(('key', key))
+
+    if study_ids is not None:
+        args.append(
+            ('studyIds', '[' + ','.join([f'"{study_id}"' for study_id in study_ids]) + ']'))
+
+    return """
+        mutation {
+            createStudyCohort(input: {
+                %s
+            })
+        }
+    """ % ','.join([f'{key}: {val}' for key, val in args])
+
+
+def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
+    return """
+    mutation {
+        addStudiesToStudyCohort(
+            studyCohortId: %s,
+            studyIds: [%s]
+        ) {
+            studyCohort {
+                id
+            }
+        }
+    }
+    """ % (
+        study_cohort_id,
+        ','.join(study_ids)
+    )
+
+
+def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids):
+    return """
+    mutation {
+        removeStudiesFromStudyCohort(
+            studyCohortId: %s,
+            studyIds: [%s]
+        ) {
+            studyCohort {
+                id
+            }
+        }
+    }
+    """ % (
+        study_cohort_id,
+        ','.join(study_ids)
+    )

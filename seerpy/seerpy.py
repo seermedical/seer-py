@@ -838,3 +838,32 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             data = None
 
         return data
+
+    def get_study_ids_in_study_cohort(self, study_cohort_id, page_size=200, offset=0):
+        """Gets the IDs of studies in the given StudyCohort
+
+        Parameters
+        ----------
+        study_cohort_id: the id of StudyCohort to retrieve
+        page_size: the number of records to return per page (optional)
+        offset: the query offset
+
+        Returns
+        -------
+        data: a list of Study ids that are in the StudyCohort
+        """
+
+        current_offset = offset
+        results = []
+        while True:
+            query_string = graphql.get_study_ids_in_study_cohort_query_string(
+                study_cohort_id, page_size, current_offset)
+            response = self.execute_query(query_string)['studyCohort']['studies']
+
+            if not response:
+                break
+
+            results += [study['id'] for study in response]
+            current_offset += page_size
+
+        return results

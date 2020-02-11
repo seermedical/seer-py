@@ -1,0 +1,36 @@
+[
+  {
+    "fields": [
+      {
+      "key": "sleep",
+      "value": "0"
+      },
+      {
+        "key": "mood",
+        "value": "0.5"
+      },
+      {
+        "key": "free",
+        "value": "test"
+      }
+    ],
+    "id": "survey1",
+    "lastSubmittedAt": "2020-02-10 19:13:12",
+    "completer": {
+      "id": "completer1"
+    }
+  },
+  {
+    "fields": [
+      {
+      "key": "mood",
+      "value": "0.25"
+      }
+    ],
+    "id": "survey2",
+    "lastSubmittedAt": "2020-02-11 19:13:12",
+    "completer": {
+      "id": "completer1"
+    }
+  }
+]

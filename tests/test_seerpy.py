@@ -403,7 +403,23 @@ class TestGetDocumentsForStudiesDataframe:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetMoodSurveyResults:
-    def test_success(self, seer_auth, gql_client):
+    def test_get_results(self, seer_auth, gql_client):
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+        with open(TEST_DATA_DIR / "mood_survey_results_1.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "mood_survey_results_2.json", "r") as f:
+            side_effects.append(json.load(f))
+        gql_client.return_value.execute.side_effect = side_effects
+
+        with open(TEST_DATA_DIR / "mood_survey_response.json", "r") as f:
+            expected_result = json.load(f)
+
+        result = SeerConnect().get_mood_survey_results(["aMoodSurveyId"])
+        assert result == expected_result
+
+    def test_get_results_dataframe(self, seer_auth, gql_client):
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
 
         side_effects = []

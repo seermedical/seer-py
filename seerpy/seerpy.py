@@ -893,6 +893,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         results = self.get_mood_survey_results(survey_template_ids, limit, offset)
 
+        if results is None or len(results) == 0:
+            return pd.DataFrame()
+
         surveys = json_normalize(results)
         fields = self.pandas_flatten(surveys, '', 'fields')
         surveys = surveys.drop('fields', errors='ignore', axis='columns')

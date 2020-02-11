@@ -1,3 +1,4 @@
+from . import utils
 
 
 def get_json_list(list_of_strings, include_brackets=True):
@@ -539,7 +540,7 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
 def get_study_ids_in_study_cohort_query_string(study_cohort_id, limit, offset):
     return """
         query {
-            studyCohort(id: "%s") {
+            studyCohort(id: %s) {
                 id
                 name
                 studies(limit: %0.f, offset: %0.f) {
@@ -547,62 +548,66 @@ def get_study_ids_in_study_cohort_query_string(study_cohort_id, limit, offset):
                 }
             }
         }
-    """ % (study_cohort_id, limit, offset)
+    """ % (utils.quote_str(study_cohort_id), limit, offset)
 
 
 def create_study_cohort_mutation_string(name, description=None, key=None, study_ids=None):
-    args = [('name', name)]
+    args = [('name', utils.quote_str(name))]
 
     if description is not None:
-        args.append(('description', description))
+        args.append(('description', utils.quote_str(description)))
 
     if key is not None:
-        args.append(('key', key))
+        args.append(('key', utils.quote_str(key)))
 
     if study_ids is not None:
         args.append(
-            ('studyIds', '[' + ','.join([f'"{study_id}"' for study_id in study_ids]) + ']'))
+            ('studyIds', utils.quote_list_of_str(study_ids)))
 
     return """
         mutation {
             createStudyCohort(input: {
                 %s
-            })
+            }) {
+                studyCohort {
+                    id
+                }
+            }
         }
-    """ % ','.join([f'{key}: {val}' for key, val in args])
+    """ % (', '.join([f'{key}: {val}' for key, val in args]))
 
 
 def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
     return """
-    mutation {
-        addStudiesToStudyCohort(
-            studyCohortId: %s,
-            studyIds: [%s]
-        ) {
-            studyCohort {
-                id
+        mutation {
+            addStudiesToStudyCohort(
+                studyCohortId: %s,
+                studyIds: %s
+            ) {
+                studyCohort {
+                    id
+                }
             }
         }
-    }
     """ % (
-        study_cohort_id,
-        ','.join(study_ids)
+        utils.quote_str(study_cohort_id),
+        utils.quote_list_of_str(study_ids)
     )
 
 
 def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids):
     return """
-    mutation {
-        removeStudiesFromStudyCohort(
-            studyCohortId: %s,
-            studyIds: [%s]
-        ) {
-            studyCohort {
-                id
+        mutation {
+            removeStudiesFromStudyCohort(
+                studyCohortId: %s,
+                studyIds: %s
+            ) {
+                studyCohort {
+                    id
+                }
             }
         }
-    }
     """ % (
-        study_cohort_id,
-        ','.join(study_ids)
+        utils.quote_str(study_cohort_id),
+        utils.quote_list_of_str(study_ids)
     )

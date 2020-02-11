@@ -838,3 +838,42 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             data = None
 
         return data
+
+    def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0):
+        """Gets a dataframe containing mood survey results
+
+        Parameters
+        ----------
+        survey_template_ids : A list of survey_template_ids to retrieve results for
+
+        Returns
+        -------
+        mood_survey_results : pandas DataFrame
+                dataframe containing survey.id, survey.lastSubmittedAt, surveyField.key, surveyField.value
+
+        Example
+        -------
+        survey_results = get_mood_survey_results_dataframe("some_id")
+        """
+
+        current_offset = offset
+        results = []
+
+        while True:
+            query_string = graphql.get_mood_survey_results_query_string(survey_template_ids, limit, current_offset)
+            current_offset += limit
+
+            response = self.execute_query(query_string)['surveys']
+
+            if not response:
+                break
+
+            surveys = json_normalize(response)
+            fields = self.pandas_flatten(surveys, '', 'fields')
+            surveys = surveys.drop('fields', errors='ignore', axis='columns')
+            surveys = surveys.merge(fields, how='left', on='id', suffixes=('', '_y'))
+
+            results.append(surveys)
+
+        return pd.concat(results)
+

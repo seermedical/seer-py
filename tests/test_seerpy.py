@@ -398,3 +398,22 @@ class TestGetDocumentsForStudiesDataframe:
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result, check_like=True)
+
+
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetMoodSurveyResults:
+    def test_success(self, seer_auth, gql_client):
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+        with open(TEST_DATA_DIR / "mood_survey_results_1.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "mood_survey_results_2.json", "r") as f:
+            side_effects.append(json.load(f))
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = pd.read_csv(TEST_DATA_DIR / "mood_survey_results.csv")
+
+        result = SeerConnect().get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        pd.testing.assert_frame_equal(result, expected_result)

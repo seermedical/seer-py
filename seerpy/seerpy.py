@@ -3,6 +3,7 @@
 import math
 import time
 import json
+import copy
 
 from gql import gql, Client as GQLClient
 from gql.transport.requests import RequestsHTTPTransport
@@ -532,8 +533,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
             response = self.execute_query(query_string)['patient']['diary']
-            label_groups = response['labelGroups']
+            if label_results is None:
+                label_results = copy.deepcopy(response)
+                # drop labels to avoid duplication in loop
+                for label_group in label_results['labelGroups']:
+                    label_group['labels'] = []
 
+            label_groups = response['labelGroups']
             query_flag = False
             for idx, group in enumerate(label_groups):
                 labels = group['labels']
@@ -545,12 +551,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 if len(labels) >= limit:
                     query_flag = True
 
-                if label_results is None:
-                    label_results = response
-                else:
-                    label_results['labelGroups'][idx]['labels'].extend(labels)
+                label_results['labelGroups'][idx]['labels'].extend(labels)
 
-                offset += limit
+            offset += limit
 
         return label_results
 

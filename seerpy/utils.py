@@ -343,7 +343,3 @@ def get_diary_fitbit_data(data_url):
 
 def quote_str(value):
     return f'"{value}"'
-
-
-def quote_list_of_str(list_to_quote):
-    return '[' + ','.join([f'"{list_item}"' for list_item in list_to_quote]) + ']'

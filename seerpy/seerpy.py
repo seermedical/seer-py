@@ -903,7 +903,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return surveys
 
-    def get_study_ids_in_study_cohort(self, study_cohort_id, page_size=200, offset=0):
+    def get_study_ids_in_study_cohort(self, study_cohort_id, limit=200, offset=0):
         """Gets the IDs of studies in the given StudyCohort
 
         Parameters
@@ -921,13 +921,72 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         results = []
         while True:
             query_string = graphql.get_study_ids_in_study_cohort_query_string(
-                study_cohort_id, page_size, current_offset)
+                study_cohort_id, limit, current_offset)
             response = self.execute_query(query_string)['studyCohort']['studies']
 
             if not response:
                 break
 
             results += [study['id'] for study in response]
-            current_offset += page_size
+            current_offset += limit
 
         return results
+
+    def create_study_cohort(self, name, description=None, key=None, study_ids=None):
+        """Creates a new study cohort
+
+        Parameters
+        ----------
+        name: string
+            The name of the study cohort to create
+        description: string, optional
+            An optional description of the study cohort
+        key: string, optional
+            An optional key to describe the cohort. Defaults to the ID
+        study_ids: list of strings
+            A list of study Ids to add to the study cohort
+
+        Returns
+        -------
+        The study cohort id
+        """
+        query_string = graphql.create_study_cohort_mutation_string(
+            name, description, key, study_ids)
+        return self.execute_query(query_string)
+
+    def add_studies_to_study_cohort(self, study_cohort_id, study_ids):
+        """Add studies to a study cohort by ID
+
+        Parameters
+        ----------
+        study_cohort_id: string
+            The ID of the study cohort to modify
+        study_ids: list of strings
+            A list of study IDs to add to the study cohort
+
+        Returns
+        -------
+        The study cohort id
+        """
+        query_string = graphql.add_studies_to_study_cohort_mutation_string(
+            study_cohort_id, study_ids)
+        return self.execute_query(query_string)
+
+
+    def remove_studies_from_study_cohort(self, study_cohort_id, study_ids):
+        """Remove studies from a study cohort by ID
+
+        Parameters
+        ----------
+        study_cohort_id: string
+            The ID of the study cohort to modify
+        study_ids: list of strings
+            A list of study IDs to remove from the study cohort
+
+        Returns
+        -------
+        The study cohort id
+        """
+        query_string = graphql.remove_studies_from_study_cohort_mutation_string(
+            study_cohort_id, study_ids)
+        return self.execute_query(query_string)

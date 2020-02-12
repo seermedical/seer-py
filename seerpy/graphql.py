@@ -562,7 +562,7 @@ def create_study_cohort_mutation_string(name, description=None, key=None, study_
 
     if study_ids is not None:
         args.append(
-            ('studyIds', utils.quote_list_of_str(study_ids)))
+            ('studyIds', get_json_list(study_ids)))
 
     return """
         mutation {
@@ -591,7 +591,7 @@ def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
         }
     """ % (
         utils.quote_str(study_cohort_id),
-        utils.quote_list_of_str(study_ids)
+        get_json_list(study_ids)
     )
 
 
@@ -609,7 +609,7 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
         }
     """ % (
         utils.quote_str(study_cohort_id),
-        utils.quote_list_of_str(study_ids)
+        get_json_list(study_ids)
     )
 
 

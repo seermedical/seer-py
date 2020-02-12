@@ -74,6 +74,3 @@ class TestCreateDataChunkUrls:
 
     def test_quote_str(self):
         assert utils.quote_str('test') == '"test"'
-
-    def test_quote_list_of_str(self):
-        assert utils.quote_list_of_str(['test1', 'test2']) == '["test1","test2"]'

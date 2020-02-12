@@ -467,7 +467,6 @@ class TestGetMoodSurveyResults:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestStudyCohorts:
-
     def test_get_study_ids_in_study_cohort(self, seer_auth, gql_client):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}
@@ -488,12 +487,13 @@ class TestStudyCohorts:
         assert result == expected_result
 
     def test_generating_create_mutation(self, unused_seer_auth, unused_gql_client):
-        query_string = graphql.create_study_cohort_mutation_string('test_cohort', study_ids=['study1', 'study2'])
+        query_string = graphql.create_study_cohort_mutation_string(
+            'test_cohort', study_ids=['study1', 'study2'])
 
         assert query_string == """
         mutation {
             createStudyCohort(input: {
-                name: "test_cohort", studyIds: ["study1","study2"]
+                name: "test_cohort", studyIds: ["study1", "study2"]
             }) {
                 studyCohort {
                     id
@@ -503,13 +503,14 @@ class TestStudyCohorts:
     """
 
     def test_generating_add_studies_to_cohort_mutation(self, unused_seer_auth, unused_gql_client):
-        query_string = graphql.add_studies_to_study_cohort_mutation_string('cohort_id', ['study1', 'study2'])
+        query_string = graphql.add_studies_to_study_cohort_mutation_string(
+            'cohort_id', ['study1', 'study2'])
 
         assert query_string == """
         mutation {
             addStudiesToStudyCohort(
                 studyCohortId: "cohort_id",
-                studyIds: ["study1","study2"]
+                studyIds: ["study1", "study2"]
             ) {
                 studyCohort {
                     id
@@ -518,14 +519,16 @@ class TestStudyCohorts:
         }
     """
 
-    def test_generating_remove_studies_from_cohort_mutation(self, unused_seer_auth, unused_gql_client):
-        query_string = graphql.remove_studies_from_study_cohort_mutation_string('cohort_id', ['study1', 'study2'])
+    def test_generating_remove_studies_from_cohort_mutation(
+            self, unused_seer_auth, unused_gql_client):
+        query_string = graphql.remove_studies_from_study_cohort_mutation_string(
+            'cohort_id', ['study1', 'study2'])
 
         assert query_string == """
         mutation {
             removeStudiesFromStudyCohort(
                 studyCohortId: "cohort_id",
-                studyIds: ["study1","study2"]
+                studyIds: ["study1", "study2"]
             ) {
                 studyCohort {
                     id

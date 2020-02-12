@@ -611,3 +611,25 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
         utils.quote_str(study_cohort_id),
         utils.quote_list_of_str(study_ids)
     )
+
+
+def get_mood_survey_results_query_string(survey_template_ids, limit, offset):
+    return """
+    query {
+        surveys(surveyTemplateIds: [%s], limit: %0.f, offset: %0.f) {
+            completer {
+                id
+            }
+            id
+            fields {
+                key
+                value
+            }
+            lastSubmittedAt
+        }
+    }
+    """ % (
+        ','.join([f'"{survey_template_id}"' for survey_template_id in survey_template_ids]),
+        limit,
+        offset
+    )

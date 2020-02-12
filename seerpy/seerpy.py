@@ -839,6 +839,70 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return data
 
+    def get_mood_survey_results(self, survey_template_ids, limit=200, offset=0):
+        """Gets a list of dictionaries containing mood survey results
+
+        Parameters
+        ----------
+        survey_template_ids : A list of survey_template_ids to retrieve results for
+
+        Returns
+        -------
+        mood_survey_results : a list of dictionaries
+                a list of dictionaries containing survey result data
+
+        Example
+        -------
+        survey_results = get_mood_survey_results("some_id")
+        """
+
+        current_offset = offset
+        results = []
+
+        while True:
+            query_string = graphql.get_mood_survey_results_query_string(
+                survey_template_ids, limit, current_offset)
+            current_offset += limit
+
+            response = self.execute_query(query_string)['surveys']
+
+            if not response:
+                break
+
+            results += response
+
+        return results
+
+
+    def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0):
+        """Gets a dataframe containing mood survey results
+
+        Parameters
+        ----------
+        survey_template_ids : A list of survey_template_ids to retrieve results for
+
+        Returns
+        -------
+        mood_survey_results : pandas DataFrame
+            dataframe with survey.id, survey.lastSubmittedAt, surveyField.key, surveyField.value
+
+        Example
+        -------
+        survey_results = get_mood_survey_results_dataframe("some_id")
+        """
+
+        results = self.get_mood_survey_results(survey_template_ids, limit, offset)
+
+        if results is None or len(results) == 0:
+            return pd.DataFrame()
+
+        surveys = json_normalize(results)
+        fields = self.pandas_flatten(surveys, '', 'fields')
+        surveys = surveys.drop('fields', errors='ignore', axis='columns')
+        surveys = surveys.merge(fields, how='left', on='id', suffixes=('', '_y'))
+
+        return surveys
+
     def get_study_ids_in_study_cohort(self, study_cohort_id, page_size=200, offset=0):
         """Gets the IDs of studies in the given StudyCohort
 

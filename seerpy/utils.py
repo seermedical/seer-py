@@ -339,3 +339,7 @@ def get_diary_fitbit_data(data_url):
     data = data.reshape(int(len(data)/2), 2)
     data = pd.DataFrame(data=data, columns=['timestamp', 'value'])
     return data
+
+
+def quote_str(value):
+    return f'"{value}"'

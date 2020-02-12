@@ -534,3 +534,24 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
                 }
             }
         }""" % (patient_id, from_time, to_time)
+
+def get_mood_survey_results_query_string(survey_template_ids, limit, offset):
+    return """
+    query {
+        surveys(surveyTemplateIds: [%s], limit: %0.f, offset: %0.f) {
+            completer {
+                id
+            }
+            id
+            fields {
+                key
+                value
+            }
+            lastSubmittedAt
+        }
+    }
+    """ % (
+        ','.join([f'"{survey_template_id}"' for survey_template_id in survey_template_ids]),
+        limit,
+        offset
+    )

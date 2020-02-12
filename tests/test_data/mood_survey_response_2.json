@@ -1,0 +1,17 @@
+{
+  "surveys": [
+    {
+      "fields": [
+        {
+          "key": "extra",
+          "value": "0.8"
+        }
+      ],
+      "id": "survey3",
+      "lastSubmittedAt": "2020-02-10 19:13:12",
+      "completer": {
+        "id": "completer2"
+      }
+    }
+  ]
+}

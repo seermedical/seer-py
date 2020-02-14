@@ -17,7 +17,7 @@ from . import graphql
 
 class SeerConnect:  # pylint: disable=too-many-public-methods
 
-    def __init__(self, api_url='https://api.seermedical.com', email=None, password=None):
+    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -49,7 +49,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         def graphql_client(party_id=None):
             url_suffix = '?partyId=' + party_id if party_id else ''
-            url = self.api_url + '/api/graphql' + url_suffix
+            url = self.api_url + '/graphql' + url_suffix
             return GQLClient(
                 transport=RequestsHTTPTransport(
                     url=url,

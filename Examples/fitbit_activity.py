@@ -23,15 +23,15 @@ to_time = end_time.timestamp() * 1000
 for idx, patient_id in enumerate(patient_ids):
 
     patient_email = patients.loc[idx]['user.email']
-    
+
 #    get data for i.e. patient email
     if patient_email == 'EMAIL':
-        
-#        Get available channel groups        
+
+#        Get available channel groups
         diary_data_channels = seer_client.get_diary_channel_groups_dataframe(patient_id, from_time, to_time)
-        
+
 #        can change to get heart rate or step count here
         segments = diary_data_channels.loc[diary_data_channels['name'] == fitbit_heart_rate_name]
         segments = segments.reset_index(drop=True)
-        
-        data, group_names, start_times = seer_client.get_diary_fitbit_data(segments)
+
+        data = seer_client.get_diary_fitbit_data(segments)

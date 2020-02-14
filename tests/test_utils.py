@@ -71,3 +71,6 @@ class TestCreateDataChunkUrls:
 
         # check result
         assert result.equals(expected_result)
+
+    def test_quote_str(self):
+        assert utils.quote_str('test') == '"test"'

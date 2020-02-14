@@ -1,0 +1,13 @@
+{
+  "studyCohort": {
+    "id": "cohort1",
+    "name": "Super Testing Cohort",
+    "studies": [
+      {
+        "id": "study1"
+      }, {
+        "id": "study2"
+      }
+    ]
+  }
+}

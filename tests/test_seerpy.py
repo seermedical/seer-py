@@ -8,6 +8,7 @@ import pytest
 import pandas as pd
 
 from seerpy.seerpy import SeerConnect
+import seerpy.graphql as graphql
 
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
@@ -398,3 +399,140 @@ class TestGetDocumentsForStudiesDataframe:
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result, check_like=True)
+
+
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetMoodSurveyResults:
+    def test_get_results(self, seer_auth, gql_client):
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+        with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "mood_survey_response_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+        gql_client.return_value.execute.side_effect = side_effects
+
+        with open(TEST_DATA_DIR / "mood_survey_results.json", "r") as f:
+            expected_result = json.load(f)
+
+        result = SeerConnect().get_mood_survey_results(["aMoodSurveyId"])
+        assert result == expected_result
+
+    def test_get_results_dataframe(self, seer_auth, gql_client):
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+        with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "mood_survey_response_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = pd.read_csv(TEST_DATA_DIR / "mood_survey_results.csv")
+
+        result = SeerConnect().get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        pd.testing.assert_frame_equal(result, expected_result)
+
+    def test_get_multiple_results_pages_dataframe(self, seer_auth, gql_client):
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+        with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "mood_survey_response_2.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "mood_survey_response_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = pd.read_csv(TEST_DATA_DIR / "mood_survey_results_multipage.csv")
+
+        result = SeerConnect().get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        pd.testing.assert_frame_equal(result, expected_result)
+
+    def test_get_empty_results_dataframe(self, seer_auth, gql_client):
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+        with open(TEST_DATA_DIR / "mood_survey_response_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+        gql_client.return_value.execute.side_effect = side_effects
+
+        result = SeerConnect().get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        assert result.empty
+
+
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestStudyCohorts:
+    def test_get_study_ids_in_study_cohort(self, seer_auth, gql_client):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "study_cohorts_1_get.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "study_cohorts_2_get.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = ['study1', 'study2']
+
+        # run test and check result
+        result = SeerConnect().get_study_ids_in_study_cohort('cohort1')
+        assert result == expected_result
+
+    def test_generating_create_mutation(self, unused_seer_auth, unused_gql_client):
+        query_string = graphql.create_study_cohort_mutation_string(
+            'test_cohort', study_ids=['study1', 'study2'])
+
+        assert query_string == """
+        mutation {
+            createStudyCohort(input: {
+                name: "test_cohort", studyIds: ["study1", "study2"]
+            }) {
+                studyCohort {
+                    id
+                }
+            }
+        }
+    """
+
+    def test_generating_add_studies_to_cohort_mutation(self, unused_seer_auth, unused_gql_client):
+        query_string = graphql.add_studies_to_study_cohort_mutation_string(
+            'cohort_id', ['study1', 'study2'])
+
+        assert query_string == """
+        mutation {
+            addStudiesToStudyCohort(
+                studyCohortId: "cohort_id",
+                studyIds: ["study1", "study2"]
+            ) {
+                studyCohort {
+                    id
+                }
+            }
+        }
+    """
+
+    def test_generating_remove_studies_from_cohort_mutation(
+            self, unused_seer_auth, unused_gql_client):
+        query_string = graphql.remove_studies_from_study_cohort_mutation_string(
+            'cohort_id', ['study1', 'study2'])
+
+        assert query_string == """
+        mutation {
+            removeStudiesFromStudyCohort(
+                studyCohortId: "cohort_id",
+                studyIds: ["study1", "study2"]
+            ) {
+                studyCohort {
+                    id
+                }
+            }
+        }
+    """

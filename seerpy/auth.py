@@ -9,9 +9,10 @@ import requests
 
 class SeerAuth:
 
-    def __init__(self, api_url, email=None, password=None):
+    def __init__(self, api_url, email=None, password=None, dev=False):
         self.api_url = api_url
         self.cookie = None
+        self.dev = dev
 
         self.read_cookie()
         if self.verify_login() == 200:
@@ -48,7 +49,16 @@ class SeerAuth:
         print("login status_code", response.status_code)
         if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
                 and response.cookies):
-            self.cookie = {'seer.sid' : response.cookies['seer.sid']}
+
+            seer_sid = response.cookies.get('seer.sid', False)
+            seerdev_sid = response.cookies.get('seerdev.sid', False)
+
+            self.cookie = {}
+            if seer_sid:
+                self.cookie['seer.sid'] = seer_sid
+            if seerdev_sid:
+                self.cookie['seerdev.sid'] = seerdev_sid
+
         else:
             self.cookie = None
 
@@ -59,7 +69,8 @@ class SeerAuth:
         verify_url = self.api_url + '/auth/verify'
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
-            print("api verify call returned", response.status_code, "status code")
+            print("api verify call returned",
+                  response.status_code, "status code")
             return 401
 
         json_response = response.json()
@@ -82,10 +93,13 @@ class SeerAuth:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
 
+    def get_cookie_path(self):
+        return '/.seerpy/cookie-dev' if self.dev else '/.seerpy/cookie'
+
     def write_cookie(self):
         try:
             home = os.path.expanduser('~')
-            cookie_file = home + '/.seerpy/cookie'
+            cookie_file = home + self.get_cookie_path()
             if not os.path.isdir(home + '/.seerpy'):
                 os.mkdir(home + '/.seerpy')
             with open(cookie_file, 'w') as f:
@@ -95,14 +109,14 @@ class SeerAuth:
 
     def read_cookie(self):
         home = os.path.expanduser('~')
-        cookie_file = home + '/.seerpy/cookie'
+        cookie_file = home + self.get_cookie_path()
         if os.path.isfile(cookie_file):
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
 
     def destroy_cookie(self):
         home = os.path.expanduser('~')
-        cookie_file = home + '/.seerpy/cookie'
+        cookie_file = home + self.get_cookie_path()
         if os.path.isfile(cookie_file):
             os.remove(cookie_file)
         self.cookie = None

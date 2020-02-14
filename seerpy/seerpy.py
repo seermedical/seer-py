@@ -81,7 +81,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 if 'NOT_AUTHENTICATED' in error_string:
                     self.seer_auth.destroy_cookie()
                 else:
-                    print('"', error_string, '" raised, trying again after a short break')
+                    print('"', error_string,
+                          '" raised, trying again after a short break')
                     time.sleep(min(30 * (invocations+1)**2,
                                    max(self.last_query_time + self.api_limit_expire - time.time(),
                                        0)))
@@ -95,8 +96,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset = 0
         objects = []
         while True:
-            formatted_query_string = query_string.format(limit=limit, offset=offset)
-            response = self.execute_query(formatted_query_string, party_id)[object_name]
+            formatted_query_string = query_string.format(
+                limit=limit, offset=offset)
+            response = self.execute_query(
+                formatted_query_string, party_id)[object_name]
             if not response:
                 break
             else:
@@ -109,8 +112,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         child_list = []
         for i in range(len(parent)):
             parent_id = parent[parent_name+'id'][i]
-            child = json_normalize(parent[parent_name+child_name][i]).sort_index(axis=1)
-            child.columns = [child_name+'.' + str(col) for col in child.columns]
+            child = json_normalize(
+                parent[parent_name+child_name][i]).sort_index(axis=1)
+            child.columns = [child_name+'.' +
+                             str(col) for col in child.columns]
             child[parent_name+'id'] = parent_id
             child_list.append(child)
 
@@ -253,13 +258,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return self.execute_query(query_string)
 
     def add_document(self, study_id, document_name, document_path):
-        query_string = graphql.get_add_document_mutation_string(study_id, document_name)
-        response_add = self.execute_query(query_string)['createStudyDocuments'][0]
+        query_string = graphql.get_add_document_mutation_string(
+            study_id, document_name)
+        response_add = self.execute_query(
+            query_string)['createStudyDocuments'][0]
         with open(document_path, 'rb') as f:
             response_put = requests.put(response_add['uploadFileUrl'], data=f)
         if response_put.status_code == 200:
             query_string = graphql.get_confirm_document_mutation_string(study_id,
-                                                                    response_add['id'])
+                                                                        response_add['id'])
             response_confirm = self.execute_query(query_string)
             return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
         else:
@@ -281,7 +288,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return [study['id'] for study in studies]
 
     def get_studies(self, limit=50, search_term='', party_id=None):
-        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
+        studies_query_string = graphql.get_studies_by_search_term_paged_query_string(
+            search_term)
         return self.get_paginated_response(studies_query_string, 'studies', limit, party_id)
 
     def get_studies_dataframe(self, limit=50, search_term='', party_id=None):
@@ -309,7 +317,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_studies_by_id(self, study_ids, limit=50):
         if isinstance(study_ids, str):
             study_ids = [study_ids]
-        studies_query_string = graphql.get_studies_by_study_id_paged_query_string(study_ids)
+        studies_query_string = graphql.get_studies_by_study_id_paged_query_string(
+            study_ids)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
     def get_channel_groups(self, study_id):
@@ -324,8 +333,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segments = []
         counter = 0
         while int(counter * limit) < len(segment_ids):
-            segment_ids_batch = segment_ids[int(counter * limit):int((counter + 1) * limit)]
-            query_string = graphql.get_segment_urls_query_string(segment_ids_batch)
+            segment_ids_batch = segment_ids[int(
+                counter * limit):int((counter + 1) * limit)]
+            query_string = graphql.get_segment_urls_query_string(
+                segment_ids_batch)
             response = self.execute_query(query_string)
             segments.extend([segment for segment in response['studyChannelGroupSegments']
                              if segment is not None])
@@ -365,8 +376,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         chunks = []
         counter = 0
         while int(counter * limit) < len(data_chunks):
-            data_chunks_batch = data_chunks[int(counter * limit):int((counter + 1) * limit)]
-            query_string = graphql.get_data_chunk_urls_query_string(data_chunks_batch, s3_urls)
+            data_chunks_batch = data_chunks[int(
+                counter * limit):int((counter + 1) * limit)]
+            query_string = graphql.get_data_chunk_urls_query_string(
+                data_chunks_batch, s3_urls)
             response = self.execute_query(query_string)
             chunks.extend([chunk for chunk in response['studyChannelGroupDataChunkUrls']
                            if chunk is not None])
@@ -400,40 +413,46 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_labels_dataframe(self, study_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
 
-        label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
+        label_results = self.get_labels(
+            study_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-        label_group = label_group.drop('labelGroup.labels', errors='ignore', axis='columns')
+        label_group = label_group.drop(
+            'labelGroup.labels', errors='ignore', axis='columns')
         labels = labels.drop('labels.tags', errors='ignore', axis='columns')
 
-        label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
-        label_group = label_group.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+        label_group = label_group.merge(
+            labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+        label_group = label_group.merge(
+            tags, how='left', on='labels.id', suffixes=('', '_y'))
 
         return label_group
 
     def get_labels_string(self, study_id, label_group_id, from_time=0, to_time=9e12):
         query_string = graphql.get_labels_string_query_string(study_id, label_group_id, from_time,
-                                                           to_time)
+                                                              to_time)
         response = self.execute_query(query_string)['study']
         return response
 
     def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                   to_time=9e12):
+                                    to_time=9e12):
         label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time,
                                                to_time=to_time)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
         label_group['labelGroup.labelString'] = (label_group['labelGroup.labelString']
-                                                    .apply(json.loads))
+                                                 .apply(json.loads))
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labelString')
-        label_group = label_group.drop('labelGroup.labelString', errors='ignore', axis='columns')
-        label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
-        label_group=label_group.rename(columns = {'labelString.d': 'labels.duration',
+        label_group = label_group.drop(
+            'labelGroup.labelString', errors='ignore', axis='columns')
+        label_group = label_group.merge(
+            labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+        label_group = label_group.rename(columns={'labelString.d': 'labels.duration',
                                                   'labelString.id': 'labels.id',
                                                   'labelString.s': 'labels.startTime'})
         return label_group
@@ -442,7 +461,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if isinstance(study_ids, str):
             study_ids = [study_ids]
 
-        labels_query_string = graphql.get_label_groups_for_study_ids_paged_query_string(study_ids)
+        labels_query_string = graphql.get_label_groups_for_study_ids_paged_query_string(
+            study_ids)
         return self.get_paginated_response(labels_query_string, 'studies', limit)
 
     def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
@@ -451,8 +471,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for label_group in study['labelGroups']:
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')
-                label_group['labelGroup.labelType'] = label_group.pop('labelType')
-                label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
+                label_group['labelGroup.labelType'] = label_group.pop(
+                    'labelType')
+                label_group['labelGroup.numberOfLabels'] = label_group.pop(
+                    'numberOfLabels')
                 label_group['id'] = study['id']
                 label_group['name'] = study['name']
                 label_groups.append(label_group)
@@ -461,12 +483,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_viewed_times_dataframe(self, study_id, limit=250, offset=0):
         views = []
         while True:
-            query_string = graphql.get_viewed_times_query_string(study_id, limit, offset)
+            query_string = graphql.get_viewed_times_query_string(
+                study_id, limit, offset)
             response = self.execute_query(query_string)
-            response = json_normalize(response['viewGroups']).sort_index(axis=1)
+            response = json_normalize(
+                response['viewGroups']).sort_index(axis=1)
             non_empty_views = False
             for i in range(len(response)):
-                view = json_normalize(response.at[i, 'views']).sort_index(axis=1)
+                view = json_normalize(
+                    response.at[i, 'views']).sort_index(axis=1)
                 view['user'] = response.at[i, 'user.fullName']
                 if not view.empty:
                     non_empty_views = True
@@ -507,7 +532,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_documents_for_studies(self, study_ids, limit=50):
         if isinstance(study_ids, str):
             study_ids = [study_ids]
-        documents_query_string = graphql.get_documents_for_study_ids_paged_query_string(study_ids)
+        documents_query_string = graphql.get_documents_for_study_ids_paged_query_string(
+            study_ids)
         return self.get_paginated_response(documents_query_string, 'studies', limit)
 
     def get_documents_for_studies_dataframe(self, study_ids, limit=50):
@@ -530,7 +556,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             if not query_flag:
                 break
 
-            query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
+            query_string = graphql.get_diary_labels_query_string(
+                patient_id, limit, offset)
             response = self.execute_query(query_string)['patient']['diary']
             label_groups = response['labelGroups']
 
@@ -560,18 +587,21 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if label_results is None:
             return label_results
 
-        label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)
+        label_groups = json_normalize(
+            label_results['labelGroups']).sort_index(axis=1)
         labels = self.pandas_flatten(label_groups, '', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-        label_groups = label_groups.drop('labels', errors='ignore', axis='columns')
+        label_groups = label_groups.drop(
+            'labels', errors='ignore', axis='columns')
         labels = labels.drop('labels.tags', errors='ignore', axis='columns')
-        label_groups = label_groups.merge(labels, how='left', on='id', suffixes=('', '_y'))
-        label_groups = label_groups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
-        label_groups = label_groups.rename({'id':'labelGroups.id'})
+        label_groups = label_groups.merge(
+            labels, how='left', on='id', suffixes=('', '_y'))
+        label_groups = label_groups.merge(
+            tags, how='left', on='labels.id', suffixes=('', '_y'))
+        label_groups = label_groups.rename({'id': 'labelGroups.id'})
         label_groups['id'] = patient_id
         return label_groups
-
 
     def get_all_study_metadata_by_names(self, study_names=None, party_id=None):
         """Get all the metadata available about named studies
@@ -616,12 +646,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if study_ids is None:
             study_ids = self.get_study_ids()
         elif not study_ids:  # treat empty list as asking for nothing, not everything
-            return {'studies' : []}
+            return {'studies': []}
 
         result = [self.execute_query(graphql.get_study_with_data_query_string(study_id))['study']
                   for study_id in study_ids]
 
-        return {'studies' : result}
+        return {'studies': result}
 
     def get_all_study_metadata_dataframe_by_names(self, study_names=None):
         study_ids = None
@@ -633,19 +663,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         metadata = self.get_all_study_metadata_by_ids(study_ids)
         all_data = json_normalize(metadata['studies']).sort_index(axis=1)
         channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
-        channels = self.pandas_flatten(channel_groups, 'channelGroups.', 'channels')
-        segments = self.pandas_flatten(channel_groups, 'channelGroups.', 'segments')
+        channels = self.pandas_flatten(
+            channel_groups, 'channelGroups.', 'channels')
+        segments = self.pandas_flatten(
+            channel_groups, 'channelGroups.', 'segments')
 
-        segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
+        segments = segments.drop(
+            'segments.dataChunks', errors='ignore', axis='columns')
         channel_groups = channel_groups.drop(['channelGroups.segments', 'channelGroups.channels'],
                                              errors='ignore', axis='columns')
-        all_data = all_data.drop(['channelGroups', 'labelGroups'], errors='ignore', axis='columns')
+        all_data = all_data.drop(
+            ['channelGroups', 'labelGroups'], errors='ignore', axis='columns')
 
         channel_groups = channel_groups.merge(segments, how='left', on='channelGroups.id',
                                               suffixes=('', '_y'))
         channel_groups = channel_groups.merge(channels, how='left', on='channelGroups.id',
                                               suffixes=('', '_y'))
-        all_data = all_data.merge(channel_groups, how='left', on='id', suffixes=('', '_y'))
+        all_data = all_data.merge(
+            channel_groups, how='left', on='id', suffixes=('', '_y'))
 
         return all_data
 
@@ -685,17 +720,21 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                       to_time)
 
     def get_all_bookings(self, organisation_id, start_time, end_time):
-        query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
+        query_string = graphql.get_bookings_query_string(
+            organisation_id, start_time, end_time)
         response = self.execute_query(query_string)
         return response['organisation']['bookings']
 
     def get_all_bookings_dataframe(self, organisation_id, start_time, end_time):
-        bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
+        bookings_response = self.get_all_bookings(
+            organisation_id, start_time, end_time)
         bookings = json_normalize(bookings_response).sort_index(axis=1)
         studies = self.pandas_flatten(bookings, 'patient.', 'studies')
         equipment = self.pandas_flatten(bookings, '', 'equipmentItems')
-        bookings = bookings.drop('patient.studies', errors='ignore', axis='columns')
-        bookings = bookings.drop('equipmentItems', errors='ignore', axis='columns')
+        bookings = bookings.drop(
+            'patient.studies', errors='ignore', axis='columns')
+        bookings = bookings.drop(
+            'equipmentItems', errors='ignore', axis='columns')
         bookings = bookings.merge(studies, how='left', on='patient.id')
         bookings = bookings.merge(equipment, how='left', on='id')
         return bookings.drop_duplicates().reset_index(drop=True)
@@ -703,7 +742,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     # DIARY STUDY (FITBIT) ANALYSIS
     def get_diary_data_groups(self, patient_id, limit=20, offset=0):
         # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
-        query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
+        query_string = graphql.get_diary_study_label_groups_string(
+            patient_id, limit, offset)
         response = self.execute_query(query_string)['patient']['diaryStudy']
         label_groups = response['labelGroups']
         return label_groups
@@ -725,20 +765,22 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = get_diary_study_label_groups_dataframe("some_id")
 
         """
-        label_group_results = self.get_diary_data_groups(patient_id, limit, offset)
+        label_group_results = self.get_diary_data_groups(
+            patient_id, limit, offset)
         if label_group_results is None:
             return label_group_results
         label_groups = json_normalize(label_group_results).sort_index(axis=1)
         return label_groups
 
     def get_diary_data_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                   to_time=9e12, limit=200, offset=0):
+                              to_time=9e12, limit=200, offset=0):
         label_results = None
 
         while True:
             query_string = graphql.get_labels_for_diary_study_query_string(patient_id, label_group_id, from_time,
-                                                           to_time, limit, offset)
-            response = self.execute_query(query_string)['patient']['diaryStudy']
+                                                                           to_time, limit, offset)
+            response = self.execute_query(query_string)[
+                'patient']['diaryStudy']
             labels = response['labelGroup']['labels']
             if not labels:
                 break
@@ -753,7 +795,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_results
 
     def get_diary_data_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
-                             from_time=0, to_time=9e12, limit=200, offset=0):
+                                        from_time=0, to_time=9e12, limit=200, offset=0):
         """Get labels from a patient's diary study
 
         Parameters
@@ -773,44 +815,52 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = get_diary_study_labels_dataframe(patient_id, label_group_id)
 
         """
-        label_results = self.get_diary_data_labels(patient_id, label_group_id, from_time, to_time, limit, offset)
+        label_results = self.get_diary_data_labels(
+            patient_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 
-        label_group = label_group.drop('labelGroup.labels', errors='ignore', axis='columns')
+        label_group = label_group.drop(
+            'labelGroup.labels', errors='ignore', axis='columns')
         labels = labels.drop('labels.tags', errors='ignore', axis='columns')
 
-        label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
-        label_group = label_group.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
+        label_group = label_group.merge(
+            labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
+        label_group = label_group.merge(
+            tags, how='left', on='labels.id', suffixes=('', '_y'))
 
         return label_group
 
-
     def get_diary_channel_groups(self, patient_id, from_time, to_time):
-        query_string = graphql.get_diary_study_channel_groups_query_string(patient_id, from_time, to_time)
+        query_string = graphql.get_diary_study_channel_groups_query_string(
+            patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
     def get_diary_channel_groups_dataframe(self, patient_id, from_time=0, to_time=90000000000000):
-        metadata = self.get_diary_channel_groups(patient_id, from_time, to_time)
+        metadata = self.get_diary_channel_groups(
+            patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
-        if len(channel_groups) == 0:
+        if channel_groups.empty:
             return None
 
         segments = self.pandas_flatten(channel_groups, '', 'segments')
         data_chunks = self.pandas_flatten(segments, 'segments.', 'dataChunks')
 
-        channel_groups = channel_groups.drop('segments', errors='ignore', axis='columns')
-        segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
+        channel_groups = channel_groups.drop(
+            'segments', errors='ignore', axis='columns')
+        segments = segments.drop(
+            'segments.dataChunks', errors='ignore', axis='columns')
 
-        channel_groups = channel_groups.merge(segments, how='left', on='id', suffixes=('', '_y'))
-        channel_groups = channel_groups.merge(data_chunks, how='left', on='segments.id', suffixes=('', '_y'))
+        channel_groups = channel_groups.merge(
+            segments, how='left', on='id', suffixes=('', '_y'))
+        channel_groups = channel_groups.merge(
+            data_chunks, how='left', on='segments.id', suffixes=('', '_y'))
 
         return channel_groups
-
 
     def get_diary_fitbit_data(self, segments):
         """Get fitbit data from a patient's diary study
@@ -876,7 +926,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return results
 
-
     def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0):
         """Gets a dataframe containing mood survey results
 
@@ -894,7 +943,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         survey_results = get_mood_survey_results_dataframe("some_id")
         """
 
-        results = self.get_mood_survey_results(survey_template_ids, limit, offset)
+        results = self.get_mood_survey_results(
+            survey_template_ids, limit, offset)
 
         if results is None or len(results) == 0:
             return pd.DataFrame()
@@ -902,7 +952,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         surveys = json_normalize(results)
         fields = self.pandas_flatten(surveys, '', 'fields')
         surveys = surveys.drop('fields', errors='ignore', axis='columns')
-        surveys = surveys.merge(fields, how='left', on='id', suffixes=('', '_y'))
+        surveys = surveys.merge(
+            fields, how='left', on='id', suffixes=('', '_y'))
 
         return surveys
 
@@ -925,7 +976,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         while True:
             query_string = graphql.get_study_ids_in_study_cohort_query_string(
                 study_cohort_id, limit, current_offset)
-            response = self.execute_query(query_string)['studyCohort']['studies']
+            response = self.execute_query(query_string)[
+                'studyCohort']['studies']
 
             if not response:
                 break
@@ -974,7 +1026,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.add_studies_to_study_cohort_mutation_string(
             study_cohort_id, study_ids)
         return self.execute_query(query_string)
-
 
     def remove_studies_from_study_cohort(self, study_cohort_id, study_ids):
         """Remove studies from a study cohort by ID

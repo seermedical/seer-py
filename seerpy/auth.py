@@ -42,7 +42,7 @@ class SeerAuth:
                 raise InterruptedError('Authentication Failed')
 
     def login(self):
-        login_url = self.api_url + '/api/auth/login'
+        login_url = self.api_url + '/auth/login'
         body = {'email': self.email, 'password': self.password}
         response = requests.post(url=login_url, data=body)
         print("login status_code", response.status_code)
@@ -56,7 +56,7 @@ class SeerAuth:
         if self.cookie is None:
             return 401
 
-        verify_url = self.api_url + '/api/auth/verify'
+        verify_url = self.api_url + '/auth/verify'
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
             print("api verify call returned", response.status_code, "status code")

@@ -47,8 +47,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def login(self, email=None, password=None):
         self.seer_auth = SeerAuth(self.api_url, email, password, self.dev)
         cookie = self.seer_auth.cookie
-        header = {'Cookie': list(cookie.keys())[
-            0] + '=' + cookie['seerdev.sid'] if self.dev else cookie['seer.sid']}
+
+        header =  {}
+
+        if self.dev:
+            header['Cookie'] = f'seerdev.sid={cookie["seerdev.sid"]}'
+        else:
+            header['Cookie'] = f'seer.sid={cookie["seer.sid"]}'
 
         def graphql_client(party_id=None):
             url_suffix = '?partyId=' + party_id if party_id else ''

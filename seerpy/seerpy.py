@@ -1009,3 +1009,91 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.remove_studies_from_study_cohort_mutation_string(
             study_cohort_id, study_ids)
         return self.execute_query(query_string)
+
+    def get_user_ids_in_user_cohort(self, user_cohort_id, limit=200, offset=0):
+        """Gets the IDs of users in the given UserCohort
+
+        Parameters
+        ----------
+        user_cohort_id: the id of UserCohort to retrieve
+        page_size: the number of records to return per page (optional)
+        offset: the query offset
+
+        Returns
+        -------
+        data: a list of User ids that are in the UserCohort
+        """
+
+        current_offset = offset
+        results = []
+        while True:
+            query_string = graphql.get_user_ids_in_user_cohort_query_string(
+                user_cohort_id, limit, current_offset)
+            response = self.execute_query(query_string)['userCohort']['users']
+
+            if not response:
+                break
+
+            results += [user['id'] for user in response]
+            current_offset += limit
+
+        return results
+
+    def create_user_cohort(self, name, description=None, key=None, user_ids=None):
+        """Creates a new UserCohort
+
+        Parameters
+        ----------
+        name: string
+            The name of the user cohort to create
+        description: string, optional
+            An optional description of the user cohort
+        key: string, optional
+            An optional key to describe the cohort. Defaults to the ID
+        user_ids: list of strings
+            A list of user Ids to add to the user cohort
+
+        Returns
+        -------
+        The user cohort id
+        """
+        query_string = graphql.create_user_cohort_mutation_string(
+            name, description, key, user_ids)
+        return self.execute_query(query_string)
+
+    def add_users_to_user_cohort(self, user_cohort_id, user_ids):
+        """Add users to a user cohort by ID
+
+        Parameters
+        ----------
+        user_cohort_id: string
+            The ID of the user cohort to modify
+        user_ids: list of strings
+            A list of user IDs to add to the user cohort
+
+        Returns
+        -------
+        The user cohort id
+        """
+        query_string = graphql.add_users_to_user_cohort_mutation_string(
+            user_cohort_id, user_ids)
+        return self.execute_query(query_string)
+
+
+    def remove_users_from_user_cohort(self, user_cohort_id, user_ids):
+        """Remove users from a user cohort by ID
+
+        Parameters
+        ----------
+        user_cohort_id: string
+            The ID of the user cohort to modify
+        user_ids: list of strings
+            A list of user IDs to remove from the user cohort
+
+        Returns
+        -------
+        The user cohort id
+        """
+        query_string = graphql.remove_users_from_user_cohort_mutation_string(
+            user_cohort_id, user_ids)
+        return self.execute_query(query_string)

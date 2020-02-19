@@ -7,6 +7,10 @@ import json
 import requests
 
 
+COOKIE_KEY_PROD = 'seer.sid'
+COOKIE_KEY_DEV = 'seerdev.sid'
+
+
 class SeerAuth:
 
     def __init__(self, api_url, email=None, password=None, dev=False):
@@ -50,14 +54,14 @@ class SeerAuth:
         if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
                 and response.cookies):
 
-            seer_sid = response.cookies.get('seer.sid', False)
-            seerdev_sid = response.cookies.get('seerdev.sid', False)
+            seer_sid = response.cookies.get(COOKIE_KEY_PROD, False)
+            seerdev_sid = response.cookies.get(COOKIE_KEY_DEV, False)
 
             self.cookie = {}
             if seer_sid:
-                self.cookie['seer.sid'] = seer_sid
-            if seerdev_sid:
-                self.cookie['seerdev.sid'] = seerdev_sid
+                self.cookie[COOKIE_KEY_PROD] = seer_sid
+            elif seerdev_sid:
+                self.cookie[COOKIE_KEY_DEV] = seerdev_sid
 
         else:
             self.cookie = None

@@ -10,7 +10,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from .auth import SeerAuth
+from .auth import SeerAuth, COOKIE_KEY_DEV, COOKIE_KEY_PROD
 from . import utils
 from . import graphql
 
@@ -48,12 +48,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.seer_auth = SeerAuth(self.api_url, email, password, self.dev)
         cookie = self.seer_auth.cookie
 
-        header =  {}
-
-        if self.dev:
-            header['Cookie'] = f'seerdev.sid={cookie["seerdev.sid"]}'
-        else:
-            header['Cookie'] = f'seer.sid={cookie["seer.sid"]}'
+        key = COOKIE_KEY_DEV if self.dev else COOKIE_KEY_PROD
+        header =  {
+            'Cookie': f'{key}={cookie[key]}'
+        }
 
         def graphql_client(party_id=None):
             url_suffix = '?partyId=' + party_id if party_id else ''

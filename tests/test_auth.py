@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from seerpy.auth import SeerAuth
+from seerpy.auth import SeerAuth, COOKIE_KEY_PROD
 
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
@@ -25,18 +25,18 @@ class TestAuth:
     def test_success(self, read_cookie, requests_post,  # pylint:disable=unused-argument
                      requests_get, email_input, password_getpass):  # pylint:disable=unused-argument
         requests_post.return_value.status_code = 200
-        requests_post.return_value.cookies = {'seer.sid': "cookie"}
+        requests_post.return_value.cookies = {COOKIE_KEY_PROD: "cookie"}
         requests_get.return_value.status_code = 200
         requests_get.return_value.json.return_value = {"session": "active"}
 
         result = SeerAuth("api-url")
 
-        assert result.cookie['seer.sid'] == "cookie"
+        assert result.cookie[COOKIE_KEY_PROD] == "cookie"
 
     def test_401_error(self, requests_post, requests_get,
                        email_input, password_getpass):  # pylint:disable=unused-argument
         requests_post.return_value.status_code = 200
-        requests_post.return_value.cookies = {'seer.sid': "cookie"}
+        requests_post.return_value.cookies = {COOKIE_KEY_PROD: "cookie"}
         requests_get.return_value.status_code = 401
 
         with pytest.raises(InterruptedError):
@@ -45,7 +45,7 @@ class TestAuth:
     def test_other_error(self, requests_post, requests_get,
                          email_input, password_getpass):  # pylint:disable=unused-argument
         requests_post.return_value.status_code = 200
-        requests_post.return_value.cookies = {'seer.sid': "cookie"}
+        requests_post.return_value.cookies = {COOKIE_KEY_PROD: "cookie"}
         requests_get.return_value.status_code = "undefined"
 
         with pytest.raises(InterruptedError):

@@ -553,10 +553,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
                 if label_results is None:
                     label_results = response
+                    if any([index['numberOfLabels'] for index in response['labelGroups'] if index['numberOfLabels'] >= limit]):
+                        query_flag = True
+                    break
+
                 else:
                     label_results['labelGroups'][idx]['labels'].extend(labels)
 
-                offset += limit
+            offset += limit
 
         return label_results
 

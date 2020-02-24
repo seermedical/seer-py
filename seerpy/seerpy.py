@@ -9,6 +9,7 @@ from gql.transport.requests import RequestsHTTPTransport
 import pandas as pd
 from pandas.io.json import json_normalize
 import requests
+from datetime import datetime
 
 from .auth import SeerAuth, COOKIE_KEY_DEV, COOKIE_KEY_PROD
 from . import utils
@@ -843,8 +844,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         data_list = []
         for idx, url in enumerate(segment_urls):
+            start_time = datetime.utcfromtimestamp(start_times[idx]/1000)
             new_data = utils.get_diary_fitbit_data(url)
-            new_data['timestamp'] = new_data['timestamp'] + start_times[idx]
+            # convert timestamps to true utc datetime
+            new_data['timestamp'] = start_time + pd.to_timedelta(new_data['timestamp'], unit='ms')
             new_data['name'] = group_names[idx]
             data_list.append(new_data)
 

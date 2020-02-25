@@ -631,3 +631,78 @@ def get_mood_survey_results_query_string(survey_template_ids, limit, offset):
         limit,
         offset
     )
+
+def get_user_ids_in_user_cohort_query_string(user_cohort_id, limit, offset):
+    return """
+        query {
+            userCohort(id: %s) {
+                id
+                name
+                users(limit: %0.f, offset: %0.f) {
+                    id
+                }
+            }
+        }
+    """ % (utils.quote_str(user_cohort_id), limit, offset)
+
+
+def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):
+    args = [('name', utils.quote_str(name))]
+
+    if description is not None:
+        args.append(('description', utils.quote_str(description)))
+
+    if key is not None:
+        args.append(('key', utils.quote_str(key)))
+
+    if user_ids is not None:
+        args.append(
+            ('userIds', get_json_list(user_ids)))
+
+    return """
+        mutation {
+            createUserCohort(input: {
+                %s
+            }) {
+                userCohort {
+                    id
+                }
+            }
+        }
+    """ % (', '.join([f'{key}: {val}' for key, val in args]))
+
+
+def get_add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
+    return """
+        mutation {
+            addUsersToUserCohort(
+                userCohortId: %s,
+                userIds: %s
+            ) {
+                userCohort {
+                    id
+                }
+            }
+        }
+    """ % (
+        utils.quote_str(user_cohort_id),
+        get_json_list(user_ids)
+    )
+
+
+def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
+    return """
+        mutation {
+            removeUsersFromUserCohort(
+                userCohortId: %s,
+                userIds: %s
+            ) {
+                userCohort {
+                    id
+                }
+            }
+        }
+    """ % (
+        utils.quote_str(user_cohort_id),
+        get_json_list(user_ids)
+    )

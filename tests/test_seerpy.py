@@ -537,3 +537,107 @@ class TestStudyCohorts:
             }
         }
     """
+
+
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestUserCohorts:
+    def test_get_user_ids_in_user_cohort(self, seer_auth, gql_client):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "user_cohorts_1_get.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "user_cohorts_2_get.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = ['user1', 'user2']
+
+        # run test and check result
+        result = SeerConnect().get_user_ids_in_user_cohort('cohort1')
+        assert result == expected_result
+
+
+    def test_get_user_ids_in_user_cohort_with_cohort_not_found(self, seer_auth, gql_client):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = [Exception('NOT_FOUND')]
+        gql_client.return_value.execute.side_effect = side_effects
+
+        with pytest.raises(Exception) as ex:
+            SeerConnect().get_user_ids_in_user_cohort('random-cohort-that-doesnt-exist')
+            assert str(ex.value) == 'NOT_FOUND'
+
+
+    def test_get_user_ids_in_user_cohort_with_no_users(self, seer_auth, gql_client):
+        # setup
+        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "user_cohorts_2_get.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = []
+
+        # run test and check result
+        result = SeerConnect().get_user_ids_in_user_cohort('a-missing-cohort')
+        assert result == expected_result
+
+    def test_generating_create_user_cohort_mutation(self, unused_seer_auth, unused_gql_client):
+        query_string = graphql.get_create_user_cohort_mutation_string(
+            'test_cohort', user_ids=['user1', 'user2'])
+
+        assert query_string == """
+        mutation {
+            createUserCohort(input: {
+                name: "test_cohort", userIds: ["user1", "user2"]
+            }) {
+                userCohort {
+                    id
+                }
+            }
+        }
+    """
+
+    def test_generating_add_users_to_cohort_mutation(self, unused_seer_auth, unused_gql_client):
+        query_string = graphql.get_add_users_to_user_cohort_mutation_string(
+            'cohort_id', ['user1', 'user2'])
+
+        assert query_string == """
+        mutation {
+            addUsersToUserCohort(
+                userCohortId: "cohort_id",
+                userIds: ["user1", "user2"]
+            ) {
+                userCohort {
+                    id
+                }
+            }
+        }
+    """
+
+    def test_generating_remove_users_from_cohort_mutation(
+            self, unused_seer_auth, unused_gql_client):
+        query_string = graphql.get_remove_users_from_user_cohort_mutation_string(
+            'cohort_id', ['user1', 'user2'])
+
+        assert query_string == """
+        mutation {
+            removeUsersFromUserCohort(
+                userCohortId: "cohort_id",
+                userIds: ["user1", "user2"]
+            ) {
+                userCohort {
+                    id
+                }
+            }
+        }
+    """

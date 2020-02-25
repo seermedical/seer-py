@@ -96,7 +96,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 self.login()
                 return self.execute_query(query_string, party_id, invocations=invocations)
 
-            raise ex
+            raise
 
     def get_paginated_response(self, query_string, object_name, limit=250, party_id=None):
         offset = 0
@@ -1029,12 +1029,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         while True:
             query_string = graphql.get_user_ids_in_user_cohort_query_string(
                 user_cohort_id, limit, current_offset)
-
-            try:
-                response = self.execute_query(query_string)['userCohort']['users']
-            except Exception as ex: # pylint: disable=broad-except
-                if 'NOT_FOUND' in str(ex):
-                    break
+            response = self.execute_query(query_string)['userCohort']['users']
 
             if not response:
                 break

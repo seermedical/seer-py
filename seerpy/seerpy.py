@@ -95,7 +95,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 self.login()
                 return self.execute_query(query_string, party_id, invocations=invocations)
 
-            raise
+            raise ex
 
     def get_paginated_response(self, query_string, object_name, limit=250, party_id=None):
         offset = 0
@@ -1023,7 +1023,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         while True:
             query_string = graphql.get_user_ids_in_user_cohort_query_string(
                 user_cohort_id, limit, current_offset)
-            response = self.execute_query(query_string)['userCohort']['users']
+
+            try:
+                response = self.execute_query(query_string)['userCohort']['users']
+            except Exception as ex: # pylint: disable=broad-except
+                if 'NOT_FOUND' in str(ex):
+                    break
 
             if not response:
                 break
@@ -1051,7 +1056,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -------
         The user cohort id
         """
-        query_string = graphql.create_user_cohort_mutation_string(
+        query_string = graphql.get_create_user_cohort_mutation_string(
             name, description, key, user_ids)
         return self.execute_query(query_string)
 
@@ -1069,7 +1074,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -------
         The user cohort id
         """
-        query_string = graphql.add_users_to_user_cohort_mutation_string(
+        query_string = graphql.get_add_users_to_user_cohort_mutation_string(
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
 
@@ -1088,6 +1093,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -------
         The user cohort id
         """
-        query_string = graphql.remove_users_from_user_cohort_mutation_string(
+        query_string = graphql.get_remove_users_from_user_cohort_mutation_string(
             user_cohort_id, user_ids)
         return self.execute_query(query_string)

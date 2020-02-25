@@ -648,7 +648,7 @@ def get_user_ids_in_user_cohort_query_string(user_cohort_id, limit, offset):
     """ % (utils.quote_str(user_cohort_id), limit, offset)
 
 
-def create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):
+def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):
     args = [('name', utils.quote_str(name))]
 
     if description is not None:
@@ -674,7 +674,7 @@ def create_user_cohort_mutation_string(name, description=None, key=None, user_id
     """ % (', '.join([f'{key}: {val}' for key, val in args]))
 
 
-def add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
+def get_add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
     return """
         mutation {
             addUsersToUserCohort(
@@ -692,7 +692,7 @@ def add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
     )
 
 
-def remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
+def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
     return """
         mutation {
             removeUsersFromUserCohort(

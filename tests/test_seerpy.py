@@ -9,6 +9,7 @@ import pandas as pd
 
 from seerpy.seerpy import SeerConnect
 import seerpy.graphql as graphql
+from seerpy.auth import COOKIE_KEY_PROD
 
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
@@ -26,7 +27,7 @@ TEST_DATA_DIR = pathlib.Path(__file__).parent / "test_data"
 class TestSeerConnect:
 
     def test_success(self, seer_auth):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         result = SeerConnect()
 
@@ -36,7 +37,7 @@ class TestSeerConnect:
         seer_auth.return_value.cookie = None
 
         # not really desired behaviour, just documenting current behaviour
-        with pytest.raises(AttributeError):
+        with pytest.raises(TypeError):
             SeerConnect()
 
     def test_login_error(self, seer_auth):
@@ -92,7 +93,7 @@ class TestGetAllStudyMetaDataByNames:
 
     def test_no_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -121,7 +122,7 @@ class TestGetAllStudyMetaDataByNames:
 
     def test_existing_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -148,7 +149,7 @@ class TestGetAllStudyMetaDataByNames:
 
     def test_getting_multiple_study_ids_by_name(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -181,7 +182,7 @@ class TestGetAllStudyMetaDataByNames:
 
     def test_nonexistent_study_param(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -206,7 +207,7 @@ class TestGetSegmentUrls:
 
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         with open(TEST_DATA_DIR / "segment_urls_1.json", "r") as f:
             gql_client.return_value.execute.return_value = json.load(f)
@@ -221,7 +222,7 @@ class TestGetSegmentUrls:
 
     def test_multiple_batches(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
         for file_name in ["segment_urls_1.json", "segment_urls_2.json"]:
@@ -240,7 +241,7 @@ class TestGetSegmentUrls:
 
     def test_none_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_empty.csv", index_col=0)
 
@@ -252,7 +253,7 @@ class TestGetSegmentUrls:
 
     def test_empty_segment_ids(self, seer_auth, unused_gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         # gql_client is never called as we don't enter the loop
 
@@ -264,7 +265,7 @@ class TestGetSegmentUrls:
 
     def test_unmatched_segment_ids(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         with open(TEST_DATA_DIR / "segment_urls_no_match.json", "r") as f:
             gql_client.return_value.execute.return_value = json.load(f)
@@ -283,7 +284,7 @@ class TestGetLabels:
 
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -314,7 +315,7 @@ class TestGetLabelsDataframe:
 
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -344,7 +345,7 @@ class TestGetViewedTimesDataframe:
 
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -375,7 +376,7 @@ class TestGetDocumentsForStudiesDataframe:
 
     def test_success(self, seer_auth, gql_client, unused_time_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 
@@ -405,7 +406,7 @@ class TestGetDocumentsForStudiesDataframe:
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetMoodSurveyResults:
     def test_get_results(self, seer_auth, gql_client):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
@@ -421,7 +422,7 @@ class TestGetMoodSurveyResults:
         assert result == expected_result
 
     def test_get_results_dataframe(self, seer_auth, gql_client):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
@@ -436,7 +437,7 @@ class TestGetMoodSurveyResults:
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_get_multiple_results_pages_dataframe(self, seer_auth, gql_client):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
@@ -453,7 +454,7 @@ class TestGetMoodSurveyResults:
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_get_empty_results_dataframe(self, seer_auth, gql_client):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_empty.json", "r") as f:
@@ -469,7 +470,7 @@ class TestGetMoodSurveyResults:
 class TestStudyCohorts:
     def test_get_study_ids_in_study_cohort(self, seer_auth, gql_client):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {COOKIE_KEY_PROD: "cookie"}
 
         side_effects = []
 

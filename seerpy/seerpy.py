@@ -10,14 +10,14 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from .auth import SeerAuth
+from .auth import SeerAuth, COOKIE_KEY_DEV, COOKIE_KEY_PROD
 from . import utils
 from . import graphql
 
 
 class SeerConnect:  # pylint: disable=too-many-public-methods
 
-    def __init__(self, api_url='https://api.seermedical.com', email=None, password=None):
+    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None, dev=False):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -36,6 +36,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
 
         self.api_url = api_url
+        self.dev = dev
+
         self.login(email, password)
 
         self.last_query_time = time.time()
@@ -43,13 +45,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.api_limit = 580
 
     def login(self, email=None, password=None):
-        self.seer_auth = SeerAuth(self.api_url, email, password)
+        self.seer_auth = SeerAuth(self.api_url, email, password, self.dev)
         cookie = self.seer_auth.cookie
-        header = {'Cookie': list(cookie.keys())[0] + '=' + cookie['seer.sid']}
+
+        key = COOKIE_KEY_DEV if self.dev else COOKIE_KEY_PROD
+        header =  {
+            'Cookie': f'{key}={cookie[key]}'
+        }
 
         def graphql_client(party_id=None):
             url_suffix = '?partyId=' + party_id if party_id else ''
-            url = self.api_url + '/api/graphql' + url_suffix
+            url = self.api_url + '/graphql' + url_suffix
             return GQLClient(
                 transport=RequestsHTTPTransport(
                     url=url,
@@ -547,10 +553,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
                 if label_results is None:
                     label_results = response
+                    if any([index['numberOfLabels'] for index in response['labelGroups'] if index['numberOfLabels'] >= limit]):
+                        query_flag = True
+                    break
+
                 else:
                     label_results['labelGroups'][idx]['labels'].extend(labels)
 
-                offset += limit
+            offset += limit
 
         return label_results
 
@@ -797,6 +807,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_channel_groups_dataframe(self, patient_id, from_time=0, to_time=90000000000000):
         metadata = self.get_diary_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
+        if channel_groups.empty:
+            return None
+
         segments = self.pandas_flatten(channel_groups, '', 'segments')
         data_chunks = self.pandas_flatten(segments, 'segments.', 'dataChunks')
 

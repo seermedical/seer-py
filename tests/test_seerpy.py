@@ -561,38 +561,6 @@ class TestUserCohorts:
         result = SeerConnect().get_user_ids_in_user_cohort('cohort1')
         assert result == expected_result
 
-    def test_get_user_ids_in_user_cohort_with_cohort_not_found(self, seer_auth, gql_client):
-        # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
-
-        side_effects = [Exception('NOT_FOUND')]
-
-        gql_client.return_value.execute.side_effect = side_effects
-
-        expected_result = []
-
-        # run test and check result
-        result = SeerConnect().get_user_ids_in_user_cohort('a-missing-cohort')
-        assert result == expected_result
-
-        # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
-
-        side_effects = []
-
-        with open(TEST_DATA_DIR / "user_cohorts_1_get.json", "r") as f:
-            side_effects.append(json.load(f))
-        with open(TEST_DATA_DIR / "user_cohorts_2_get.json", "r") as f:
-            side_effects.append(json.load(f))
-
-        gql_client.return_value.execute.side_effect = side_effects
-
-        expected_result = ['user1', 'user2']
-
-        # run test and check result
-        result = SeerConnect().get_user_ids_in_user_cohort('cohort1')
-        assert result == expected_result
-
     def test_get_user_ids_in_user_cohort_with_no_users(self, seer_auth, gql_client):
         # setup
         seer_auth.return_value.cookie = {'seer.sid': "cookie"}

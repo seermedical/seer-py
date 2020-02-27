@@ -317,7 +317,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
-    def get_segment_urls(self, segment_ids, limit=10000):
+    def get_segment_urls(self, segment_ids, limit=5000):
         if not segment_ids:
             return pd.DataFrame(columns=['baseDataChunkUrl', 'segments.id'])
 

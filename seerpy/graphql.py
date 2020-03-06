@@ -332,6 +332,14 @@ def get_patients_query_string():
                     shortName
                     email
                 }
+                diaryStudy {
+                    id
+                    labelGroups {
+                        id
+                        name
+                        numberOfLabels
+                    }
+                }
             }
         }"""
 

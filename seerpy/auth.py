@@ -99,7 +99,7 @@ class SeerAuth:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
             if not self.help_message_displayed:
-                print("\nHint: To skip this in future, save your details to ~/.seerpy/credentials")
+                print(f"\nHint: To skip this in future, save your details to {pswdfile}")
                 print("See README.md - 'Authenticating' for details\n")
                 self.help_message_displayed = True
 

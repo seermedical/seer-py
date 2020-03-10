@@ -30,6 +30,23 @@ Check out the [Example](Examples/Example.ipynb) for a step-by-step example of ho
 
 To start a Jupyter notebook, run `jupyter notebook` in a command/bash window. Further instructions on Jupyter can be found here: https://github.com/jupyter/notebook
 
+## Authenticating
+
+To access data from the Seer platform you must first register for an account 
+at https://app.seermedical.com/. You can then use seer-py to authenticate with
+the API.
+
+Create an instance of the `SeerAuth` class (defined in _auth.py_) and provide
+your email address and password using one of the following options:
+
+1. Pass them as arguments when instantiating the `SeerAuth` object.
+2. In your home directory, create a  _.seerpy/_ folder, and within it a file
+  named _credentials_. Save your email address on the first line and your
+  password on the second line with no other text.
+3. If you don't use one of the previous options, you will be prompted for your
+  email address and password in the terminal or Jupyter notebook before you can
+  retrieve any data.
+
 ## Running with other API endpoints
 
 To run seer-py against other environments (for instance against a development API server), perform the following steps:

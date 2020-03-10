@@ -13,6 +13,8 @@ COOKIE_KEY_DEV = 'seerdev.sid'
 
 class SeerAuth:
 
+    help_message_displayed = False
+
     def __init__(self, api_url, email=None, password=None, dev=False):
         self.api_url = api_url
         self.cookie = None
@@ -91,11 +93,15 @@ class SeerAuth:
         if os.path.isfile(pswdfile):
             with open(pswdfile, 'r') as f:
                 lines = f.readlines()
-                self.email = lines[0][:-1]
-                self.password = lines[1][:-1]
+                self.email = lines[0].rstrip()
+                self.password = lines[1].rstrip()
         else:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
+            if not self.help_message_displayed:
+                print("\nHint: To skip this in future, save your details to ~/.seerpy/credentials")
+                print("See README.md - 'Authenticating' for details\n")
+                self.help_message_displayed = True
 
     def get_cookie_path(self):
         return '/.seerpy/cookie-dev' if self.dev else '/.seerpy/cookie'

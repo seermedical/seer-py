@@ -6,19 +6,20 @@ import json
 
 import requests
 
-
 COOKIE_KEY_PROD = 'seer.sid'
 COOKIE_KEY_DEV = 'seerdev.sid'
 
 
 class SeerAuth:
 
-    help_message_displayed = False
+    seerpy_dir = f"{os.path.expanduser('~')}/.seerpy"
+    pswdfile = f"{seerpy_dir}/credentials"
 
     def __init__(self, api_url, email=None, password=None, dev=False):
         self.api_url = api_url
         self.cookie = None
         self.dev = dev
+        self.save_creds_prompted = False
 
         self.read_cookie()
         if self.verify_login() == 200:
@@ -36,6 +37,7 @@ class SeerAuth:
             response = self.verify_login()
             if response == requests.codes.ok:  # pylint: disable=maybe-no-member
                 print('Login Successful')
+                self.prompt_to_write_credentials()
                 break
             elif i < allowed_attempts - 1:
                 print('\nLogin error, please re-enter your email and password: \n')
@@ -88,45 +90,49 @@ class SeerAuth:
         return response.status_code
 
     def login_details(self):
-        home = os.path.expanduser('~')
-        pswdfile = home + '/.seerpy/credentials'
-        if os.path.isfile(pswdfile):
-            with open(pswdfile, 'r') as f:
+        if os.path.isfile(self.pswdfile):
+            with open(self.pswdfile, 'r') as f:
                 lines = f.readlines()
                 self.email = lines[0].rstrip()
                 self.password = lines[1].rstrip()
         else:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
-            if not self.help_message_displayed:
-                print(f"\nHint: To skip this in future, save your details to {pswdfile}")
-                print("See README.md - 'Authenticating' for details\n")
-                self.help_message_displayed = True
 
     def get_cookie_path(self):
-        return '/.seerpy/cookie-dev' if self.dev else '/.seerpy/cookie'
+        return f"{self.seerpy_dir}/cookie-dev" if self.dev else f"{self.seerpy_dir}/cookie"
 
     def write_cookie(self):
         try:
-            home = os.path.expanduser('~')
-            cookie_file = home + self.get_cookie_path()
-            if not os.path.isdir(home + '/.seerpy'):
-                os.mkdir(home + '/.seerpy')
+            cookie_file = self.get_cookie_path()
+            if not os.path.isdir(self.seerpy_dir):
+                os.mkdir(self.seerpy_dir)
             with open(cookie_file, 'w') as f:
                 f.write(json.dumps(self.cookie))
         except Exception:  # pylint:disable=broad-except
             pass
 
     def read_cookie(self):
-        home = os.path.expanduser('~')
-        cookie_file = home + self.get_cookie_path()
+        cookie_file = self.get_cookie_path()
         if os.path.isfile(cookie_file):
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
 
     def destroy_cookie(self):
-        home = os.path.expanduser('~')
-        cookie_file = home + self.get_cookie_path()
+        cookie_file = self.get_cookie_path()
         if os.path.isfile(cookie_file):
             os.remove(cookie_file)
         self.cookie = None
+
+    def prompt_to_write_credentials(self):
+        """If no credentials file exists, ask user if they would like to create one"""
+        if not os.path.isfile(self.pswdfile) and not self.save_creds_prompted:
+            response = input(f"\nWould you like to save your credentials to file "
+                             f"to skip this step in future? (Y/n) ")
+            if response.lower().startswith('y'):
+                with open(self.pswdfile, 'w') as f:
+                    f.write(f"{self.email}\n")
+                    f.write(f"{self.password}\n")
+                print(f"Credentials saved to {self.pswdfile}")
+
+        self.save_creds_prompted = True

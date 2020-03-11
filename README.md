@@ -36,7 +36,7 @@ To access data from the Seer platform you must first register for an account at
 https://app.seermedical.com/. You can then use seer-py to authenticate with the API.
 
 Create an instance of the `SeerAuth` class (defined in _auth.py_) and provide
-your email address and password using either of the following options:
+your email address and password using one of the following options:
 
 1. Pass them as arguments when instantiating a `SeerAuth` object.
 2. In your local user directory, create a _.seerpy/_ folder with a file named

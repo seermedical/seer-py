@@ -93,8 +93,8 @@ class SeerAuth:
         if os.path.isfile(self.pswdfile):
             with open(self.pswdfile, 'r') as f:
                 lines = f.readlines()
-                self.email = lines[0].rstrip()
-                self.password = lines[1].rstrip()
+                self.email = lines[0].rstrip('\n')
+                self.password = lines[1].rstrip('\n')
         else:
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')

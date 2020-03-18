@@ -583,6 +583,22 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups['id'] = patient_id
         return label_groups
 
+    def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
+
+        query_string = graphql.get_diary_medication_compliance_query_string(patient_id, from_time, to_time)
+        response = self.execute_query(query_string)
+
+        return response
+
+    def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
+
+        results = self.get_diary_medication_compliance(patient_id, from_time, to_time)
+        if results is None:
+            return results
+
+        medication_compliance = json_normalize(results['patient']['diary']['medicationCompliance']).sort_index(axis=1)
+        medication_compliance['id'] = patient_id
+        return medication_compliance
 
     def get_all_study_metadata_by_names(self, study_names=None, party_id=None):
         """Get all the metadata available about named studies

@@ -587,7 +587,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         query_string = graphql.get_diary_medication_compliance_query_string(patient_id, from_time, to_time)
         response = self.execute_query(query_string)
-
         return response
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):

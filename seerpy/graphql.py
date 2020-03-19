@@ -373,6 +373,22 @@ def get_diary_labels_query_string(patient_id, limit, offset):
             }
         }""" % (patient_id, limit, offset)
 
+def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):
+
+    return """
+        query {
+            patient (id: "%s") {
+                id
+                diary {
+                    id
+                    medicationCompliance (range: { from: %.0f, to: %.0f }) {
+                        label
+                        status
+                        date
+                    }
+                }
+            }
+        }""" % (patient_id, from_time, to_time)
 
 def get_documents_for_study_ids_paged_query_string(study_ids):
     study_ids_string = get_json_list(study_ids)

@@ -140,6 +140,7 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         comprehension-escape,
+        too-many-arguments,
         missing-docstring  # temporary
 
 # Enable the message, report, category or checker with the given id(s). You can

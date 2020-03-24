@@ -583,14 +583,25 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups['id'] = patient_id
         return label_groups
 
-    def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
+    def get_diary_medication_alerts(self, patient_id, from_time=0, to_time=9e12):
+        query_string = graphql.get_diary_medication_alerts_query_string(patient_id, from_time, to_time)
+        response = self.execute_query(query_string)['patient']['diary']
+        return response
 
+    def get_diary_medication_alerts_dataframe(self, patient_id, from_time=0, to_time=9e12):
+        results = self.get_diary_medication_alerts(patient_id, from_time, to_time)
+        if results is None:
+            return results
+        alerts = json_normalize(results['alerts']).sort_index(axis=1)
+        labels = self.pandas_flatten(alerts, '', 'labels')
+        return labels
+
+    def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         query_string = graphql.get_diary_medication_compliance_query_string(patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
-
         results = self.get_diary_medication_compliance(patient_id, from_time, to_time)
         if results is None:
             return results

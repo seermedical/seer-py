@@ -857,9 +857,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data_list = []
         for idx, url in enumerate(segment_urls):
             start_time = datetime.utcfromtimestamp(start_times[idx]/1000)
+            timezone = segments['segments.timezone'][idx]
             new_data = utils.get_diary_fitbit_data(url)
             # convert timestamps to true utc datetime
             new_data['timestamp'] = start_time + pd.to_timedelta(new_data['timestamp'], unit='ms')
+            new_data['timestamp'] = new_data['timestamp'].dt.tz_localize('UTC')
+            new_data['timestamp'] = new_data['timestamp'].dt.tz_convert('Etc/GMT-{}'.format(timezone))
             new_data['name'] = group_names[idx]
             data_list.append(new_data)
 

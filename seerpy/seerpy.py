@@ -19,16 +19,17 @@ Concepts
     - tags (List[str]): list of associated tag IDs
     - confidence (float | None): Confidence given to label between 0 and 1
     - createdAt (str): ISO-formatted creation datetime
-    - createdBy (Dict[str, str]): User who created the label 
+    - createdBy (Dict[str, str]): User who created the label
 - tag: An ontology of "attributes" that may be atached to a label to provide
     info or clarifications, e.g. Jaw clenching, Beta, Exemplar, Generalised, Sleep.
     Tags are arranged into categories, e.g. Band, Brain area, Channel, Seizure type, Sleep
-- party ID: The ID associated with e.g. an organisation, which will have
-    permissions to view certain data
 - segment: A duration of recording for a given channel group. Segments lengths
     are variable, though generally capped at 135 minutes (at least for EEG)
 - data chunk: Segments are saved to disk as 10-second data chunks, which must be
     reassembled to yield a complete segment
+
+- party ID: The ID associated with e.g. an organisation, which will change the
+    endpoint URL
 - API response: Data returned from the GraphQL endpoint. Returned as JSON format,
     so typically get a dictionary with string keys and values that may be strings,
     numbers, bools, dictionaries, lists of dicts etc.
@@ -117,7 +118,7 @@ class SeerConnect:
         Parameters
         ----------
         query_string: The formatted GraphQL query
-        party_id: The organisation/entity to use for the query
+        party_id: The organisation/entity to specify for the query
         _invocations: Used for recursive calls; don't set directly
 
         Returns: Dictionary of str: API result, e.g. dict, str, list of dict...
@@ -164,7 +165,7 @@ class SeerConnect:
         query_string: The formatted GraphQL query
         object_name: Key to retrieve from the response object, e.g. 'studies'
         limit: Max number of objects to return per GraphQL query
-        party_id: The organisation/entity to use for the query
+        party_id: The organisation/entity to specify for the query
 
         Returns: List of API response dicts
         """
@@ -192,7 +193,6 @@ class SeerConnect:
         Parameters
         ----------
         df: The DataFrame with a `parent_name`'id' col, and `child_name` col of
-            
         parent_name: The prefix to the 'id' column in the DataFrame
         child_name: The name of the column with nest
 
@@ -223,8 +223,8 @@ class SeerConnect:
         study_id: Seer study ID
         name: Name of the new label
         description: Free text explanation/notes on the label group
-        label_type (Optional): Seer label type ID
-        party_id (Optional): The organisation/entity to use for the query.
+        label_type: Seer label type ID
+        party_id: The organisation/entity to specify for the query
 
         Returns: ID of the newly created label group
         """
@@ -336,7 +336,7 @@ class SeerConnect:
         ----------
         limit: The number of studies to retrieve per API call
         search_term: A string used to filter the studies returned
-        party_id: The organisation/entity to use for the query
+        party_id: The organisation/entity to specify for the query
         """
         studies = self.get_studies(limit, search_term, party_id)
         return [study['id'] for study in studies]
@@ -350,7 +350,7 @@ class SeerConnect:
         ----------
         limit: The number of studies to retrieve per API call
         search_term: A string used to filter the studies returned
-        party_id: The organisation/entity to use for the query
+        party_id: The organisation/entity to specify for the query
         """
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
         return self.get_paginated_response(studies_query_string, 'studies', limit, party_id)
@@ -365,7 +365,7 @@ class SeerConnect:
         ----------
         limit: The number of studies to retrieve per API call
         search_term: A string used to filter the studies returned
-        party_id: The organisation/entity to use for the query
+        party_id: The organisation/entity to specify for the query
         """
         studies = self.get_studies(limit, search_term, party_id)
         studies_dataframe = json_normalize(studies).sort_index(axis=1)
@@ -380,7 +380,7 @@ class SeerConnect:
         Parameters
         ----------
         study_names: Iterable of Seer study names
-        party_id: The organisation/entity to use for the query
+        party_id: The organisation/entity to specify for the query
         """
         if isinstance(study_names, str):
             study_names = [study_names]
@@ -404,7 +404,7 @@ class SeerConnect:
         Parameters
         ----------
         study_names: Iterable of Seer study names
-        party_id: The organisation/entity to use for the query
+        party_id: The organisation/entity to specify for the query
         """
         return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()
 
@@ -415,9 +415,8 @@ class SeerConnect:
 
         Parameters
         ----------
+        study_ids: Seer study IDs to get details for
         limit: The number of studies to retrieve per API call
-        search_term: A string used to filter the studies returned
-        party_id: The organisation/entity to use for the query
         """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
@@ -540,7 +539,7 @@ class SeerConnect:
         limit: The maximum number of labels to retrieve per API query
         """
         label_results = None
-        offset= 0
+        offset = 0
 
         while True:
             query_string = graphql.get_labels_query_string(study_id, label_group_id, from_time,
@@ -679,7 +678,17 @@ class SeerConnect:
                 label_groups.append(label_group)
         return pd.DataFrame(label_groups)
 
-    def get_viewed_times_dataframe(self, study_id, limit=250, offset=0):
+    def get_viewed_times_dataframe(self, study_id: str, limit: int = 250) -> pd.DataFrame:
+        """
+        Get timestamp info about all parts of a study that have been viewed by
+        various users. DataFrame includes cols ['id', 'startTime', 'duration' 'user']
+
+        Parameters
+        ----------
+        study_id: Seer study ID
+        limit: Maximum number of results per API call
+        """
+        offset = 0
         views = []
         while True:
             query_string = graphql.get_viewed_times_query_string(study_id, limit, offset)
@@ -703,35 +712,75 @@ class SeerConnect:
             views = None
         return views
 
-    def get_organisations(self):
+    def get_organisations(self) -> List[Dict[str, ApiResponse]]:
+        """
+        Get a list of dict of organisation details, including 'id' and 'name'.
+        """
         query_string = graphql.get_organisations_query_string()
         response = self.execute_query(query_string)['organisations']
         return response
 
-    def get_organisations_dataframe(self):
+    def get_organisations_dataframe(self) -> pd.DataFrame:
+        """
+        Get a DataFrame of organisation details, including 'id' and 'name'.
+        """
         orgs = self.get_organisations()
         if orgs is None:
             return orgs
         return pd.DataFrame(orgs)
 
-    def get_patients(self, party_id=None):
+    def get_patients(self, party_id: str = None):
+        """
+        Get a list of dict of all available patients. Keys are ['id', 'user']
+
+        Parameters
+        ----------
+        party_id: The organisation/entity to specify for the query
+        """
         query_string = graphql.get_patients_query_string()
         response = self.execute_query(query_string, party_id)['patients']
         return response
 
     def get_patients_dataframe(self, party_id=None):
+        """
+        Get a DataFrame of all available patients, with cols ['id', 'user']
+
+        Parameters
+        ----------
+        party_id: The organisation/entity to specify for the query
+        """
         patients = self.get_patients(party_id)
         if patients is None:
             return patients
         return json_normalize(patients).sort_index(axis=1)
 
-    def get_documents_for_studies(self, study_ids, limit=50):
+    def get_documents_for_studies(self, study_ids: Union[str, Iterable[str]],
+                                  limit: int = 50) -> List[Dict[str, ApiResponse]]:
+        """
+        Get list of dicts of details of all documents associated with provided
+        study IDs. Fields include ['id', 'name', 'fileSize', 'downloadFileUrl']
+
+        Parameters
+        ----------
+        study_id: Iterable of Seer study ID
+        limit: Maximum number of results per API call
+        """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
         documents_query_string = graphql.get_documents_for_study_ids_paged_query_string(study_ids)
         return self.get_paginated_response(documents_query_string, 'studies', limit)
 
-    def get_documents_for_studies_dataframe(self, study_ids, limit=50):
+    def get_documents_for_studies_dataframe(self, study_ids: Union[str, Iterable[str]],
+                                            limit: int = 50):
+        """
+        Get DataFrame of details of all documents associated with provided
+        study IDs. See `get_documents_for_studies()` for details.
+
+        Parameters
+        ----------
+        study_id: Iterable of Seer study ID
+        limit: Maximum number of results per API call
+        """
         documents = []
         for study in self.get_documents_for_studies(study_ids, limit):
             for document in study['documents']:
@@ -822,9 +871,9 @@ class SeerConnect:
 
         Parameters
         ----------
-        study_names (Optional) : a list of study names. If not provided, 
+        study_names (Optional) : a list of study names. If not provided,
             data will be returned for all studies
-        party_id (Optional) : string, the party id of the context for the query (e.g. organisation)
+        party_id: The organisation/entity to specify for the query
 
         Returns: A dict with one key, 'studies', indexing a list of study dicts
 
@@ -866,7 +915,8 @@ class SeerConnect:
 
         return {'studies': result}
 
-    def get_all_study_metadata_dataframe_by_names(self, study_names: Iterable[str] = None) -> pd.DataFrame:
+    def get_all_study_metadata_dataframe_by_names(self, study_names: Iterable[str] = None
+                                                  ) -> pd.DataFrame:
         """
         Get all metadata available about studies with the suppled names as a
         DataFrame. See `get_all_study_metadata_by_ids()` for details.
@@ -941,12 +991,26 @@ class SeerConnect:
         return utils.get_channel_data(study_metadata, segment_urls, download_function, threads,
                                       from_time, to_time)
 
-    def get_all_bookings(self, organisation_id, start_time, end_time):
+    def get_all_bookings(self, organisation_id: str, start_time: int,
+                         end_time: int) -> List[Dict[str, ApiResponse]]:
+        """
+        Get all bookings for any studies that are activate at any point between
+        `start_time` and `end_time` as a list of dict. Keys include ['id',
+        'startTime', 'endTime', 'patient', 'referral', 'equipmentItems', 'location']
+
+        Parameters
+        ----------
+        organisation_id: Organisation ID associated with patient bookings
+        start_time: Timestamp in msec - find studies active after this point
+        end_time: Timestamp in msec - find studies active before this point
+        """
         query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
         response = self.execute_query(query_string)
         return response['organisation']['bookings']
 
-    def get_all_bookings_dataframe(self, organisation_id, start_time, end_time):
+    def get_all_bookings_dataframe(self, organisation_id: str, start_time: int, end_time: int):
+        """Get all bookings for any studies that are activate at any point between
+        `start_time` and `end_time`"""
         bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
         bookings = json_normalize(bookings_response).sort_index(axis=1)
         studies = self.pandas_flatten(bookings, 'patient.', 'studies')
@@ -988,14 +1052,8 @@ class SeerConnect:
         label_groups = json_normalize(label_group_results).sort_index(axis=1)
         return label_groups
 
-    def get_diary_data_labels(
-            self,
-            patient_id,
-            label_group_id,
-            from_time=0,  # pylint:disable=too-many-arguments
-            to_time=9e12,
-            limit=200,
-            offset=0):
+    def get_diary_data_labels(self, patient_id, label_group_id, from_time=0, to_time=9e12,
+                              limit=200, offset=0):
         label_results = None
 
         while True:
@@ -1035,7 +1093,7 @@ class SeerConnect:
         Returns
         -------
         label_group : pandas DataFrame
-                dataframe containing labelGroup info, labels (startTime, timeZone, duration) and tags
+            dataframe containing labelGroup info, labels (startTime, timeZone, duration) and tags
 
         Example
         -------
@@ -1085,7 +1143,8 @@ class SeerConnect:
 
     @staticmethod
     def get_diary_fitbit_data(segments):
-        """Get fitbit data from a patient's diary study
+        """
+        Get fitbit data from a patient's diary study
 
         Parameters
         ----------

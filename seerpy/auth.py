@@ -98,12 +98,12 @@ class SeerAuth:
         verify_url = self.api_url + '/auth/verify'
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
-            print(f"API 'verify' call returned {response.status_code} status code")
+            print(f"API verify call returned {response.status_code} status code")
             return 401
 
         json_response = response.json()
         if not json_response or not json_response['session'] == "active":
-            print("API 'verify' call did not return an active session")
+            print("API verify call did not return an active session")
             return 401
 
         self.write_cookie()

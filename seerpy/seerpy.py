@@ -3,18 +3,35 @@ Single-class module to define a GraphQL client for interacting with the API.
 
 Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 
-Concepts used in this module
-----------------------------
-- party_id (str): The ID associated with e.g. organisation, which will have
-    permission to view certain data
-
-- label: Fields needed to define a new label. These are:
+Concepts
+--------
+- study: A period of time monitoring a patient, often with EEG/ECG
+- channel group: A type of monitoring data in a study, e.g. EEG, ECG, video
+- channel: A specific channel of a channel group, e.g. for EEG: Fz, C4, Fp1 channels
+- label group: Categories of labels relevant to a study, e.g. Abnormal / Epileptiform,
+    Normal / Routine, Sleep, Suspect - Low/Medium.
+- label: An instance of a label group. Fields to define a label:
+    - id (str): unique UUID identifier
     - note (str): label note
     - startTime (float): label start time in epoch time
     - duration (float): duration of event in milliseconds
     - timezone (float): offset from UTC time in hours (eg. Melbourne = 11.0)
-    - tagIds (List[str]): list of tag ids
-    - confidence (float): Confidence given to label between 0 and 1
+    - tags (List[str]): list of associated tag IDs
+    - confidence (float | None): Confidence given to label between 0 and 1
+    - createdAt (str): ISO-formatted creation datetime
+    - createdBy (Dict[str, str]): User who created the label 
+- tag: An ontology of "attributes" that may be atached to a label to provide
+    info or clarifications, e.g. Jaw clenching, Beta, Exemplar, Generalised, Sleep.
+    Tags are arranged into categories, e.g. Band, Brain area, Channel, Seizure type, Sleep
+- party ID: The ID associated with e.g. an organisation, which will have
+    permissions to view certain data
+- segment: A duration of recording for a given channel group. Segments lengths
+    are variable, though generally capped at 135 minutes (at least for EEG)
+- data chunk: Segments are saved to disk as 10-second data chunks, which must be
+    reassembled to yield a complete segment
+- API response: Data returned from the GraphQL endpoint. Returned as JSON format,
+    so typically get a dictionary with string keys and values that may be strings,
+    numbers, bools, dictionaries, lists of dicts etc.
 """
 
 from datetime import datetime
@@ -33,9 +50,9 @@ from .auth import SeerAuth, API_URL, COOKIE_KEY_DEV, COOKIE_KEY_PROD
 from . import utils
 from . import graphql
 
-# Custom datatypes
+# Custom datatypes. See module docstring for details
 Labels = Union[pd.DataFrame, Iterable[Mapping[str, Any]]]
-ApiResponse = Union[str, List[Any], Dict[str, Any]]
+ApiResponse = Union[str, bool, int, float, None, List[Any], Dict[str, Any]]
 
 
 class SeerConnect:
@@ -92,17 +109,18 @@ class SeerConnect:
         self.last_query_time = time.time()
 
     def execute_query(self, query_string: str, party_id: str = None,
-                      _invocations: int = 0) -> Dict[Any, Any]:
+                      _invocations: int = 0) -> Dict[str, ApiResponse]:
         """
-        Execute a GraphQL query, handling rate limiting
+        Execute a GraphQL query and return response. Handle retrying upon
+        failure and rate limiting requests.
 
         Parameters
         ----------
-        query_string: The formatted GraphQL query.
-        party_id: The organisation/entity to use for the query.
+        query_string: The formatted GraphQL query
+        party_id: The organisation/entity to use for the query
         _invocations: Used for recursive calls; don't set directly
 
-        Returns: dictionary of results
+        Returns: Dictionary of str: API result, e.g. dict, str, list of dict...
         """
         resolvable_api_errors = [
             '502 Server Error', '503 Server Error', '504 Server Error'
@@ -136,19 +154,19 @@ class SeerConnect:
             raise
 
     def get_paginated_response(self, query_string: str, object_name: str, limit: int = 250,
-                               party_id: str = None) -> List[Any]:
+                               party_id: str = None) -> List[Dict[str, ApiResponse]]:
         """
-        For queries expecting a large number of matching objects, limit number
-        of responses and make iterative calls to `execute_query()`.
+        For queries expecting a large number of matching objects, divide query
+        over iterative calls to `execute_query()`.
 
         Parameters
         ----------
-        query_string: The formatted GraphQL query.
+        query_string: The formatted GraphQL query
         object_name: Key to retrieve from the response object, e.g. 'studies'
-        limit: Max number of objects to return per GraphQL query.
-        party_id: The organisation/entity to use for the query.
+        limit: Max number of objects to return per GraphQL query
+        party_id: The organisation/entity to use for the query
 
-        Returns: List of response objects (e.g. dicts)
+        Returns: List of API response dicts
         """
         offset = 0
         objects = []
@@ -162,28 +180,28 @@ class SeerConnect:
         return objects
 
     @staticmethod
-    def pandas_flatten(parent: pd.DataFrame, parent_name: str, child_name: str) -> pd.DataFrame:
+    def pandas_flatten(df: pd.DataFrame, parent_name: str, child_name: str) -> pd.DataFrame:
         """
         Expand a 'nested' column of a DataFrame into a new DataFrame.
         The DataFrame should have:
         - A `child_name` column, where each cell is a list of dict. These dict
-            keys will become the columns of the new DataFrame.
+            keys will become the columns of the new DataFrame
+            will also be included in the returned DataFrame
         - An `id` column, which may have a `parent_name` prefix. This column
-            will also be included in the returned DataFrame.
 
         Parameters
         ----------
-        parent: The DataFrame with a nested column, `parent_name`'id' col, and
-            `child_name` col of nested disctionaries
-        parent_name: The prefix to the 'id' column in the parent DataFrame
+        df: The DataFrame with a `parent_name`'id' col, and `child_name` col of
+            
+        parent_name: The prefix to the 'id' column in the DataFrame
         child_name: The name of the column with nest
-    
-        Returns: DataFrame expanded from nested column
+
+        Returns: DataFrame wih cols expanded from parent DataFrame nested col
         """
         child_list = []
-        for i in range(len(parent)):
-            parent_id = parent[parent_name + 'id'][i]
-            child = json_normalize(parent[parent_name + child_name][i]).sort_index(axis=1)
+        for i in range(len(df)):
+            parent_id = df[parent_name + 'id'][i]
+            child = json_normalize(df[parent_name + child_name][i]).sort_index(axis=1)
             child.columns = [child_name + '.' + str(col) for col in child.columns]
             child[parent_name + 'id'] = parent_id
             child_list.append(child)
@@ -208,7 +226,7 @@ class SeerConnect:
         label_type (Optional): Seer label type ID
         party_id (Optional): The organisation/entity to use for the query.
 
-        Returns: (str) ID of the newly created label group
+        Returns: ID of the newly created label group
         """
         query_string = graphql.get_add_label_group_mutation_string(study_id, name, description,
                                                                    label_type)
@@ -223,7 +241,7 @@ class SeerConnect:
         ----------
         label_group_id: Seer label group ID to delete.
 
-        Returns: (str) ID of deleted label group
+        Returns: ID of deleted label group
         """
         query_string = graphql.get_remove_label_group_mutation_string(label_group_id)
         return self.execute_query(query_string)
@@ -245,7 +263,7 @@ class SeerConnect:
             end = start + batch_size
             self.add_labels(label_group_id, labels[start:end])
 
-    def add_labels(self, label_group_id: str, labels: Labels) -> Dict:
+    def add_labels(self, label_group_id: str, labels: Labels) -> Dict[str, ApiResponse]:
         """
         Add labels to a label group.
 
@@ -260,13 +278,27 @@ class SeerConnect:
             - timezone (float): offset from UTC time in hours (eg. Melbourne = 11.0)
             - tagIds (List[str]): tag IDs
             - confidence (float): Confidence given to label between 0 and 1
+
+        Returns: Dictionary with a single key, 'addLabelsToLabelGroup', that indexes
+            to a list of dicts, each having an 'id' key indicating an added label
         """
         if isinstance(labels, pd.DataFrame):
             labels = labels.to_dict('records')
         query_string = graphql.get_add_labels_mutation_string(label_group_id, labels)
         return self.execute_query(query_string)
 
-    def add_document(self, study_id, document_name, document_path):
+    def add_document(self, study_id: str, document_name: str, document_path: str) -> str:
+        """
+        Upload a local document and associate with a study.
+
+        Parameters
+        ----------
+        study_id: Seer study ID
+        document_name: Name to assign document after upload
+        document_path: Path to document on local device
+
+        Returns: URL to the uploaded document.
+        """
         query_string = graphql.get_add_document_mutation_string(study_id, document_name)
         response_add = self.execute_query(query_string)['createStudyDocuments'][0]
         with open(document_path, 'rb') as f:
@@ -278,39 +310,78 @@ class SeerConnect:
             return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
         raise RuntimeError('Error uploading document: status code ' + str(response_put.status_code))
 
-    def get_tag_ids(self):
+    def get_tag_ids(self) -> List[Dict[str, ApiResponse]]:
+        """
+        Get details of all tag types as a list of dict.
+        Keys included: ['id', 'value', 'category', 'forDiary', 'forStudy']
+        """
         query_string = graphql.get_tag_id_query_string()
         response = self.execute_query(query_string)
         return response['labelTags']
 
     def get_tag_ids_dataframe(self):
+        """
+        Get details of all tag types as a DataFrame. See `get_tag_ids()` for details.
+        """
         tag_ids = self.get_tag_ids()
         tag_ids = json_normalize(tag_ids).sort_index(axis=1)
         return tag_ids
 
-    def get_study_ids(self, limit=50, search_term='', party_id=None):
-        studies = self.get_studies(limit, search_term, party_id)
-        return [study['id'] for study in studies]
-
-    def get_studies(self, limit=50, search_term='', party_id=None) -> List[Dict[str, Any]]:
+    def get_study_ids(self, limit: int = 50, search_term: str = '',
+                      party_id: str = None) -> List[str]:
         """
-        Return a list of study dicts, with study ID, name and patient info.
+        Get the IDs of all available studies.
 
         Parameters
         ----------
-        limit: The maximum number of studies to return
-        search_term: A str used to filter the studies returned
-        party_id: The organisation/entity to use for the query.
+        limit: The number of studies to retrieve per API call
+        search_term: A string used to filter the studies returned
+        party_id: The organisation/entity to use for the query
+        """
+        studies = self.get_studies(limit, search_term, party_id)
+        return [study['id'] for study in studies]
+
+    def get_studies(self, limit: int = 50, search_term: str = '',
+                    party_id: str = None) -> List[Dict[str, ApiResponse]]:
+        """
+        Get a list of study dicts, with each having keys: 'id', 'name' and 'patient'.
+
+        Parameters
+        ----------
+        limit: The number of studies to retrieve per API call
+        search_term: A string used to filter the studies returned
+        party_id: The organisation/entity to use for the query
         """
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
         return self.get_paginated_response(studies_query_string, 'studies', limit, party_id)
 
-    def get_studies_dataframe(self, limit=50, search_term='', party_id=None):
+    def get_studies_dataframe(self, limit: int = 50, search_term: str = '',
+                              party_id: str = None) -> pd.DataFrame:
+        """
+        Get details of study IDs, names and patient info as a DataFrame. See
+        `get_studies()` for details.
+
+        Parameters
+        ----------
+        limit: The number of studies to retrieve per API call
+        search_term: A string used to filter the studies returned
+        party_id: The organisation/entity to use for the query
+        """
         studies = self.get_studies(limit, search_term, party_id)
         studies_dataframe = json_normalize(studies).sort_index(axis=1)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
-    def get_study_ids_from_names_dataframe(self, study_names, party_id=None):
+    def get_study_ids_from_names_dataframe(self, study_names: Union[str, Iterable[str]],
+                                           party_id: str = None) -> pd.DataFrame:
+        """
+        Get the IDs of all available studies as a DataFrame. See `get_studies()`
+        for details.
+
+        Parameters
+        ----------
+        study_names: Iterable of Seer study names
+        party_id: The organisation/entity to use for the query
+        """
         if isinstance(study_names, str):
             study_names = [study_names]
 
@@ -324,21 +395,58 @@ class SeerConnect:
 
         return studies[['name', 'id']].reset_index(drop=True)
 
-    def get_study_ids_from_names(self, study_names, party_id=None):
+    def get_study_ids_from_names(self, study_names: Union[str, Iterable[str]],
+                                 party_id: str = None) -> List[str]:
+        """
+        Get the IDs of studies corresponding to given study names.
+        See `get_studies()` for details.
+
+        Parameters
+        ----------
+        study_names: Iterable of Seer study names
+        party_id: The organisation/entity to use for the query
+        """
         return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()
 
-    def get_studies_by_id(self, study_ids, limit=50):
+    def get_studies_by_id(self, study_ids: Union[str, Iterable[str]],
+                          limit: int = 50) -> List[Dict[str, ApiResponse]]:
+        """
+        Get a list of study dicts corresponding to a list of study IDs.
+
+        Parameters
+        ----------
+        limit: The number of studies to retrieve per API call
+        search_term: A string used to filter the studies returned
+        party_id: The organisation/entity to use for the query
+        """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
         studies_query_string = graphql.get_studies_by_study_id_paged_query_string(study_ids)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
-    def get_channel_groups(self, study_id):
+    def get_channel_groups(self, study_id: str) -> List[Dict[str, ApiResponse]]:
+        """
+        Get a list of channel group dicts for a given study. Channel group dicts
+        may include keys such as ['name', 'sampleRate', 'segments'].
+
+        Parameters
+        ----------
+        study_id: Seer study ID
+        """
         query_string = graphql.get_channel_groups_query_string(study_id)
         response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
-    def get_segment_urls(self, segment_ids, limit=10000):
+    def get_segment_urls(self, segment_ids: Iterable[str], limit: int = 10000) -> pd.DataFrame:
+        """
+        Get a DataFrame matching segment IDs an URLs to download them from.
+        DataFrame will have columns ['baseDataChunkUrl', 'segments.id']
+
+        Parameters
+        ----------
+        segment_ids: Iterable of segment IDs
+        limit: Maximum number of segment URLs to retrieve per query to the API
+        """
         if not segment_ids:
             return pd.DataFrame(columns=['baseDataChunkUrl', 'segments.id'])
 
@@ -356,8 +464,22 @@ class SeerConnect:
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
         return segment_urls
 
-    def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12,
-                            limit=10000):
+    def get_data_chunk_urls(self, study_metadata: pd.DataFrame, s3_urls: bool = True,
+                            from_time: int = 0, to_time: int = 9e12,
+                            limit: int = 10000) -> pd.DataFrame:
+        """
+        Get a DataFrame containing download details of all data chunks that
+        comprise segments in a metadata DataFrame. The returned DataFrame has cols:
+        ['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end', 'chunk_url']
+
+        Parameters
+        ----------
+        study_metadata: Study metadata, as returned by `get_all_study_metadata_dataframe_by_*()`
+        s3_urls: Return download URLs for S3 (otherwise return URLs for Cloudfront)
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+        limit: The maximum number of chunks to retrieve per API query
+        """
         if study_metadata.empty:
             return pd.DataFrame(
                 columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end', 'chunk_url'])
@@ -403,15 +525,22 @@ class SeerConnect:
 
         return data_chunk_urls
 
-    def get_labels(
-            self,
-            study_id,
-            label_group_id,
-            from_time=0,  # pylint:disable=too-many-arguments
-            to_time=9e12,
-            limit=200,
-            offset=0):
+    def get_labels(self, study_id: str, label_group_id: str, from_time: int = 0,
+                   to_time: int = 9e12, limit: int = 200) -> Dict[str, ApiResponse]:
+        """
+        Get all labels for a given study and label group. The returned dict has
+        key 'labelGroup' which indexes to a dictionary with a 'labels' key
+
+        Parameters
+        ----------
+        study_id: Seer study ID
+        label_group_id: Label group ID string
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+        limit: The maximum number of labels to retrieve per API query
+        """
         label_results = None
+        offset= 0
 
         while True:
             query_string = graphql.get_labels_query_string(study_id, label_group_id, from_time,
@@ -430,16 +559,21 @@ class SeerConnect:
 
         return label_results
 
-    def get_labels_dataframe(
-            self,
-            study_id,
-            label_group_id,  # pylint:disable=too-many-arguments
-            from_time=0,
-            to_time=9e12,
-            limit=200,
-            offset=0):
+    def get_labels_dataframe(self, study_id: str, label_group_id: str, from_time: int = 0,
+                             to_time: int = 9e12, limit: int = 200) -> Union[pd.DataFrame, None]:
+        """
+        Get all labels for a given study and label group as a DataFrame.
+        See `get_labels()` for details.
 
-        label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
+        Parameters
+        ----------
+        study_id: Seer study ID
+        label_group_id: Label group ID string
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+        limit: The maximum number of labels to retrieve per API query
+        """
+        label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
@@ -454,18 +588,39 @@ class SeerConnect:
 
         return label_group
 
-    def get_labels_string(self, study_id, label_group_id, from_time=0, to_time=9e12):
+    def get_labels_string(self, study_id: str, label_group_id: str, from_time: int = 0,
+                          to_time: int = 9e12) -> Dict[str, ApiResponse]:
+        """
+        Get all labels for a given study and label group in an abridged format.
+        Instead of a list of label dicts as returned by `get_labels()`, the
+        'labelString' key indexes a stringified JSON representation with only 3
+        keys per label: 'id', 's' (for startTime), and 'd' (for duration)
+
+        Parameters
+        ----------
+        study_id: Seer study ID
+        label_group_id: Label group ID string
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+        """
         query_string = graphql.get_labels_string_query_string(study_id, label_group_id, from_time,
                                                               to_time)
         response = self.execute_query(query_string)['study']
         return response
 
-    def get_labels_string_dataframe(
-            self,
-            study_id,
-            label_group_id,
-            from_time=0,  # pylint:disable=too-many-arguments
-            to_time=9e12):
+    def get_labels_string_dataframe(self, study_id: str, label_group_id: str, from_time: int = 0,
+                                    to_time: int = 9e12) -> pd.DataFrame:
+        """
+        Get all labels for a given study and label group in an abridged format,
+        as a DataFrame. Cols include ['labels.id', 'labels.startTime', 'labels.duration']
+
+        Parameters
+        ----------
+        study_id: Seer study ID
+        label_group_id: Label group ID string
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+        """
         label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time,
                                                to_time=to_time)
         if label_results is None:
@@ -489,11 +644,11 @@ class SeerConnect:
         """
         Get label group information for all provided study IDs. Keys returned:
         ['id', 'labelGroups', 'name'].
-    
+
         Parameters
         ----------
-        study_ids: Seer study IDs to retrieve label groups for.
-        limit: Maximum number of label groups to retrieve.
+        study_ids: Seer study IDs to retrieve label groups for
+        limit: Maximum number of label groups to retrieve per API query
         """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
@@ -509,8 +664,8 @@ class SeerConnect:
 
         Parameters
         ----------
-        study_ids: Seer study IDs to retrieve label groups for.
-        limit: Maximum number of label groups to retrieve.
+        study_ids: Seer study IDs to retrieve label groups for
+        limit: Maximum number of label groups to retrieve per API query
         """
         label_groups = []
         for study in self.get_label_groups_for_studies(study_ids, limit):
@@ -903,13 +1058,14 @@ class SeerConnect:
 
         return label_group
 
-    def get_diary_channel_groups(self, patient_id, from_time, to_time):
+    def get_diary_channel_groups(self, patient_id: str, from_time: int, to_time: int):
         query_string = graphql.get_diary_study_channel_groups_query_string(
             patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
-    def get_diary_channel_groups_dataframe(self, patient_id, from_time=0, to_time=90000000000000):
+    def get_diary_channel_groups_dataframe(self, patient_id: str, from_time: int = 0,
+                                           to_time: int = 9e13) -> Union[pd.DataFrame, None]:
         metadata = self.get_diary_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
         if channel_groups.empty:

@@ -528,7 +528,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 documents.append(document)
         return pd.DataFrame(documents)
 
-    def get_diary_labels(self, patient_id, offset=0, limit=100):
+    def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         label_results = None
         # set true if we need to fetch labels
         query_flag = True
@@ -537,7 +537,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             if not query_flag:
                 break
 
-            query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
+            query_string = graphql.get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration)
             response = self.execute_query(query_string)['patient']['diary']
             label_groups = response['labelGroups']
 

@@ -565,9 +565,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-    def get_diary_labels_dataframe(self, patient_id):
+    def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
 
-        label_results = self.get_diary_labels(patient_id)
+        label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time, to_time, from_duration, to_duration)
         if label_results is None:
             return label_results
 

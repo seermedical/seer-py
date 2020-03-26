@@ -181,7 +181,7 @@ class SeerConnect:
         return objects
 
     @staticmethod
-    def pandas_flatten(df: pd.DataFrame, parent_name: str, child_name: str) -> pd.DataFrame:
+    def pandas_flatten(dataframe: pd.DataFrame, parent_name: str, child_name: str) -> pd.DataFrame:
         """
         Expand a 'nested' column of a DataFrame into a new DataFrame.
         The DataFrame should have:
@@ -192,22 +192,22 @@ class SeerConnect:
 
         Parameters
         ----------
-        df: The DataFrame with a `parent_name`'id' col, and `child_name` col of
+        dataframe: The DataFrame with a `parent_name`'id' col, and `child_name` col of
         parent_name: The prefix to the 'id' column in the DataFrame
         child_name: The name of the column with nest
 
         Returns: DataFrame wih cols expanded from parent DataFrame nested col
         """
         child_list = []
-        for i in range(len(df)):
-            parent_id = df[parent_name + 'id'][i]
-            child = json_normalize(df[parent_name + child_name][i]).sort_index(axis=1)
+        for i in range(len(dataframe)):
+            parent_id = dataframe[parent_name + 'id'][i]
+            child = json_normalize(dataframe[parent_name + child_name][i]).sort_index(axis=1)
             child.columns = [child_name + '.' + str(col) for col in child.columns]
             child[parent_name + 'id'] = parent_id
             child_list.append(child)
 
         if child_list:
-            child = pd.concat(child_list).reset_index(drop=True)
+            child = pd.concat(child_list, sort=True).reset_index(drop=True)
         if not child_list or child.empty:
             columns = [parent_name + 'id', child_name + '.id']
             child = pd.DataFrame(columns=columns)
@@ -886,7 +886,7 @@ class SeerConnect:
             study_ids = self.get_study_ids_from_names(study_names, party_id)
         return self.get_all_study_metadata_by_ids(study_ids)
 
-    def get_all_study_metadata_by_ids(self, study_ids: Iterable[str] = None):
+    def get_all_study_metadata_by_ids(self, study_ids: Iterable[str] = None) -> Dict[str, List[Dict]]:
         """
         Get all metadata available about studies with the suppled IDs. This can
         include e.g. 'name', 'description', 'patient' and 'channelGroups',
@@ -932,11 +932,11 @@ class SeerConnect:
             study_ids = self.get_study_ids_from_names(study_names)
         return self.get_all_study_metadata_dataframe_by_ids(study_ids)
 
-    def get_all_study_metadata_dataframe_by_ids(self, study_ids=None) -> pd.DataFrame:
+    def get_all_study_metadata_dataframe_by_ids(self,
+                                                study_ids: Iterable[str] = None) -> pd.DataFrame:
         """
-
         Get all metadata available about studies with the suppled IDs as a
-        DataFrame. See `get_all_study_metadata_by_ids()` for details.
+        DataFrame. See `get_all_study_metadata_by_ids()` for more details.
 
         Parameters
         ----------
@@ -994,8 +994,8 @@ class SeerConnect:
     def get_all_bookings(self, organisation_id: str, start_time: int,
                          end_time: int) -> List[Dict[str, ApiResponse]]:
         """
-        Get all bookings for any studies that are activate at any point between
-        `start_time` and `end_time` as a list of dict. Keys include ['id',
+        Get all bookings for any studies that are active at any point between
+        `start_time` and `end_time`, as a list of dict. Keys include ['id',
         'startTime', 'endTime', 'patient', 'referral', 'equipmentItems', 'location']
 
         Parameters
@@ -1008,9 +1008,18 @@ class SeerConnect:
         response = self.execute_query(query_string)
         return response['organisation']['bookings']
 
-    def get_all_bookings_dataframe(self, organisation_id: str, start_time: int, end_time: int):
-        """Get all bookings for any studies that are activate at any point between
-        `start_time` and `end_time`"""
+    def get_all_bookings_dataframe(self, organisation_id: str, start_time: int,
+                                   end_time: int) -> pd.DataFrame:
+        """
+        Get all bookings for any studies that are active at any point between
+        `start_time` and `end_time` as a DataFrame. See `get_all_bookings()`.
+
+        Parameters
+        ----------
+        organisation_id: Organisation ID associated with patient bookings
+        start_time: Timestamp in msec - find studies active after this point
+        end_time: Timestamp in msec - find studies active before this point
+        """
         bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
         bookings = json_normalize(bookings_response).sort_index(axis=1)
         studies = self.pandas_flatten(bookings, 'patient.', 'studies')
@@ -1022,7 +1031,11 @@ class SeerConnect:
         return bookings.drop_duplicates().reset_index(drop=True)
 
     # DIARY STUDY (FITBIT) ANALYSIS
-    def get_diary_data_groups(self, patient_id, limit=20, offset=0):
+    def get_diary_data_groups(self, patient_id: str, limit: int = 20,
+                              offset: int = 0) -> str:
+        """
+        Get all diary study label groups for a given patient.
+        """
         # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
         query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
         response = self.execute_query(query_string)['patient']['diaryStudy']

@@ -854,6 +854,44 @@ class SeerConnect:
         label_groups['id'] = patient_id
         return label_groups
 
+    def get_diary_medication_alerts(self, patient_id: str, from_time: int = 0,
+                                    to_time: int = 9e12) -> ApiResponse:
+        """
+        Get diary medication alerts for a given patient as a dict with keys
+        ['id', 'alerts']. 'alerts' indexes to a list of labels with keys
+        ['id', 'name', 'labels']; 'labels' is a list of dict with 'doses', 'alert',
+        'startTime', 'scheduledTime' etc.
+
+        Parameters
+        ----------
+        patient_id: The Seer patient ID for which to retrieve diary labels
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+        """
+        query_string = graphql.get_diary_medication_alerts_query_string(
+            patient_id, from_time, to_time)
+        response = self.execute_query(query_string)['patient']['diary']
+        return response
+
+    def get_diary_medication_alerts_dataframe(self, patient_id: str, from_time: int = 0,
+                                              to_time: int = 9e12) -> pd.DataFrame:
+        """
+        Get diary medication alerts for a given patient as a DataFrame. See
+        `get_diary_medication_alerts()` for details.
+
+        Parameters
+        ----------
+        patient_id: The Seer patient ID for which to retrieve diary labels
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+        """
+        results = self.get_diary_medication_alerts(patient_id, from_time, to_time)
+        if results is None:
+            return results
+        alerts = json_normalize(results['alerts']).sort_index(axis=1)
+        labels = self.pandas_flatten(alerts, '', 'labels')
+        return labels
+
     def get_diary_medication_compliance(self, patient_id: str, from_time: int = 0,
                                         to_time: int = 0) -> ApiResponse:
         """

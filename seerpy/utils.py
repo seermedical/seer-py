@@ -8,7 +8,7 @@ import functools
 import gzip
 from multiprocessing import Pool
 import os
-from typing import Callable, List, Union
+from typing import Any, Callable, List, Union
 
 from matplotlib.collections import LineCollection
 from matplotlib import gridspec
@@ -19,7 +19,7 @@ import requests
 from scipy.signal import butter, sosfilt
 
 
-def download_channel_data(data_q: List[pd.Series, str, str, str, List[str]],
+def download_channel_data(data_q: List[Any],
                           download_function: Callable) -> pd.DataFrame:
     """
     Download data for a single channel of a single segment, decompress if

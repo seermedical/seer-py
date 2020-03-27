@@ -9,7 +9,6 @@ import os
 
 import requests
 
-API_URL = 'https://api.seermedical.com/api'
 COOKIE_KEY_PROD = 'seer.sid'
 COOKIE_KEY_DEV = 'seerdev.sid'
 
@@ -21,8 +20,7 @@ class SeerAuth:
     seerpy_dir = f"{os.path.expanduser('~')}/.seerpy"
     pswdfile = f"{seerpy_dir}/credentials"
 
-    def __init__(self, api_url: str = API_URL, email: str = None, password: str = None,
-                 dev: bool = False):
+    def __init__(self, api_url: str, email: str = None, password: str = None, dev: bool = False):
         """
         Authenticate session using email address and password
 

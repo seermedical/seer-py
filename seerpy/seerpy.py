@@ -38,7 +38,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from .auth import SeerAuth, API_URL, COOKIE_KEY_DEV, COOKIE_KEY_PROD
+from .auth import SeerAuth, COOKIE_KEY_DEV, COOKIE_KEY_PROD
 from . import utils
 from . import graphql
 
@@ -52,8 +52,8 @@ class SeerConnect:
 
     # pylint: disable=too-many-public-methods
 
-    def __init__(self, api_url: str = API_URL, email: str = None, password: str = None,
-                 dev: bool = False):
+    def __init__(self, api_url: str = 'https://api.seermedical.com/api', email: str = None,
+                 password: str = None, dev: bool = False):
         """
         Create a GraphQL client able to interact with the Seer API endpoint,
         handling login and authorisation.

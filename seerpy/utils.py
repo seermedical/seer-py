@@ -34,7 +34,7 @@ def download_channel_data(data_q: List[pd.Series, str, str, str, List[str]],
     download_function: A callable that will be used to attempt to download data
         available at the URL defined in data_q[0]['dataChunks.url']
     """
-    # pylint: disabe=too-many-statements
+    # pylint: disable=too-many-statements
     meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
     try:
         raw_data = download_function(meta_data['dataChunks.url'])

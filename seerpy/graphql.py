@@ -1,15 +1,34 @@
-# pylint:disable=too-many-arguments
+"""
+GraphQL queries exposed by various seerpy.SeerConnect wrapper functions.
+"""
+# pylint:disable=too-many-arguments,missing-function-docstring
+from typing import Any, Dict, List
+
 from . import utils
 
 
-def get_json_list(list_of_strings, include_brackets=True):
+def get_json_list(list_of_strings: List[str], include_brackets: bool = True) -> str:
+    """
+    Convert a list of strings into a single comma-separated string, as per
+    string-ified JSON format.
+
+    Paramters
+    ---------
+    list_of_strings: Strings to convert to single string
+    include_backets: Whether to include square braces in the returned string
+    """
     json_list = ', '.join('"%s"' % string for string in list_of_strings)
     if include_brackets:
         json_list = '[' + json_list + ']'
     return json_list
 
 
-def get_string_from_list_of_dicts(list_of_dicts):
+def get_string_from_list_of_dicts(list_of_dicts: List[Dict[str, Any]]):
+    """
+    Convert a list of dicts into a flattened string representation, e.g.
+    >>> get_string_from_list_of_dicts([{'a': 'this', 'b': 'that'}, {'c': 'next'}])
+    >>> ' { a: "this", b: "that"}, { c: "next"}'
+    """
     labels_string = ''
     for d in list_of_dicts:
         labels_string += ' {'

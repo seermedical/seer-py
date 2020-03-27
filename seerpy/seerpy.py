@@ -204,7 +204,7 @@ class SeerConnect:
             child = pd.DataFrame(columns=columns)
         return child
 
-    def add_label_group(self, study_id: str, name: str, description: str, label_type=None,
+    def add_label_group(self, study_id: str, name: str, description: str, label_type: str = None,
                         party_id: str = None) -> str:
         """
         Add a new label group to a study, returning the ID of the newly created
@@ -1058,7 +1058,8 @@ class SeerConnect:
         offset: The index of the first label group to return. Useful in
             conjunction with `limit` for repeated calls
         """
-        # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
+        # TODO use limit/offset for pagination -
+        # Unlikely to be more than 20 label groups for a while)
         query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
         response = self.execute_query(query_string)['patient']['diaryStudy']
         label_groups = response['labelGroups']

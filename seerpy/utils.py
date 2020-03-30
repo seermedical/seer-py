@@ -19,8 +19,7 @@ import requests
 from scipy.signal import butter, sosfilt
 
 
-def download_channel_data(data_q: List[Any],
-                          download_function: Callable) -> pd.DataFrame:
+def download_channel_data(data_q: List[Any], download_function: Callable) -> pd.DataFrame:
     """
     Download data for a single channel of a single segment, decompress if
     needed, convert to numeric type, apply exponentiation etc, and return as a
@@ -84,9 +83,9 @@ def download_channel_data(data_q: List[Any],
         data = data.fillna(method='ffill', axis='columns')
         data = data.fillna(method='bfill', axis='columns')
         data = data.fillna(value=0., axis='columns')
-        data['time'] = (np.arange(data.shape[0]) *
-                        (1000.0 / meta_data['channelGroups.sampleRate']) +
-                        meta_data['dataChunks.time'])
+        data['time'] = (
+            np.arange(data.shape[0]) *
+            (1000.0 / meta_data['channelGroups.sampleRate']) + meta_data['dataChunks.time'])
         data['id'] = study_id
         data['channelGroups.id'] = channel_groups_id
         data['segments.id'] = segments_id
@@ -128,8 +127,8 @@ def create_data_chunk_urls(metadata: pd.DataFrame, segment_urls: pd.DataFrame, f
     for index in range(len(metadata.index)):
         row = metadata.iloc[index]
 
-        seg_base_urls = segment_urls.loc[segment_urls['segments.id'] == row['segments.id'],
-                                         'baseDataChunkUrl']
+        seg_base_urls = segment_urls.loc[segment_urls['segments.id'] ==
+                                         row['segments.id'], 'baseDataChunkUrl']
         if seg_base_urls.empty:
             continue
         seg_base_url = seg_base_urls.iloc[0]
@@ -251,8 +250,8 @@ def get_channel_names_or_ids(metadata: pd.DataFrame) -> List[str]:
 
 
 def plot_eeg(x: Union[np.ndarray, pd.Series], y: np.ndarray = None,
-             pred: Union[List[float], pd.Series,
-                         np.ndarray] = None, squeeze: float = 5.0, scaling_factor=None) -> plt:
+             pred: Union[List[float], pd.Series, np.ndarray] = None, squeeze: float = 5.0,
+             scaling_factor=None) -> plt:
     """
     Plot EEG data as a time series.
 

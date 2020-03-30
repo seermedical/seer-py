@@ -472,8 +472,8 @@ class SeerConnect:
 
         study_metadata = study_metadata.drop_duplicates('segments.id')
         study_metadata = study_metadata[study_metadata['segments.startTime'] <= to_time]
-        study_metadata = study_metadata[study_metadata['segments.startTime'] +
-                                        study_metadata['segments.duration'] >= from_time]
+        study_metadata = study_metadata[study_metadata['segments.startTime']
+                                        + study_metadata['segments.duration'] >= from_time]
 
         data_chunks = []
         chunk_metadata = []
@@ -614,8 +614,8 @@ class SeerConnect:
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
-        label_group['labelGroup.labelString'] = (label_group['labelGroup.labelString'].apply(
-            json.loads))
+        label_group['labelGroup.labelString'] = (
+            label_group['labelGroup.labelString'].apply(json.loads))
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labelString')
         label_group = label_group.drop('labelGroup.labelString', errors='ignore', axis='columns')
         label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
@@ -818,7 +818,8 @@ class SeerConnect:
                 if label_results is None:
                     label_results = response
                     if any([
-                            index['numberOfLabels'] for index in response['labelGroups']
+                            index['numberOfLabels']
+                            for index in response['labelGroups']
                             if index['numberOfLabels'] >= limit
                     ]):
                         query_flag = True
@@ -972,8 +973,8 @@ class SeerConnect:
 
         return {'studies': result}
 
-    def get_all_study_metadata_dataframe_by_names(
-            self, study_names: Iterable[str] = None) -> pd.DataFrame:
+    def get_all_study_metadata_dataframe_by_names(self, study_names: Iterable[str] = None
+                                                  ) -> pd.DataFrame:
         """
         Get all metadata available about studies with the suppled names as a
         DataFrame. See `get_all_study_metadata_by_ids()` for details.

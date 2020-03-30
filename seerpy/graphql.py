@@ -303,7 +303,8 @@ def get_remove_label_group_mutation_string(group_id):
     return """
         mutation {
             removeLabelGroupFromStudy(groupId: "%s")
-        }""" % (group_id)
+        }""" % (
+        group_id)
 
 
 def get_viewed_times_query_string(study_id, limit, offset):

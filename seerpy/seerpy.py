@@ -861,6 +861,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data: pandas DataFrame containing timestamp (adjusted), value, and group name
 
         """
+        if not 'dataChunks.url' in segments.columns:
+            return pd.DataFrame(columns=['name', 'timestamp', 'value'])
         segment_urls = segments['dataChunks.url']
         group_names = segments['name']
         start_times = segments['segments.startTime']

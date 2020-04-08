@@ -528,6 +528,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 documents.append(document)
         return pd.DataFrame(documents)
 
+    def get_diary_created_at(self, patient_id):
+        query_string = graphql.get_diary_created_at_query_string(patient_id)
+        response = self.execute_query(query_string)['patient']['diary']['createdAt']
+        return response
+
     def get_diary_labels(self, patient_id, offset=0, limit=100):
         label_results = None
         # set true if we need to fetch labels
@@ -581,6 +586,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = label_groups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
         label_groups = label_groups.rename({'id':'labelGroups.id'})
         label_groups['id'] = patient_id
+        label_groups['createdAt'] = label_results['createdAt']
         return label_groups
 
     def get_diary_medication_alerts(self, patient_id, from_time=0, to_time=9e12):

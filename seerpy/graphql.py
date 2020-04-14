@@ -345,7 +345,7 @@ def get_diary_created_at_query_string(patient_id):
             }
         }""" % patient_id
 
-def get_diary_labels_query_string(patient_id, limit, offset):
+def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration):
     return """
         query {
             patient (id: "%s") {
@@ -353,13 +353,13 @@ def get_diary_labels_query_string(patient_id, limit, offset):
                 diary {
                     id
                     createdAt
-                    labelGroups {
+                    labelGroups (filters: [{name: "labelType", value:"%s"}]) {
                         id
                         labelType
                         labelSourceType
                         name
                         numberOfLabels
-                        labels(limit: %.0f, offset: %.0f) {
+                        labels(limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
                             id
                             startTime
                             timezone
@@ -381,7 +381,7 @@ def get_diary_labels_query_string(patient_id, limit, offset):
                     }
                 }
             }
-        }""" % (patient_id, limit, offset)
+        }""" % (patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration)
 
 def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
 

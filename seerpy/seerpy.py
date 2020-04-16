@@ -864,14 +864,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls = segments['dataChunks.url']
         group_names = segments['name']
         start_times = segments['segments.startTime']
+        timezones = segments['segments.timezone']
 
         data_list = []
         for idx, url in enumerate(segment_urls):
+            # timestamps are returned in their utc time
             start_time = datetime.utcfromtimestamp(start_times[idx]/1000)
             new_data = utils.get_diary_fitbit_data(url)
             # convert timestamps to true utc datetime
             new_data['timestamp'] = start_time + pd.to_timedelta(new_data['timestamp'], unit='ms')
             new_data['name'] = group_names[idx]
+            new_data['timezone'] = timezones[idx]
             data_list.append(new_data)
 
         if data_list:

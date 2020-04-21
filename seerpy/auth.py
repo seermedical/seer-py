@@ -7,7 +7,7 @@ import json
 import requests
 
 
-COOKIE_KEY_PROD = '__Host-seer.sid'
+COOKIE_KEY_PROD = 'seer.sid'
 COOKIE_KEY_DEV = 'seerdev.sid'
 
 

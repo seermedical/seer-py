@@ -544,7 +544,7 @@ class TestStudyCohorts:
 class TestUserCohorts:
     def test_get_user_ids_in_user_cohort(self, seer_auth, gql_client):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {'__Host-seer.sid': "cookie"}
 
         side_effects = []
 
@@ -564,7 +564,7 @@ class TestUserCohorts:
 
     def test_get_user_ids_in_user_cohort_with_cohort_not_found(self, seer_auth, gql_client):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {'__Host-seer.sid': "cookie"}
 
         side_effects = [Exception('NOT_FOUND')]
         gql_client.return_value.execute.side_effect = side_effects
@@ -576,7 +576,7 @@ class TestUserCohorts:
 
     def test_get_user_ids_in_user_cohort_with_no_users(self, seer_auth, gql_client):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {'__Host-seer.sid': "cookie"}
 
         side_effects = []
 

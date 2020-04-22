@@ -529,6 +529,40 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return pd.DataFrame(documents)
 
     def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
+        """
+        Retrieves diary label groups and labels for a given patient.
+
+        Parameters
+        ----------
+        patient_id: str
+                Seer patient ID
+        label_type: str
+                The type of label to retrieve. Default = 'all'. Options = 'seizure',
+                'medications', 'cardiac'.
+        offset: int
+                Index of first record to return
+        limit: int
+                Batch size for repeated API calls
+        from_time: int
+                UTC timestamp to apply a range filter on label start times.
+                Retrieves labels after the given from_time
+        to_time: int
+                UTC timestamp to apply a range filter label start times.
+                Retrieves labels before the given to_time
+        from_duration: int
+                Time in millseconds to apply a range filter on the duration of labels.
+                Retrieves labels of duration > from_duration
+        to_duration: int
+                Time in milliseconds to apply a range filter on the duration of labels.
+                Retrieves labels of duration < to_duration
+
+        Returns
+        -------
+        label_results: dict
+                Returns a dict with keys 'id' and 'labelGroups'; 'labelGroups' indexes
+                to a list of dict with keys ['id', 'labelType', 'name', 'labels',
+                'numberOfLabels', 'labelSourceType']
+        """
         label_results = None
         # set true if we need to fetch labels
         query_flag = True

@@ -843,7 +843,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         metadata = self.get_diary_study_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
         if channel_groups.empty:
-            return None
+            return pd.DataFrame({})
 
         segments = self.pandas_flatten(channel_groups, '', 'segments')
         data_chunks = self.pandas_flatten(segments, 'segments.', 'dataChunks')
@@ -887,7 +887,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if data_list:
             data = pd.concat(data_list)
         else:
-            data = None
+            data = pd.DataFrame({})
 
         return data
 

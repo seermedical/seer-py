@@ -1,5 +1,8 @@
-# Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
+Authenticate a connection by verifying a user's ID against the auth endpoint.
 
+Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
 import getpass
 import os
 import json
@@ -12,10 +15,25 @@ COOKIE_KEY_DEV = 'seerdev.sid'
 
 
 class SeerAuth:
+    """Class to handle authenticating a user"""
 
     help_message_displayed = False
 
     def __init__(self, api_url, email=None, password=None, dev=False):
+        """
+        Authenticate session using email address and password
+
+        Parameters
+        ----------
+        api_url : str
+            Base URL of API endpoint
+        email : str
+            The email address for a user's Seer account
+        password : str
+            The password for a user's Seer account
+        dev : bool
+            Flag to query the dev rather than production endpoint
+        """
         self.api_url = api_url
         self.cookie = None
         self.dev = dev
@@ -49,6 +67,10 @@ class SeerAuth:
                 raise InterruptedError('Authentication Failed')
 
     def login(self):
+        """
+        Request and save a session cookie from the auth endpoint, by making a
+        POST request with a user's email address and password.
+        """
         login_url = self.api_url + '/auth/login'
         body = {'email': self.email, 'password': self.password}
         response = requests.post(url=login_url, data=body)
@@ -69,6 +91,10 @@ class SeerAuth:
             self.cookie = None
 
     def verify_login(self):
+        """
+        Attempt to verify user by making a GET request with the current session cookie.
+        If successful, save cookie to disk. Returns response status code.
+        """
         if self.cookie is None:
             return 401
 
@@ -88,6 +114,9 @@ class SeerAuth:
         return response.status_code
 
     def login_details(self):
+        """
+        Get user's email address and password, either from file or stdin.
+        """
         home = os.path.expanduser('~')
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
@@ -104,9 +133,11 @@ class SeerAuth:
                 self.help_message_displayed = True
 
     def get_cookie_path(self):
+        """Get the path to the local cookie file"""
         return '/.seerpy/cookie-dev' if self.dev else '/.seerpy/cookie'
 
     def write_cookie(self):
+        """Save the current cookie to file"""
         try:
             home = os.path.expanduser('~')
             cookie_file = home + self.get_cookie_path()
@@ -118,6 +149,7 @@ class SeerAuth:
             pass
 
     def read_cookie(self):
+        """Read the latest cookie saved to file"""
         home = os.path.expanduser('~')
         cookie_file = home + self.get_cookie_path()
         if os.path.isfile(cookie_file):
@@ -125,6 +157,7 @@ class SeerAuth:
                 self.cookie = json.loads(f.read().strip())
 
     def destroy_cookie(self):
+        """Delete any saved cookie"""
         home = os.path.expanduser('~')
         cookie_file = home + self.get_cookie_path()
         if os.path.isfile(cookie_file):

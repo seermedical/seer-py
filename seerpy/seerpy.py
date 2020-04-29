@@ -918,7 +918,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if data_list:
             data = pd.concat(data_list)
         else:
-            data = None
+            data = pd.DataFrame({})
 
         return data
 

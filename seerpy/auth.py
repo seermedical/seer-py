@@ -1,5 +1,5 @@
 """
-Authenticate a connection by verifying a user's ID against the auth endpoint.
+Authenticate a connection by verifying a user's credentials against the auth endpoint.
 
 Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 """

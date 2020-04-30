@@ -5,11 +5,19 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 
 Concepts
 --------
-- study: A period of time monitoring a patient, often with EEG/ECG
-- channel group: A type of monitoring data in a study, e.g. EEG, ECG, video
-- channel: A specific channel of a channel group, e.g. for EEG: Fz, C4, Fp1 channels
-- label group: Categories of labels relevant to a study, e.g. Abnormal / Epileptiform,
-    Normal / Routine, Sleep, Suspect - Low/Medium.
+- study: A defined period of time monitoring a patient, typically with EEG-ECG-video
+- diary: Use of the Seer app by a patient to record events such as seizures
+    ("labels") and "alerts" for medication use
+- diary study: Use of a wearable, such as a Fitbit, to record patient data
+- channel group: A mode of monitoring data, dependent on the study type.
+    Study: EEG, ECG, video
+    Diary study: Wearable data, e.g. heart rate, step count
+- channel: A channel group may have multiple channels. E.g. The different
+    electrodes for EEG: Fz, C4, Fp1 etc.
+- label group: Categories of labels relevant to a study. Depends on the study type.
+    Study: clinical annotations, e.g. Abnormal / Epileptiform, Normal / Routine
+    Diary: self-reported annotations of events, e.g. Seizure / Other
+    Diary study: labels from a wearable device, e.g. Sleep annotations
 - label: An instance of a label group. Labels typically involve the following
     fields: id, startTime, duration, timezone, note, tags, confidence,
     createdAt, createdBy
@@ -197,9 +205,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         parent : pd.DataFrame
-            A DataFrame with f"{parent_name}id" and `child_name` cols
+            A DataFrame with f"{parent_name}id" and `child_name` columns
         parent_name : str
-            Any prefix to the 'id' and `child_name` cols in the parent DataFrame
+            Any prefix to the 'id' and `child_name` columns in the parent DataFrame
         child_name : str
             The name of the column with list of dict values
 
@@ -406,7 +414,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         limit : int, optional
-            The number of studies to retrieve per API call
+            Batch size for repeated API calls
         search_term : str, optional
             Filter results to study names matching this string
         party_id : str, optional
@@ -474,7 +482,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Parameters
         ----------
-        study_names : list of str
+        study_names : str or list of str
             Seer study names to retrieve
         party_id : str, optional
             The organisation/entity to specify for the query
@@ -611,7 +619,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         data_chunk_df : pd.DataFrame
-            The returned DataFrame has cols:
+            The returned DataFrame has columns:
             - segments.id
             - chunkIndex
             - chunk_start
@@ -731,7 +739,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_labels_string(self, study_id, label_group_id, from_time=0, to_time=9e12):
         """
         Get all labels for a given study and label group as an abridged string
-        representation.
+        representation. Because the GraphQL response is unvalidated, it can
+        perform significantly faster for larger datasets.
 
         Parameters
         ----------
@@ -764,7 +773,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         labels_str_df : pd.DataFrame
-            Cols include 'labels.id', 'labels.startTime' and 'labels.duration'
+            Columns include 'labels.id', 'labels.startTime' and 'labels.duration'
         """
         label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time,
                                                to_time=to_time)
@@ -843,7 +852,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         times_df : pd.DataFrame
-            Includes cols 'id', 'startTime', 'duration' and 'user'
+            Includes columns 'id', 'startTime', 'duration' and 'user'
         """
         views = []
         while True:

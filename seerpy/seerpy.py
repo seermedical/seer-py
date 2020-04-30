@@ -170,7 +170,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             The formatted GraphQL query
         object_name : str
             Key to retrieve from the response object, e.g. 'studies'
-        limit : int
+        limit : int, optional
             Batch size for repeated API calls
         party_id : str, optional
             The organisation/entity to specify for the query
@@ -552,7 +552,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Parameters
         ----------
-        study_id: Seer study ID
+        study_id : str
+            Seer study ID
 
         Returns
         -------
@@ -1240,7 +1241,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Parameters
         ----------
-        study_ids: Iterable of study IDs
+        study_ids : list of str
+            Iterable of study IDs
 
         Returns
         -------
@@ -1280,12 +1282,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls : pd.DataFrame, optional
             DataFrame with columns ['segments.id', 'baseDataChunkUrl'].
             If None, these will be retrieved for each segment in `all_data`.
-        download_function: The function used to download the channel data.
-            Defaults to requests.get
-        threads: Number of threads to use. If > 1 will use multiprocessing.
-            If None (default), will use 1 on Windows and 5 on Linux/MacOS.
-        from_time: Timestamp in msec - only retrieve data after this point
-        to_time: Timestamp in msec - only retrieve data before this point
+        download_function : callable, optional
+            The function used to download the channel data. Defaults to requests.get
+        threads : int, optional
+            Number of threads to use. If > 1 will use multiprocessing. If None
+            (default), will use 1 on Windows and 5 on Linux/MacOS.
+        from_time : int, optional
+            Timestamp in msec - only retrieve data after this point
+        to_time : int, optional
+            Timestamp in msec - only retrieve data before this point
     
         Returns
         -------
@@ -1535,9 +1540,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Parameters
         ----------
-        segments: DataFrame with cols ['dataChunks.url', 'name', 'segments.startTime']
+        segments : pd.DataFrame
+            DataFrame with columns 'dataChunks.url', 'name' & 'segments.startTime',
             as returned by `get_diary_channel_groups_dataframe()`
-        
+
         Returns
         -------
         fitbit_data_df : pd.DataFrame
@@ -1575,9 +1581,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         ----------
         survey_template_ids : str or list of str
             A list of survey_template_ids for which to retrieve results
-        limit : int
+        limit : int, optional
             Batch size for repeated API calls
-        offset : int
+        offset : int, optional
             Index of the first result to return
 
         Returns

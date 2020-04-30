@@ -1,7 +1,34 @@
+"""
+GraphQL queries used by various seerpy.SeerConnect methods.
+"""
 from . import utils
 
 
 def get_json_list(list_of_strings, include_brackets=True):
+    """
+    Convert a list of strings into a single string representation, suitable for
+    inclusion in GraphQL queries.
+
+    Parameters
+    ---------
+    list_of_strings : list of str
+        Strings to convert to single string
+    include_backets : bool
+        Whether to include square braces in the returned string
+
+    Returns
+    -------
+    stringified_list : str
+        String representation of the input list
+
+    Example
+    -------
+    >>> get_json_list(['cat', 'dog'])
+    '["cat", "dog"]'
+
+    >>> get_json_list(['cat', 'dog'], include_brackets=False)
+    '"cat", "dog"'
+    """
     json_list = ', '.join('"%s"' % string for string in list_of_strings)
     if include_brackets:
         json_list = '[' + json_list + ']'
@@ -9,6 +36,25 @@ def get_json_list(list_of_strings, include_brackets=True):
 
 
 def get_string_from_list_of_dicts(list_of_dicts):
+    """
+    Convert a list of dicts into a flattened string representation.
+
+    Parameters
+    ---------
+    list_of_dicts : list of dict
+        Arbitrary dictionaries to convert to string
+
+    Returns
+    -------
+    stringified_dicts : str
+        String representation of the input list of dicts
+
+    Example
+    -------
+    >>> dicts = [{'a': 'this', 'b': 'that', 'c': {'the other'}}, {'d': 'then'}]
+    >>> get_string_from_list_of_dicts(dicts)
+    ' { a: "this", b: "that", c: {\'the other\'}}, { d: "then"}'
+    """
     labels_string = ''
     for d in list_of_dicts:
         labels_string += ' {'

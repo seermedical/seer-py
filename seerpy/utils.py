@@ -1,5 +1,9 @@
-# Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
+Utility and helper functions for downloading data, as well as plotting and
+filtering signals.
 
+Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
 import functools
 import gzip
 from multiprocessing import Pool
@@ -16,6 +20,32 @@ from scipy.signal import butter, sosfilt
 
 # pylint:disable=too-many-locals,too-many-statements
 def download_channel_data(data_q, download_function):
+    """
+    Download data for a single channel of a single segment, decompress if
+    needed, convert to numeric type & apply exponentiation etc, and return as a
+    DataFrame.
+
+    Parameters
+    ----------
+    data_q : list of list
+        A list containing 5 elements:
+        - A row from a metadata DataFrame with fields including: a data chunk URL,
+        timestamp, sample encoding, sample rate, compression, signal min/max
+        exponent etc. See `get_channel_data` for series derivation
+        - study_id : str
+        - channel_group_id : str
+        - segment_id : str
+        - channel_names: list of str
+    download_function : callable
+        A function that will be used to attempt to download data from the URL
+        defined in data_q[0]['dataChunks.url']
+
+    Returns
+    -------
+    data_df : pd.DataFrame
+        DataFrame with columns 'time', 'id', 'channelGroups.id', 'segments.id',
+        and a column with data for each channel in channel_names
+    """
     meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
     try:
         raw_data = download_function(meta_data['dataChunks.url'])
@@ -91,6 +121,27 @@ def download_channel_data(data_q, download_function):
 
 # pylint:disable=too-many-locals
 def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
+    """
+    Get URLs and timestamps for data chunks listed in a metadata DataFrame.
+
+    Parameters
+    ----------
+    metadata : pd.DataFrame
+        Study metadata as returned by seerpy.get_all_study_metadata_dataframe_by_*()
+    segment_urls : pd.DataFrame
+        DataFrame with columns 'segments.id', and 'baseDataChunkUrl', as returned
+        by seerpy.get_segment_urls()
+    from_time : int, optional
+        Only include data chunks that start after this time
+    to_time : int, optional
+        Only include data chunks that start before this time
+
+    Returns
+    -------
+    download_df : pd.DataFrame
+        A DataFrame with columns 'segments.id', 'dataChunks.url' and 'dataChunks.time',
+        which can be used to download data chunks in a segment
+    """
     chunk_pattern = '00000000000.dat'
 
     data_chunks = []
@@ -128,29 +179,30 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
 # pylint:disable=too-many-locals
 def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-arguments
                      download_function=requests.get, threads=None, from_time=0, to_time=9e12):
-    """Download data chunks and stich them together in one dataframe
+    """
+    Download data chunks and stich together into a single DataFrame.
 
     Parameters
     ----------
-    all_data : pandas DataFrame
-            metadata required for downloading and processing raw data
-    segment_urls : pandas DataFrame
-            columns=['segments.id', 'baseDataChunkUrl']
-    download_function: function
-            the function used to download the channel data. defaults to requests.get
-    threads : int
-            number of threads to use. If > 1 then will use multiprocessing
-            if None (default), it will use 1 on Windows and 5 on Linux/MacOS
+    all_data : pd.DataFrame
+        Study metadata as returned by seerpy.get_all_study_metadata_dataframe_by_*()
+    segment_urls : pd.DataFrame
+        DataFrame with columns ['segments.id', 'baseDataChunkUrl'] as returned
+        by seerpy.get_segment_urls()
+    download_function : callable
+        The function used to download the channel data. Defaults to requests.get
+    threads : int, optional
+        Number of threads to use. If > 1 then will use multiprocessing. If None
+        (default), it will use 1 on Windows and 5 on Linux/MacOS
+    from_time : int, optional
+        Timestamp in msec - only retrieve data after this point
+    to_time : int, optional
+        Timestamp in msec - only retrieve data before this point
 
     Returns
     -------
-    data : pandas DataFrame
-            dataframe containing studyID, channelGroupIDs, semgmentIDs, time, and raw data
-
-    Example
-    -------
-    data = get_channel_data(all_data, segment_urls)
-
+    data_df : pd.DataFrame
+        DataFrame containing study ID, channel group IDs, semgment IDs, time, and raw data
     """
     if threads is None:
         if os.name == 'nt':
@@ -215,17 +267,18 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
 
 
 def get_channel_names_or_ids(metadata):
-    """Get a list of unique channel names, or ids where name is null or duplicated.
+    """
+    Get a list of unique channel names, or IDs where name is null or duplicated.
 
     Parameters
     ----------
-    metadata : pandas DataFrame
-            a dataframe containing a 'channels.name' and 'channels.id' column
+    metadata : pd.DataFrame
+        A DataFrame containing 'channels.name' and 'channels.id' columns
 
     Returns
     -------
-    actual_channel_names : list
-            a list of unique channels names or ids.
+    actual_channel_names : list of str
+        Unique channels names or IDs.
     """
     actual_channel_names = []
     unique_ids = metadata.drop_duplicates(subset='channels.id')
@@ -242,6 +295,36 @@ def get_channel_names_or_ids(metadata):
 
 # pylint:disable=too-many-locals
 def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
+    """
+    Plot EEG data as a time series.
+
+    Parameters
+    ----------
+    x : np.ndarray, pd.Series or list of float
+        A 1- or 2-D array-like of EEG signal values over time, corresponding to
+        1 or more channels
+    y : np.ndarray, optional
+        An binary-value series of len(x), used to add filled areas to the plot
+    pred : np.ndarray, pd.Series or list of float, optional
+        An optional iterable of arbitrary length, where all values are in the
+        range [0, 1], used to add filled area to the plot
+    squeeze : float, optional
+        Used to set Y-axis scaling factor if `scaling_factor` not supplied
+    scaling_factor : float, optional
+        Set Y-axis upper & lower limits
+
+    Returns
+    -------
+    time_series_fig : matplotlib.pyplot
+        Matplotlib plt package
+
+    Example
+    -------
+    >>> metadata_df = seerpy_client.get_all_study_metadata_dataframe_by_ids([study_id])
+    >>> data_df = seerpy_client.get_channel_data(metadata_df)
+    >>> data_series = data_df.iloc[:, 0]
+    >>> plot_eeg(x=data_series)
+    """
     if not isinstance(x, np.ndarray):
         x = np.asarray(x)
 
@@ -296,6 +379,26 @@ def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
 
 
 def butter_bandstop(lowcut, highcut, fs, order=5):
+    """
+    Get second-order-sections representation of and IIR Butterworth digital
+    bandstop filter.
+
+    Parameters
+    ----------
+    lowcut : float
+        The lowcut critical frequency
+    highcut : float
+        The highcut critical frequency
+    fs : float
+        The sampling frequency of the digital system
+    order : int
+        The order of the filter
+
+    Returns
+    -------
+    filter_params : np.ndarray
+        Second-order-section filter parameters
+    """
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -305,12 +408,54 @@ def butter_bandstop(lowcut, highcut, fs, order=5):
 
 
 def butter_bandstop_filter(data, lowcut, highcut, fs, order=5):
+    """
+    Apply a bandstop filter to data along one dimension using cascaded
+    second-order sections.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Array of data to apply filter to
+    lowcut : float
+        The lowcut critical frequency
+    highcut : float
+        The highcut critical frequency
+    fs : float
+        The sampling frequency of the digital system
+    order : int
+        The order of the filter
+
+    Returns
+    -------
+    filtered_data : np.ndarray
+        The original data after applying the filter
+    """
     sos = butter_bandstop(lowcut, highcut, fs, order=order)
     y = sosfilt(sos, data)
     return y
 
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
+    """
+    Get second-order-sections representation of and IIR Butterworth digital
+    bandpass filter.
+
+    Parameters
+    ----------
+    lowcut : float
+        The lowcut critical frequency
+    highcut : float
+        The highcut critical frequency
+    fs : float
+        The sampling frequency of the digital system
+    order : int
+        The order of the filter
+
+    Returns
+    -------
+    filter_params : np.ndarray
+        Second-order-section filter parameters
+    """
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -320,12 +465,47 @@ def butter_bandpass(lowcut, highcut, fs, order=5):
 
 
 def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
+    """
+    Apply a bandpass filter to data along one dimension using cascaded
+    second-order sections.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Array of data to apply filter to
+    lowcut : float
+        The lowcut critical frequency
+    highcut : float
+        The highcut critical frequency
+    fs : float
+        The sampling frequency of the digital system
+    order : int
+        The order of the filter
+
+    Returns
+    -------
+    filtered_data : np.ndarray
+        The original data after applying the filter
+    """
     sos = butter_bandpass(lowcut, highcut, fs, order=order)
     y = sosfilt(sos, data)
     return y
 
 
 def get_diary_fitbit_data(data_url):
+    """
+    Download Fitbit data from a given URL and wrangle into a DataFrame.
+    
+    Parameters
+    ----------
+    data_url : str
+        URL to download the data from
+
+    Returns
+    -------
+    data_df : pd.DataFrame
+        Fitbit data with columns 'timestamp' and 'value'
+    """
     raw_data = requests.get(data_url)
     data = raw_data.content
 
@@ -342,4 +522,22 @@ def get_diary_fitbit_data(data_url):
 
 
 def quote_str(value):
+    """
+    Return a string in double quotes.
+
+    Parameters
+    ----------
+    value : str
+        Some string
+    
+    Returns
+    -------
+    quoted_value : str
+        The original value in quote marks
+    
+    Example
+    -------
+    >>> quote_str('some value')
+    '"some value"'
+    """
     return f'"{value}"'

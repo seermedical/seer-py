@@ -437,7 +437,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         limit : int
             Batch size for repeated API calls
         search_term : str
-            A string used to filter the studies returned
+            Filter results to studies including this string, either in the study
+            name or patient name. Not case sensitive.
         party_id : str
             The organisation/entity to specify for the query
 
@@ -878,34 +879,101 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return views
 
     def get_organisations(self):
+        """
+        Get details of all available organisations.
+
+        Returns
+        -------
+        organisations : list of dict
+            Dictionaries with organisation 'id' and 'name' keys
+        """
         query_string = graphql.get_organisations_query_string()
         response = self.execute_query(query_string)['organisations']
         return response
 
     def get_organisations_dataframe(self):
+        """
+        Get details of all available organisations as a DataFrame.
+
+        Returns
+        -------
+        orgs_df : pd.DataFrame
+            Organisations DataFrame with 'id' and 'name' columns
+        """
         orgs = self.get_organisations()
         if orgs is None:
             return orgs
         return pd.DataFrame(orgs)
 
     def get_patients(self, party_id=None):
+        """
+        Get available patient IDs and user names.
+
+        Parameters
+        ----------
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        patients : list of dict
+            Patient details, with keys 'id' and 'user'
+        """
         query_string = graphql.get_patients_query_string()
         response = self.execute_query(query_string, party_id)['patients']
         return response
 
     def get_patients_dataframe(self, party_id=None):
+        """
+        Get available patient IDs and user names as a DataFrame.
+
+        Parameters
+        ----------
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        patient_df : pd.DataFrame
+            Patient details, with columns 'id' and 'user'
+        """
         patients = self.get_patients(party_id)
         if patients is None:
             return patients
         return json_normalize(patients).sort_index(axis=1)
 
     def get_documents_for_studies(self, study_ids, limit=50):
+        """
+        Get details of all documents associated with given study ID(s). 
+
+        Parameters
+        ----------
+        study_id : str or list of str
+            Iterable of Seer study ID
+        limit : int, optional
+            Batch size for repeated API calls
+
+        Returns
+        -------
+        documents : list of dict
+            Document details. Dict has key 'documents' that indexes a nested dict
+            with keys including: 'id', 'name', 'fileSize', 'downloadFileUrl'
+        """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
         documents_query_string = graphql.get_documents_for_study_ids_paged_query_string(study_ids)
         return self.get_paginated_response(documents_query_string, 'studies', limit)
 
     def get_documents_for_studies_dataframe(self, study_ids, limit=50):
+        """
+        Get details of all documents associated with given study ID(s) as a DataFrame.
+        See `get_documents_for_studies()` for details.
+
+        Returns
+        -------
+        documents_df : pd.DataFrame
+            DataFrame with document details for a study
+        """
         documents = []
         for study in self.get_documents_for_studies(study_ids, limit):
             for document in study['documents']:
@@ -917,6 +985,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return pd.DataFrame(documents)
 
     def get_diary_labels(self, patient_id, offset=0, limit=100):
+        """
+        Get all diary label groups (e.g. heart rate) and labels for a given patient.
+
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary labels
+        offset : int, optional
+            Index of first record to return
+        limit : int, optional
+            Batch size for repeated API calls
+
+        Returns
+        -------
+        diary_labels : dict
+            Dictionary with a 'labelGroups' key which indexes to a nested dictionary
+            with keys 'id', 'labelType', 'name', 'labels', 'labelSourceType' etc.
+        """
         label_results = None
         # set true if we need to fetch labels
         query_flag = True
@@ -954,7 +1040,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_results
 
     def get_diary_labels_dataframe(self, patient_id):
+        """
+        Get all diary label groups and labels for a given patient as a DataFrame.
+        See `get_diary_labels()` for details.
 
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary labels
+
+        Returns
+        -------
+        diary_labels_df : pd.DataFrame
+            DataFrame with diary label information
+        """
         label_results = self.get_diary_labels(patient_id)
         if label_results is None:
             return label_results
@@ -972,11 +1071,39 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_groups
 
     def get_diary_medication_alerts(self, patient_id, from_time=0, to_time=9e12):
+        """
+        Get diary medications ("alerts") for a given patient.
+
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary labels
+        from_time : int, optional
+            Timestamp in msec - only retrieve data after this point
+        to_time : int, optional
+            Timestamp in msec - only retrieve data before this point
+
+        Returns
+        -------
+        medications : dict
+            Medication information with key 'alerts', which indexes to a dictionary
+             with a 'labels' key that indexes list of dict with keys 'doses',
+             'alert', 'startTime', 'scheduledTime' etc.
+        """
         query_string = graphql.get_diary_medication_alerts_query_string(patient_id, from_time, to_time)
         response = self.execute_query(query_string)['patient']['diary']
         return response
 
     def get_diary_medication_alerts_dataframe(self, patient_id, from_time=0, to_time=9e12):
+        """
+        Get diary medication alerts for a given patient as a DataFrame. See
+        `get_diary_medication_alerts()` for details.
+
+        Returns
+        -------
+        medications_df : pd.DataFrame
+            DataFrame with details of patient medication information
+        """
         results = self.get_diary_medication_alerts(patient_id, from_time, to_time)
         if results is None:
             return results
@@ -985,11 +1112,38 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return labels
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
+        """
+        Get all medication compliance records for a given patient.
+
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary labels
+        from_time : int, optional
+            Timestamp in msec - only retrieve data after this point
+        to_time : int, optional
+            Timestamp in msec - only retrieve data before this point
+
+        Returns
+        -------
+        medication_compliance : dict
+            Has a single key, 'patient', which indexes a nested dictionary with a
+            'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
+        """
         query_string = graphql.get_diary_medication_compliance_query_string(patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
+        """
+        Get all medication compliance records for a given patient as a DataFrame.
+        See `get_diary_medication_compliance()` for details.
+
+        Returns
+        -------
+        medication_compliance_df : pd.DataFrame
+            Dataframe with columns about medication compliance
+        """
         results = self.get_diary_medication_compliance(patient_id, from_time, to_time)
         if results is None:
             return results
@@ -999,22 +1153,22 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return medication_compliance
 
     def get_all_study_metadata_by_names(self, study_names=None, party_id=None):
-        """Get all the metadata available about named studies
+        """
+        Get all metadata available about provided study names. See
+        `get_all_study_metadata_by_ids()` for details.
 
         Parameters
         ----------
-        study_names (Optional) : a list of study names. If not provided, data will be returned for
-        all studies
-        party_id (Optional) : string, the party id of the context for the query (e.g. organisation)
+        study_names : str or list of str, optional
+            Study names. If not provided, data will be returned for all studies
+        party_id : str, optional
+            The organisation/entity to specify for the query
 
         Returns
         -------
-        allData : dict
-                a dictionary with a single key 'studies' with a list of studies as it's value
-
-        Example
-        -------
-        studies = get_all_study_metadata_by_names()['studies']
+        metadata : dict
+            Nested dictionaries with information on patient, channel groups,
+            channels and segments
         """
         study_ids = None
         if study_names:
@@ -1022,21 +1176,22 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return self.get_all_study_metadata_by_ids(study_ids)
 
     def get_all_study_metadata_by_ids(self, study_ids=None):
-        """Get all the metadata available about studies with the suppled ids
+        """
+        Get all metadata available about studies with supplied IDs.
 
         Parameters
         ----------
-        study_ids (Optional) : a list of study ids. If not provided, data will be returned for
-        all studies
+        study_ids : list of str, optional
+            A list of study IDs. If not provided, data will be returned for all
+            available studies.
 
         Returns
         -------
-        allData : dict
-                a dictionary with a single key 'studies' with a list of studies as it's value
-
-        Example
-        -------
-        studies = get_all_study_metadata_by_ids()['studies']
+        metadata : dict
+            A dictionary with a single key 'studies', which indexes a list of
+            dictionaries with keys 'id', 'name', 'description', 'patient' and
+            'channelGroups'. 'channelGroup' indexes a dictionary with keys
+            'channels', 'segments', 'sampleRate' etc.
         """
         if study_ids is None:
             study_ids = self.get_study_ids()
@@ -1049,12 +1204,39 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return {'studies' : result}
 
     def get_all_study_metadata_dataframe_by_names(self, study_names=None):
+        """
+        Get all metadata available about studies with the suppled names as a
+        DataFrame. See `get_all_study_metadata_by_ids()` for details.
+
+        Parameters
+        ----------
+        study_names : str or list of str, optional
+            Study names. If not provided, data will be returned for all studies
+
+        Returns
+        -------
+        metadata_df : pd.DataFrame
+            DataFrame with information on patient, channel groups, channels and segments
+        """
         study_ids = None
         if study_names:
             study_ids = self.get_study_ids_from_names(study_names)
         return self.get_all_study_metadata_dataframe_by_ids(study_ids)
 
     def get_all_study_metadata_dataframe_by_ids(self, study_ids=None):
+        """
+        Get all metadata available about studies with the suppled IDs as a
+        DataFrame. See `get_all_study_metadata_by_ids()` for more details.
+
+        Parameters
+        ----------
+        study_ids: Iterable of study IDs
+
+        Returns
+        -------
+        metadata_df : pd.DataFrame
+            DataFrame with information on patient, channel groups, channels and segments
+        """
         metadata = self.get_all_study_metadata_by_ids(study_ids)
         all_data = json_normalize(metadata['studies']).sort_index(axis=1)
         channel_groups = self.pandas_flatten(all_data, '', 'channelGroups')
@@ -1077,30 +1259,37 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     # pylint:disable=too-many-locals
     def get_channel_data(self, all_data, segment_urls=None,  # pylint:disable=too-many-arguments
                          download_function=requests.get, threads=None, from_time=0, to_time=9e12):
-        """Download data chunks and stich them together in one dataframe
+        """
+        Download raw data for all channel groups and segments listed in a given
+        metadata DataFrame and wrangle into a new DataFrame.
 
         Parameters
         ----------
-        all_data : pandas DataFrame
-                metadata required for downloading and processing raw data
-        segment_urls : pandas DataFrame
-                columns=['segments.id', 'baseDataChunkUrl']
-                if None, these will be retrieved for each segment in all_data
-        download_function: function
-                the function used to download the channel data. defaults to requests.get
-        threads : int
-                number of threads to use. If > 1 then will use multiprocessing
-                if None (default), it will use 1 on Windows and 5 on Linux/MacOS
-
+        all_data : pd.DataFrame
+            Study metadata, as returned by `get_all_study_metadata_dataframe_by_*()`
+        segment_urls : pd.DataFrame, optional
+            DataFrame with columns ['segments.id', 'baseDataChunkUrl'].
+            If None, these will be retrieved for each segment in `all_data`.
+        download_function: The function used to download the channel data.
+            Defaults to requests.get
+        threads: Number of threads to use. If > 1 will use multiprocessing.
+            If None (default), will use 1 on Windows and 5 on Linux/MacOS.
+        from_time: Timestamp in msec - only retrieve data after this point
+        to_time: Timestamp in msec - only retrieve data before this point
+    
         Returns
         -------
-        data : pandas DataFrame
-                dataframe containing studyID, channelGroupIDs, semgmentIDs, time, and raw data
+        data_df : pd.DataFrame
+            DataFrame with 'time', 'id', 'channelGroups.id' and 'segments.id' columns,
+            as well as a column for each data channel, e.g. each EEG electrode.
 
         Example
         -------
-        data = get_channel_data(all_data)
-
+        Get all ECG data for a study of patient "Jane Doe":
+        >>> study_id = get_study_ids(search_term="Jane Doe")[0]['id']
+        >>> metadata_df = get_all_study_metadata_dataframe_by_ids(study_id)
+        >>> ecg_metadata_df = metadata_df[metadata_df['channelGroups.name'] == 'ECG']
+        >>> ecg_data_df = get_channel_data(ecg_metadata_df)
         """
         if segment_urls is None:
             segment_ids = all_data['segments.id'].drop_duplicates().tolist()
@@ -1110,11 +1299,48 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                       to_time)
 
     def get_all_bookings(self, organisation_id, start_time, end_time):
+        """
+        Get all bookings for any studies that are active at any point between
+        `start_time` and `end_time`.
+
+        Parameters
+        ----------
+        organisation_id : str
+            Organisation ID associated with patient bookings
+        start_time : int
+            Timestamp in msec - find studies active after this point
+        end_time : int
+            Timestamp in msec - find studies active before this point
+
+        Returns
+        -------
+        bookings : list of dict
+            Booking information, with keys including 'id', 'startTime', 'endTime',
+            'patient', 'referral', 'equipmentItems', and 'location'
+        """
         query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
         response = self.execute_query(query_string)
         return response['organisation']['bookings']
 
     def get_all_bookings_dataframe(self, organisation_id, start_time, end_time):
+        """
+        Get all bookings for any studies that are active at any point between
+        `start_time` and `end_time` as a DataFrame. See `get_all_bookings()`.
+
+        Parameters
+        ----------
+        organisation_id : str
+            Organisation ID associated with patient bookings
+        start_time : int
+            Timestamp in msec - find studies active after this point
+        end_time : int
+            Timestamp in msec - find studies active before this point
+        
+        Returns
+        -------
+        bookings_df : pd.DataFrame
+            DataFrame with details about all relevant bookings
+        """
         bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
         bookings = json_normalize(bookings_response).sort_index(axis=1)
         studies = self.pandas_flatten(bookings, 'patient.', 'studies')
@@ -1127,6 +1353,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     # DIARY STUDY (FITBIT) ANALYSIS
     def get_diary_data_groups(self, patient_id, limit=20, offset=0):
+        """
+        Get wearable label groups (e.g. heart rate, steps) for a patient diary study.
+
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary data
+        limit : int, optional
+            The maximum number of results to return
+        offset : int optional
+            The index of the first label group to return. Useful in conjunction
+            with `limit` for repeated calls
+
+        Returns
+        -------
+        label_groups : list of dict
+            Diary study label groups, with keys 'id', 'name', 'numberOfLabels'
+        """
         # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
         query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
         response = self.execute_query(query_string)['patient']['diaryStudy']
@@ -1134,21 +1378,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_groups
 
     def get_diary_data_groups_dataframe(self, patient_id, limit=20, offset=0):
-        """Get a list of label groups present in a patient's diary study
-
-        Parameters
-        ----------
-        patient_id : The patient ID (string)
+        """
+        Get wearable label groups (e.g. heart rate, steps) for a patient diary
+        study as a DataFrame. See `get_diary_data_groups()` for details.
 
         Returns
         -------
-        label_groups : pandas DataFrame
-                dataframe containing labelGroupID, labelGroupName, numberOfLabels in labelGroup
-
-        Example
-        -------
-        label_groups = get_diary_study_label_groups_dataframe("some_id")
-
+        label_groups : pd.DataFrame
+            Dataframe of diary study label groups
         """
         label_group_results = self.get_diary_data_groups(patient_id, limit, offset)
         if label_group_results is None:
@@ -1158,6 +1395,31 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_data_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
+        """
+        Get all diary study labels for a given patient and wearable label group,
+        e.g. heart rate.
+
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary labels
+        label_group_id : str
+            The ID of the diary study label group for which to retrieve labels
+        from_time : int, optional
+            Timestamp in msec - find diary labels after this point
+        to_time : int, optional
+            Timestamp in msec - find diary labels before this point
+        limit : int, optional
+            Batch size for repeated API calls
+        offset : int, optional
+            The index of the first label group to return
+
+        Returns
+        -------
+        data_labels : dict
+            A dict with one key, 'labelGroup', which indexes to a dict with
+        a 'labels' key. Labels include ['id', 'startTime', 'duration', 'tags', 'timezone']
+        """
         label_results = None
 
         while True:
@@ -1179,24 +1441,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_data_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
-        """Get labels from a patient's diary study
-
-        Parameters
-        ----------
-        patient_id : The patient ID (string)
-        label_group_id: The label group ID
-        from_time: min start time for labels (UTC time in milliseconds)
-        to_time: max start time for labels (UTC time in milliseconds)
+        """
+        Get all diary study labels for a given patient and wearble label group
+        as a DataFrame.
+        See `get_diary_data_labels()` for details.
 
         Returns
         -------
-        label_group : pandas DataFrame
-                dataframe containing labelGroup info, labels (startTime, timeZone, duration) and tags
-
-        Example
-        -------
-        label_groups = get_diary_study_labels_dataframe(patient_id, label_group_id)
-
+        data_labels_df : pd.DataFrame
+            DataFrame with information about labels for a diary study
         """
         label_results = self.get_diary_data_labels(patient_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
@@ -1215,11 +1468,38 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
 
     def get_diary_channel_groups(self, patient_id, from_time, to_time):
+        """
+        Get all diary study channel groups (e.g. heart rate) and associated
+        segment information for a given patient.
+
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary channel groups
+        from_time : int
+            Timestamp in msec - find segments after this point
+        to_time : int
+            Timestamp in msec - find segments before this point
+
+        Returns
+        -------
+        diary_channel_groups : list of dicts
+            Diary channel group details, with keys 'id', 'name', 'startTime', 'segments'
+        """
         query_string = graphql.get_diary_study_channel_groups_query_string(patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
-    def get_diary_channel_groups_dataframe(self, patient_id, from_time=0, to_time=90000000000000):
+    def get_diary_channel_groups_dataframe(self, patient_id, from_time=0, to_time=9e13):
+        """
+        Get all diary study channel groups and associated segment information for a given
+        patient, as a DataFrame. See `get_diary_channel_groups()` for details.
+
+        Returns
+        -------
+        diary_channel_groups_df : pd.DataFrame
+            Diary channel groups with columns 'id', 'name', 'startTime', 'segments'
+        """
         metadata = self.get_diary_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
         if channel_groups.empty:
@@ -1238,15 +1518,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
 
     def get_diary_fitbit_data(self, segments):
-        """Get fitbit data from a patient's diary study
+        """
+        Get Fitbit data from a patient diary study. `segments` should be a
+        DataFrame as returned by `get_diary_channel_groups_dataframe()` that
+        includes columns ['dataChunks.url', 'name', 'segments.startTime'].
 
         Parameters
         ----------
-        segments: pandas DataFrame as returned by get_diary_channel_groups_dataframe
-
+        segments: DataFrame with cols ['dataChunks.url', 'name', 'segments.startTime']
+            as returned by `get_diary_channel_groups_dataframe()`
+        
         Returns
         -------
-        data: pandas DataFrame containing timestamp (adjusted), value, and group name
+        fitbit_data_df : pd.DataFrame
+            Fitbit data DataFrame with timestamp (adjusted), value, and group name
 
         """
         segment_urls = segments['dataChunks.url']
@@ -1273,22 +1558,25 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return data
 
     def get_mood_survey_results(self, survey_template_ids, limit=200, offset=0):
-        """Gets a list of dictionaries containing mood survey results
+        """
+        Get mood survey results for one or more survey template IDs.
 
         Parameters
         ----------
-        survey_template_ids : A list of survey_template_ids to retrieve results for
+        survey_template_ids : str or list of str
+            A list of survey_template_ids for which to retrieve results
+        limit : int
+            Batch size for repeated API calls
+        offset : int
+            Index of the first result to return
 
         Returns
         -------
-        mood_survey_results : a list of dictionaries
-                a list of dictionaries containing survey result data
-
-        Example
-        -------
-        survey_results = get_mood_survey_results("some_id")
+        mood_survey_results : list of dict
+            A list of dictionaries with survey result data, including keys
+            'completer', 'lastSubmittedAt', and 'fields', which indexes to a
+            list of dictionaries with keys 'key' and 'value'
         """
-
         current_offset = offset
         results = []
 
@@ -1308,20 +1596,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
 
     def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0):
-        """Gets a dataframe containing mood survey results
-
-        Parameters
-        ----------
-        survey_template_ids : A list of survey_template_ids to retrieve results for
+        """
+        Get mood survey results as a DataFrame. See `get_mood_survey_results()`
+        for details.
 
         Returns
         -------
-        mood_survey_results : pandas DataFrame
-            dataframe with survey.id, survey.lastSubmittedAt, surveyField.key, surveyField.value
-
-        Example
-        -------
-        survey_results = get_mood_survey_results_dataframe("some_id")
+        mood_survey_results : pd.DataFrame
+            Dataframe with survey.id, survey.lastSubmittedAt, surveyField.key, surveyField.value
         """
 
         results = self.get_mood_survey_results(survey_template_ids, limit, offset)
@@ -1337,19 +1619,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return surveys
 
     def get_study_ids_in_study_cohort(self, study_cohort_id, limit=200, offset=0):
-        """Gets the IDs of studies in the given StudyCohort
+        """
+        Get the IDs of studies in a given study cohort.
 
         Parameters
         ----------
-        study_cohort_id: the id of StudyCohort to retrieve
-        page_size: the number of records to return per page (optional)
-        offset: the query offset
+        study_cohort_id : str
+            The study cohort ID to retrieve
+        limit : int, optional
+            Batch size for repeated API calls
+        offset : int, optional
+            Index of the first result to return
 
         Returns
         -------
-        data: a list of Study ids that are in the StudyCohort
+        study_ids : list of str
+            All study IDs in the given cohort
         """
-
         current_offset = offset
         results = []
         while True:
@@ -1366,78 +1652,87 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return results
 
     def create_study_cohort(self, name, description=None, key=None, study_ids=None):
-        """Creates a new study cohort
+        """
+        Create a new study cohort.
 
         Parameters
         ----------
-        name: string
+        name : str
             The name of the study cohort to create
-        description: string, optional
+        description : str, optional
             An optional description of the study cohort
-        key: string, optional
+        key: str, optional
             An optional key to describe the cohort. Defaults to the ID
-        study_ids: list of strings
-            A list of study Ids to add to the study cohort
+        study_ids: list of str, optional
+            A list of study IDs to add to the study cohort
 
         Returns
         -------
-        The study cohort id
+        cohort_id : str
+            The study cohort ID
         """
         query_string = graphql.create_study_cohort_mutation_string(
             name, description, key, study_ids)
         return self.execute_query(query_string)
 
     def add_studies_to_study_cohort(self, study_cohort_id, study_ids):
-        """Add studies to a study cohort by ID
+        """
+        Add studies to a study cohort by ID.
 
         Parameters
         ----------
-        study_cohort_id: string
+        study_cohort_id : str
             The ID of the study cohort to modify
-        study_ids: list of strings
+        study_ids : list of str
             A list of study IDs to add to the study cohort
 
         Returns
         -------
-        The study cohort id
+        cohort_id : str
+            The study cohort ID
         """
         query_string = graphql.add_studies_to_study_cohort_mutation_string(
             study_cohort_id, study_ids)
         return self.execute_query(query_string)
 
-
     def remove_studies_from_study_cohort(self, study_cohort_id, study_ids):
-        """Remove studies from a study cohort by ID
+        """
+        Remove studies from a study cohort by ID.
 
         Parameters
         ----------
-        study_cohort_id: string
+        study_cohort_id : str
             The ID of the study cohort to modify
-        study_ids: list of strings
+        study_ids : list of str
             A list of study IDs to remove from the study cohort
 
         Returns
         -------
-        The study cohort id
+        cohort_id : str
+            The study cohort ID
         """
         query_string = graphql.remove_studies_from_study_cohort_mutation_string(
             study_cohort_id, study_ids)
         return self.execute_query(query_string)
 
     def get_user_ids_in_user_cohort(self, user_cohort_id, limit=200, offset=0):
-        """Gets the IDs of users in the given UserCohort
+        """
+        Get the IDs of users in the given user cohort.
 
         Parameters
         ----------
-        user_cohort_id: the id of UserCohort to retrieve
-        page_size: the number of records to return per page (optional)
-        offset: the query offset
+        user_cohort_id : str
+            ID of the user cohort to retrieve
+        limit : int, optional
+            Batch size for repeated API calls
+        offset : int, optional
+            Index of the first result to return
 
         Returns
         -------
-        data: a list of User ids that are in the UserCohort
+        user_ids : list of str
+            User IDs that are in the cohort
         """
-
         current_offset = offset
         results = []
         while True:
@@ -1454,59 +1749,64 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return results
 
     def create_user_cohort(self, name, description=None, key=None, user_ids=None):
-        """Creates a new UserCohort
+        """
+        Create a new user cohort.
 
         Parameters
         ----------
-        name: string
+        name : str
             The name of the user cohort to create
-        description: string, optional
+        description : str, optional
             An optional description of the user cohort
-        key: string, optional
+        key : str, optional
             An optional key to describe the cohort. Defaults to the ID
-        user_ids: list of strings
-            A list of user Ids to add to the user cohort
+        user_ids : list of str
+            A list of user IDs to add to the user cohort
 
         Returns
         -------
-        The user cohort id
+        cohort_id : str
+            The user cohort ID
         """
         query_string = graphql.get_create_user_cohort_mutation_string(
             name, description, key, user_ids)
         return self.execute_query(query_string)
 
     def add_users_to_user_cohort(self, user_cohort_id, user_ids):
-        """Add users to a user cohort by ID
+        """
+        Add users to a user cohort by ID.
 
         Parameters
         ----------
-        user_cohort_id: string
+        user_cohort_id : str
             The ID of the user cohort to modify
-        user_ids: list of strings
+        user_ids : list of str
             A list of user IDs to add to the user cohort
 
         Returns
         -------
-        The user cohort id
+        cohort_id : str
+            The user cohort ID
         """
         query_string = graphql.get_add_users_to_user_cohort_mutation_string(
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
 
-
     def remove_users_from_user_cohort(self, user_cohort_id, user_ids):
-        """Remove users from a user cohort by ID
+        """
+        Remove users from a user cohort by ID
 
         Parameters
         ----------
-        user_cohort_id: string
+        user_cohort_id : str
             The ID of the user cohort to modify
-        user_ids: list of strings
+        user_ids : list of str
             A list of user IDs to remove from the user cohort
 
         Returns
         -------
-        The user cohort id
+        cohort_id : str
+            The user cohort ID
         """
         query_string = graphql.get_remove_users_from_user_cohort_mutation_string(
             user_cohort_id, user_ids)

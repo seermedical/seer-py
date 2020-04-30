@@ -533,7 +533,41 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)['patient']['diary']['createdAt']
         return response
 
-    def get_diary_labels(self, patient_id, offset=0, limit=100):
+    def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
+        """
+        Retrieves diary label groups and labels for a given patient.
+
+        Parameters
+        ----------
+        patient_id: str
+                Seer patient ID
+        label_type: str
+                The type of label to retrieve. Default = 'all'. Options = 'seizure',
+                'medications', 'cardiac'.
+        offset: int
+                Index of first record to return
+        limit: int
+                Batch size for repeated API calls
+        from_time: int
+                UTC timestamp to apply a range filter on label start times.
+                Retrieves labels after the given from_time
+        to_time: int
+                UTC timestamp to apply a range filter label start times.
+                Retrieves labels before the given to_time
+        from_duration: int
+                Time in millseconds to apply a range filter on the duration of labels.
+                Retrieves labels of duration > from_duration
+        to_duration: int
+                Time in milliseconds to apply a range filter on the duration of labels.
+                Retrieves labels of duration < to_duration
+
+        Returns
+        -------
+        label_results: dict
+                Returns a dict with keys 'id' and 'labelGroups'; 'labelGroups' indexes
+                to a list of dict with keys ['id', 'labelType', 'name', 'labels',
+                'numberOfLabels', 'labelSourceType']
+        """
         label_results = None
         # set true if we need to fetch labels
         query_flag = True
@@ -542,7 +576,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             if not query_flag:
                 break
 
-            query_string = graphql.get_diary_labels_query_string(patient_id, limit, offset)
+            query_string = graphql.get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration)
             response = self.execute_query(query_string)['patient']['diary']
             label_groups = response['labelGroups']
 
@@ -570,9 +604,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-    def get_diary_labels_dataframe(self, patient_id):
+    def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
 
-        label_results = self.get_diary_labels(patient_id)
+        label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time, to_time, from_duration, to_duration)
         if label_results is None:
             return label_results
 
@@ -870,14 +904,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segment_urls = segments['dataChunks.url']
         group_names = segments['name']
         start_times = segments['segments.startTime']
+        timezones = segments['segments.timezone']
 
         data_list = []
         for idx, url in enumerate(segment_urls):
+            # timestamps are returned in their utc time
             start_time = datetime.utcfromtimestamp(start_times[idx]/1000)
             new_data = utils.get_diary_fitbit_data(url)
             # convert timestamps to true utc datetime
             new_data['timestamp'] = start_time + pd.to_timedelta(new_data['timestamp'], unit='ms')
             new_data['name'] = group_names[idx]
+            new_data['timezone'] = timezones[idx]
             data_list.append(new_data)
 
         if data_list:

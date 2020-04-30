@@ -1,5 +1,31 @@
-# Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
+Define a client class for interacting with the GraphQL API endpoint.
 
+Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+
+Concepts
+--------
+- study: A period of time monitoring a patient, often with EEG/ECG
+- channel group: A type of monitoring data in a study, e.g. EEG, ECG, video
+- channel: A specific channel of a channel group, e.g. for EEG: Fz, C4, Fp1 channels
+- label group: Categories of labels relevant to a study, e.g. Abnormal / Epileptiform,
+    Normal / Routine, Sleep, Suspect - Low/Medium.
+- label: An instance of a label group. Labels typically involve the following
+    fields: id, startTime, duration, timezone, note, tags, confidence,
+    createdAt, createdBy
+- tag: An ontology of "attributes" that may be atached to a label to provide
+    info or clarifications, e.g. Jaw clenching, Beta, Exemplar, Generalised, Sleep.
+    Tags are arranged into categories, e.g. Band, Brain area, Channel, Seizure type, Sleep
+- segment: A duration of recording for a given channel group. Segments lengths
+    are variable, though generally capped at 135 minutes (at least for EEG)
+- data chunk: Segments are saved to disk as 10-second data chunks, which must be
+    reassembled to yield a complete segment
+- party ID: The ID associated with e.g. an organisation, which will filter the
+    values returned
+- API response: Data returned from the GraphQL endpoint. Returned as JSON format,
+    so get a dictionary with string keys and values that may be strings, numbers,
+    bools, dictionaries, lists of dicts etc.
+"""
 import math
 import time
 import json
@@ -23,17 +49,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             the Seer database, handling login and authorisation
         Parameters
         ----------
-        None
-
-        Returns
-        -------
-
-        Notes
-        -----
-
-        Example
-        -------
-
+        api_url : str, optional
+            Base URL of API endpoint
+        email : str, optional
+            The email address for a user's Seer account
+        password : str, optional
+            User password associated with Seer account
+        dev : bool, optional
+            dev: Flag to query the development rather than production endpoint
         """
 
         self.api_url = api_url
@@ -46,6 +69,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.api_limit = 580
 
     def login(self, email=None, password=None):
+        """
+        Authenticate with the API endpoint and set up the GraphQL client with
+        the correct URL address and cookie value headers.
+        """
         self.seer_auth = SeerAuth(self.api_url, email, password, self.dev)
         cookie = self.seer_auth.cookie
 
@@ -55,6 +82,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         }
 
         def graphql_client(party_id=None):
+            """
+            Return a GraphQL client with parameters configured for the correct
+            URL and cookie header.
+            """
             url_suffix = '?partyId=' + party_id if party_id else ''
             url = self.api_url + '/graphql' + url_suffix
             return GQLClient(
@@ -70,6 +101,28 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.last_query_time = time.time()
 
     def execute_query(self, query_string, party_id=None, invocations=0):
+        """
+        Execute a GraphQL query and return response. Handle retrying upon
+        failure and rate limiting requests.
+
+        Parameters
+        ----------
+        query_string: str
+            The formatted GraphQL query
+        party_id : str, optional
+            The organisation/entity to specify for the query
+        invocations : int, optional
+            Used for recursive calls; don't set directly
+
+        Returns
+        -------
+        graphql_results : dict
+            Query results as a dictionary matching the structure of the query
+
+        Notes
+        -----
+        See queries in graphql.py for structure of results returned
+        """
         resolvable_api_errors = ['502 Server Error', '503 Server Error', '504 Server Error'
                                  'Read timed out.', 'NOT_AUTHENTICATED']
 
@@ -99,6 +152,26 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             raise
 
     def get_paginated_response(self, query_string, object_name, limit=250, party_id=None):
+        """
+        For queries expecting a large number of objects returned, split query
+        into iterative calls to `execute_query()`.
+
+        Parameters
+        ----------
+        query_string : str
+            The formatted GraphQL query
+        object_name : str
+            Key to retrieve from the response object, e.g. 'studies'
+        limit : int
+            Batch size for repeated API calls
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        responses: list of dict
+            List of query result dictionaries
+        """
         offset = 0
         objects = []
         while True:
@@ -113,6 +186,40 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     @staticmethod  # maybe this could move to a utility class
     def pandas_flatten(parent, parent_name, child_name):
+        """
+        Take a DataFrame with at least 2 columns:
+        - A column named like f"{parent_name}id"
+        - A `child_name` column, where each cell is a list of dicts.
+
+        Return a new DataFrame that retains the ID column and creates new
+        columns from the dictionary keys.
+
+        Parameters
+        ----------
+        parent : pd.DataFrame
+            A DataFrame with f"{parent_name}id" and `child_name` cols
+        parent_name : str
+            Any prefix to the 'id' and `child_name` cols in the parent DataFrame
+        child_name : str
+            The name of the column with list of dict values
+
+        Returns
+        -------
+        expanded_df : pd.DataFrame
+            DataFrame wih columns derived from the `child_name` dicts
+
+        Example
+        -------
+        >>> df
+           start.id                           start.nested
+        0         A  [{'key1': 5, 'key2': 6}, {'key1': 7}]
+        1         B                          [{'key2': 8}]
+        >>> pandas_flatten(df, 'top.', 'nested')
+           nested.key1  nested.key2  start.id
+        0          5.0          6.0         A
+        1          7.0          NaN         A
+        2          NaN          8.0         B
+        """
         child_list = []
         for i in range(len(parent)):
             parent_id = parent[parent_name+'id'][i]
@@ -129,32 +236,26 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return child
 
     def add_label_group(self, study_id, name, description, label_type=None, party_id=None):
-        """Add Label Group to study
+        """
+        Add a new label group to a study.
 
         Parameters
         ----------
-        study_id : string
-                Seer study ID
-        name : string
-                name of label
-        description : string
-                description of label
-        label_type (Optional) : string
-                Seer label type ID
-        party_id (Optional) : string, the party id of the context for the query (e.g. organisation)
+        study_id : str
+            Seer study ID
+        name : str
+            Name of the new label
+        description : str
+            Free text explanation of the label group
+        label_type : str, optional
+            Seer label type ID
+        party_id : str, optional
+            The organisation/entity to specify for the query
 
         Returns
         -------
-        labelGroupID : string
-                ID of label group
-
-        Notes
-        -----
-
-        Example
-        -------
-        labelGroup = add_label_group(study_id, name, description)
-
+        label_group_id : str
+            ID of the newly created label group
         """
         query_string = graphql.get_add_label_group_mutation_string(study_id, name, description,
                                                                    label_type)
@@ -162,61 +263,38 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return response['addLabelGroupToStudy']['id']
 
     def del_label_group(self, group_id):
-        """Delete Label Group from study
+        """
+        Delete a label group from a study.
 
         Parameters
         ----------
-        group_id : string
-                Seer label group ID to delete
+        group_id : str
+            Seer label group ID to delete
 
         Returns
         -------
-        label_group_id : string
-                ID of deleted label group
-
-        Notes
-        -----
-
-        Example
-        -------
-        delLG = del_label_group(group_id)
-
+        label_group_id : str
+            ID of the deleted label group
         """
         query_string = graphql.get_remove_label_group_mutation_string(group_id)
         return self.execute_query(query_string)
 
     def add_labels_batched(self, label_group_id, labels, batch_size=500):
-        """Add labels to label group in batches
+        """
+        Add labels to label group in batches.
 
         Parameters
         ----------
-        label_group_id : string
-                Seer label group ID
-
-        labels: list of:
-                note: string
-                        label note
-                startTime : float
-                        label start time in epoch time
-                duration : float
-                        duration of event in milliseconds
-                timezone : float
-                        local UTC timezone (eg. Melbourne = 11.0)
-                tagIds: [String!]
-                        list of tag ids
-                confidence: float
-                        Confidence given to label between 0 and 1
-
-        batch_size: int
-                number of labels to add in a batch. Optional, defaults to 500.
+        label_group_id : str
+            Seer label group ID
+        labels: pd.DateFrame or list of dict
+            Should include columns/keys as per `add_labels()`
+        batch_size: int, optional
+            Number of labels to include per batch
 
         Returns
         -------
         None
-
-        Notes
-        -----
-
         """
         number_of_batches = math.ceil(len(labels) / batch_size)
         for i in range(number_of_batches):
@@ -225,34 +303,33 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             self.add_labels(label_group_id, labels[start:end])
 
     def add_labels(self, group_id, labels):
-        """Add labels to label group
+        """
+        Add labels to label group.
 
         Parameters
         ----------
-        group_id : string
-                Seer label group ID
-
-        labels: list of:
-                note: string
-                        label note
-                startTime : float
-                        label start time in epoch time
-                duration : float
-                        duration of event in milliseconds
-                timezone : float
-                        local UTC timezone (eg. Melbourne = 11.0)
-                tagIds: [String!]
-                        list of tag ids
-                confidence: float
-                        Confidence given to label between 0 and 1
+        group_id : str
+            Seer label group ID
+        labels : pd.DateFrame or list of dict
+            Should include the following columns/keys:
+            - note : str
+                Label note
+            - startTime : float
+                Label start time in epoch time
+            - duration : float
+                Duration of event in milliseconds
+            - timezone : float
+                Offset from UTC time in hours (eg. Melbourne = 11.0)
+            - tagIds : list of str
+                Tag IDs
+            - confidence : float
+                Confidence given to label between 0 and 1
 
         Returns
         -------
-        None
-
-        Notes
-        -----
-
+        labels_added : dict
+            A dict with a single key, 'addLabelsToLabelGroup', that indexes to
+            a list of dicts, each with an 'id' key indicating an added label
         """
         if isinstance(labels, pd.DataFrame):
             labels = labels.to_dict('records')
@@ -260,6 +337,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return self.execute_query(query_string)
 
     def add_document(self, study_id, document_name, document_path):
+        """
+        Upload a local document and associate it with a study.
+
+        Parameters
+        ----------
+        study_id : str
+            Seer study ID
+        document_name : str
+            Name to assign document after upload
+        document_path : str
+            Path to document on local device
+
+        Returns
+        -------
+        url : str
+            URL of the uploaded document.
+        """
         query_string = graphql.get_add_document_mutation_string(study_id, document_name)
         response_add = self.execute_query(query_string)['createStudyDocuments'][0]
         with open(document_path, 'rb') as f:
@@ -274,29 +368,122 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                str(response_put.status_code))
 
     def get_tag_ids(self):
+        """
+        Get details of all tag types.
+
+        Returns
+        -------
+        tags : list of dict
+            Descriptions of each tag, with keys:
+            - id
+            - value
+            - category
+            - forDiary
+            - forStudy
+        """
         query_string = graphql.get_tag_id_query_string()
         response = self.execute_query(query_string)
         return response['labelTags']
 
     def get_tag_ids_dataframe(self):
+        """
+        Get details of all tag types as a DataFrame. See `get_tag_ids()` for
+        details.
+
+        Returns
+        -------
+        tags_df : pd.DataFrame
+            DataFrame with tag details
+        """
         tag_ids = self.get_tag_ids()
         tag_ids = json_normalize(tag_ids).sort_index(axis=1)
         return tag_ids
 
     def get_study_ids(self, limit=50, search_term='', party_id=None):
+        """
+        Get the IDs of all available studies.
+
+        Parameters
+        ----------
+        limit : int, optional
+            The number of studies to retrieve per API call
+        search_term : str, optional
+            Filter results to study names matching this string
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        study_ids : list of str
+            A list of all study IDs
+        """
         studies = self.get_studies(limit, search_term, party_id)
         return [study['id'] for study in studies]
 
     def get_studies(self, limit=50, search_term='', party_id=None):
+        """
+        Get a list of study dicts, with each having keys: 'id', 'name' and 'patient'.
+
+        Parameters
+        ----------
+        limit : int
+            Batch size for repeated API calls
+        search_term : str
+            A string used to filter the studies returned
+        party_id : str
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        studies : list of dict
+            Study details, each having keys:
+            - id
+            - name
+            - patient
+        """
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
         return self.get_paginated_response(studies_query_string, 'studies', limit, party_id)
 
     def get_studies_dataframe(self, limit=50, search_term='', party_id=None):
+        """
+        Get details of study IDs, names and patient info as a DataFrame. See
+        `get_studies()` for details.
+
+        Parameters
+        ----------
+        limit : int, optional
+            Batch size for repeated API calls
+        search_term : str, optional
+            A string used to filter the studies returned
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        study_df: pd.DataFrame
+            DataFrame with details of all matching studies
+        """
         studies = self.get_studies(limit, search_term, party_id)
         studies_dataframe = json_normalize(studies).sort_index(axis=1)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
     def get_study_ids_from_names_dataframe(self, study_names, party_id=None):
+        """
+        Get the IDs of all available studies as a DataFrame. See `get_studies()`
+        for details.
+
+        Parameters
+        ----------
+        study_names : list of str
+            Seer study names to retrieve
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        study_ids_df : pd.DataFrame
+            A DataFrarme wihth study names and IDs
+        """
         if isinstance(study_names, str):
             study_names = [study_names]
 
@@ -311,20 +498,81 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return studies[['name', 'id']].reset_index(drop=True)
 
     def get_study_ids_from_names(self, study_names, party_id=None):
+        """
+        Get the IDs of studies corresponding to given study names.
+        See `get_studies()` for details.
+
+        Parameters
+        ----------
+        study_names : str or list of str
+            Seer study name or names to look up
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        study_ids: list of str
+            IDs matching the provided study
+        """
         return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()
 
     def get_studies_by_id(self, study_ids, limit=50):
+        """
+        Get a dict of study details for each study ID provided.
+
+        Parameters
+        ----------
+        study_ids : str or list of str
+            Seer study IDs to get details for
+        limit : int, optional
+            Batch size for repeated API calls
+
+        Returns
+        -------
+        study_dicts: list of dict
+            Details for each study (name, ID etc)
+        """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
         studies_query_string = graphql.get_studies_by_study_id_paged_query_string(study_ids)
         return self.get_paginated_response(studies_query_string, 'studies', limit)
 
     def get_channel_groups(self, study_id):
+        """
+        Get details of each channel group for a given study.
+
+        Parameters
+        ----------
+        study_id: Seer study ID
+
+        Returns
+        -------
+        study_id : list of dict
+            Details for each channel group, with dicts including keys:
+            - name
+            - sampleRate
+            - segments
+        """
         query_string = graphql.get_channel_groups_query_string(study_id)
         response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
     def get_segment_urls(self, segment_ids, limit=10000):
+        """
+        Get a DataFrame with segment IDs and URLs from which to download them.
+
+        Parameters
+        ----------
+        segment_ids : list of str
+            Iterable of segment IDs
+        limit : int, optional
+            Batch size for repeated API calls
+
+        Returns
+        -------
+        segment_url_df : pd.DataFrame
+            DataFrame with columns 'baseDataChunkUrl' and 'segments.id'
+        """
         if not segment_ids:
             return pd.DataFrame(columns=['baseDataChunkUrl', 'segments.id'])
 
@@ -343,6 +591,33 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12,
                             limit=10000):
+        """
+        Get a DataFrame containing download details of all data chunks that
+        comprise the segments in a provided metadata DataFrame.
+
+        Parameters
+        ----------
+        study_metadata : pd.DataFrame
+            Study metadata as returned by `get_all_study_metadata_dataframe_by_*()`
+        s3_urls : bool, optional
+            Return download URLs for S3 (otherwise return URLs for Cloudfront)
+        from_time : int, optional
+            Timestamp in msec - only retrieve data after this point
+        to_time : int, optional
+            Timestamp in msec - only retrieve data before this point
+        limit : int, options
+            Batch size for repeated API calls
+
+        Returns
+        -------
+        data_chunk_df : pd.DataFrame
+            The returned DataFrame has cols:
+            - segments.id
+            - chunkIndex
+            - chunk_start
+            - chunk_end
+            - chunk_url
+        """
         if study_metadata.empty:
             return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
                                          'chunk_url'])
@@ -385,6 +660,29 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
+        """
+        Get labels for a given study and label group.
+
+        Parameters
+        ----------
+        study_id : str
+            Seer study ID
+        label_group_id : str
+            Label group ID string
+        from_time : int, optional
+            Timestamp in msec - only retrieve data after this point
+        to_time : int, optional
+            Timestamp in msec - only retrieve data before this point
+        limit : int, optional
+            Batch size for repeated API calls
+        offset : int, optional
+            Index of first label to retrieve
+
+        Returns
+        -------
+        labels : dict
+            Has a 'labelGroup' key which indexes to a nested dict with a 'labels' key
+        """
         label_results = None
 
         while True:
@@ -406,7 +704,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_labels_dataframe(self, study_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
+        """
+        Get all labels for a given study and label group as a DataFrame.
+        See `get_labels()` for details.
 
+        Returns
+        -------
+        labels_df : pd.DataFrame
+            Details of all matching labels
+        """
         label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
             return label_results
@@ -423,6 +729,27 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_group
 
     def get_labels_string(self, study_id, label_group_id, from_time=0, to_time=9e12):
+        """
+        Get all labels for a given study and label group as an abridged string
+        representation.
+
+        Parameters
+        ----------
+        study_id : str
+            Seer study ID
+        label_group_id : str
+            Label group ID string
+        from_time : int, optional
+            Timestamp in msec - only retrieve data after this point
+        to_time : int, optional
+            Timestamp in msec - only retrieve data before this point
+
+        Returns
+        -------
+        labels_str : dict
+            Has a key 'labelString' which indexes a JSON-like string with only
+            3 keys per label: 'id', 's' (for startTime), and 'd' (for duration)
+        """
         query_string = graphql.get_labels_string_query_string(study_id, label_group_id, from_time,
                                                            to_time)
         response = self.execute_query(query_string)['study']
@@ -430,6 +757,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12):
+        """
+        Get all labels for a given study and label group in an abridged string
+        representation, as a DataFrame. See `get_labels_string()` for details.
+
+        Returns
+        -------
+        labels_str_df : pd.DataFrame
+            Cols include 'labels.id', 'labels.startTime' and 'labels.duration'
+        """
         label_results = self.get_labels_string(study_id, label_group_id, from_time=from_time,
                                                to_time=to_time)
         if label_results is None:
@@ -446,6 +782,21 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_group
 
     def get_label_groups_for_studies(self, study_ids, limit=50):
+        """
+        Get label group information for all provided study IDs.
+
+        Parameters
+        ----------
+        study_ids : str
+            Seer study IDs to retrieve label groups for
+        limit : int, optional
+            Batch size for repeated API calls
+
+        Returns
+        -------
+        label_groups : list of dict
+            Keys included: 'id', 'labelGroups' and 'name'
+        """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
 
@@ -453,6 +804,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return self.get_paginated_response(labels_query_string, 'studies', limit)
 
     def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
+        """
+        Get label group information for all provided study IDs as a DataFrame.
+        See `get_label_groups_for_studies()`.
+
+        Returns
+        -------
+        label_groups_df : pd.DataFrame
+            Columns with details on name, id, type, and number of labels, as
+            well as study ID and name
+        """
         label_groups = []
         for study in self.get_label_groups_for_studies(study_ids, limit):
             for label_group in study['labelGroups']:
@@ -466,6 +827,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return pd.DataFrame(label_groups)
 
     def get_viewed_times_dataframe(self, study_id, limit=250, offset=0):
+        """
+        Get timestamp info about all parts of a study that have been viewed by
+        various users.
+
+        Parameters
+        ----------
+        study_id : str
+            Seer study ID
+        limit : int, optional
+            Batch size for repeated API calls
+        offset : int, optional
+            Index of first record to return
+
+        Returns
+        -------
+        times_df : pd.DataFrame
+            Includes cols 'id', 'startTime', 'duration' and 'user'
+        """
         views = []
         while True:
             query_string = graphql.get_viewed_times_query_string(study_id, limit, offset)

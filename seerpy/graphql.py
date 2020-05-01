@@ -353,7 +353,7 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                 diary {
                     id
                     createdAt
-                    labelGroups {
+                    labelGroups (filters: [{name: "labelType", value:"%s"}]) {
                         id
                         labelType
                         labelSourceType

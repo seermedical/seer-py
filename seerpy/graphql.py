@@ -320,6 +320,19 @@ def get_organisations_query_string():
             }
         }"""
 
+def get_patient_query_string(patient_id):
+    return """
+        query {
+            patient (id: "%s") {
+                id
+                user {
+                    id
+                    fullName
+                    shortName
+                    email
+                }
+            }
+        }""" % patient_id
 
 def get_patients_query_string():
     return """
@@ -352,9 +365,8 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                 id
                 diary {
                     id
-                    labelGroups (filters: [{name: "labelType", value:"%s"}]) {
                     createdAt
-                    labelGroups {
+                    labelGroups (filters: [{name: "labelType", value:"%s"}]) {
                         id
                         labelType
                         labelSourceType

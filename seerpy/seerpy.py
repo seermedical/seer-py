@@ -500,7 +500,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return orgs
         return pd.DataFrame(orgs)
 
-    def get_patient(self, patient_id):
+    def get_user_from_patient_id(self, patient_id):
         """
         Get user ID and info from patient ID.
         Parameters
@@ -515,6 +515,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_patient_query_string(patient_id)
         response = self.execute_query(query_string)['patient']
         return response
+
+    def get_user_from_patient_id_dataframe(self, patient_id):
+        """
+        Get user ID and info from patient ID.
+        Parameters
+        ----------
+        patient_id : str
+            The patient ID
+        Returns
+        -------
+        patient : pd.DataFrame
+            Patient details as pandas DataFrame
+        """
+        patient = self.get_user_from_patient_id(patient_id)
+        if not patient:
+            return pd.DataFrame({})
+        return json_normalize(patient).sort_index(axis=1)
         
     def get_patients(self, party_id=None):
         query_string = graphql.get_patients_query_string()

@@ -573,7 +573,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 to a list of dict with keys ['id', 'labelType', 'name', 'labels',
                 'numberOfLabels', 'labelSourceType']
         """
-        label_results = None
+        label_results = {}
         # set true if we need to fetch labels
         query_flag = True
 
@@ -596,7 +596,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 if len(labels) >= limit:
                     query_flag = True
 
-                if label_results is None:
+                if not label_results:
                     label_results = response
                     if any([index['numberOfLabels'] for index in response['labelGroups'] if index['numberOfLabels'] >= limit]):
                         query_flag = True
@@ -612,7 +612,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
 
         label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time, to_time, from_duration, to_duration)
-        if label_results is None:
+        if not label_results:
             return label_results
 
         label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)

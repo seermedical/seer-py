@@ -500,6 +500,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return orgs
         return pd.DataFrame(orgs)
 
+    def get_patient(self, patient_id):
+        query_string = graphql.get_patient_query_string(patient_id)
+        response = self.execute_query(query_string)['patient']
+        return response
+        
     def get_patients(self, party_id=None):
         query_string = graphql.get_patients_query_string()
         response = self.execute_query(query_string, party_id)['patients']

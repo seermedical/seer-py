@@ -501,6 +501,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return pd.DataFrame(orgs)
 
     def get_patient(self, patient_id):
+        """
+        Get user ID and info from patient ID.
+        Parameters
+        ----------
+        patient_id : str
+            The Seer patient ID for which to retrieve diary labels
+        Returns
+        -------
+        patient : dict
+            Patient details, with keys 'id' and 'user'
+        """
         query_string = graphql.get_patient_query_string(patient_id)
         response = self.execute_query(query_string)['patient']
         return response

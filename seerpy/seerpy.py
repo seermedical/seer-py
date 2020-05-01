@@ -506,7 +506,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         patient_id : str
-            The Seer patient ID for which to retrieve diary labels
+            The patient ID
         Returns
         -------
         patient : dict

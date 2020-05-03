@@ -1,26 +1,81 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 
+from abc import ABC, abstractmethod
 import getpass
 import os
 import json
 
 import requests
 
-
-COOKIE_KEY_PROD = 'seer.sid'
-COOKIE_KEY_DEV = 'seerdev.sid'
+DEFAULT_COOKIE_KEY = 'seer.sid'
 
 
-class SeerAuth:
+class BaseConnectionFactory(ABC):
+    def __init__(self, api_url):
+        self.api_url = api_url
+
+    def get_connection(self, party_id=None):
+        url_suffix = '?partyId=' + party_id if party_id else ''
+
+        return {
+            'url': self.api_url + '/graphql' + url_suffix,
+            'headers': self.get_headers(),
+            'use_json': True,
+            'timeout': 30
+        }
+
+    @abstractmethod
+    def login(self):
+        pass
+
+    @abstractmethod
+    def logout(self):
+        pass
+
+    def get_headers(self):
+        return {}
+
+
+class EmptyConnectionFactory(BaseConnectionFactory):
+    """
+    Creates an empty connection factory, used for testing purposes
+    """
+    def login(self):
+        return True
+
+    def logout(self):
+        return True
+
+
+class DefaultConnectionFactory(BaseConnectionFactory):
+    """
+    Creates a default connection factory, which should be used
+    for most API use cases.
+    """
 
     help_message_displayed = False
 
-    def __init__(self, api_url, email=None, password=None, dev=False):
-        self.api_url = api_url
-        self.cookie = None
-        self.dev = dev
+    def __init__(
+            self,
+            api_url="https://api.seermedical.com/api",
+            email=None,
+            password=None,
+            region='',
+            cookie_key=DEFAULT_COOKIE_KEY,
+            credential_namespace='cookie'):
 
+        # default to no region unless specified
+        use_region = region if len(region) > 0 and region.lower() != 'au' else ''
+
+        super(DefaultConnectionFactory, self).__init__(
+            api_url if api_url is not None else f"https://api{use_region}.seermedical.com/api"
+        )
+
+        self.cookie = None
+        self.cookie_key = cookie_key
+        self.credential_namespace = credential_namespace
         self.read_cookie()
+
         if self.verify_login() == 200:
             print('Login Successful')
             return
@@ -34,10 +89,12 @@ class SeerAuth:
                 self.login_details()
             self.login()
             response = self.verify_login()
+
             if response == requests.codes.ok:  # pylint: disable=maybe-no-member
                 print('Login Successful')
                 break
-            elif i < allowed_attempts - 1:
+
+            if i < allowed_attempts - 1:
                 print('\nLogin error, please re-enter your email and password: \n')
                 self.cookie = None
                 self.password = None
@@ -48,6 +105,12 @@ class SeerAuth:
                 self.password = None
                 raise InterruptedError('Authentication Failed')
 
+    def get_headers(self):
+        cookie = self.cookie
+        return {
+            'Cookie': f'{self.cookie_key}={cookie[self.cookie_key]}'
+        }
+
     def login(self):
         login_url = self.api_url + '/auth/login'
         body = {'email': self.email, 'password': self.password}
@@ -56,17 +119,19 @@ class SeerAuth:
         if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
                 and response.cookies):
 
-            seer_sid = response.cookies.get(COOKIE_KEY_PROD, False)
-            seerdev_sid = response.cookies.get(COOKIE_KEY_DEV, False)
-
+            seer_sid = response.cookies.get(self.cookie_key, False)
             self.cookie = {}
-            if seer_sid:
-                self.cookie[COOKIE_KEY_PROD] = seer_sid
-            elif seerdev_sid:
-                self.cookie[COOKIE_KEY_DEV] = seerdev_sid
+            self.cookie[self.cookie_key] = seer_sid
 
         else:
             self.cookie = None
+
+    def logout(self):
+        home = os.path.expanduser('~')
+        cookie_file = home + self.get_cookie_path()
+        if os.path.isfile(cookie_file):
+            os.remove(cookie_file)
+        self.cookie = None
 
     def verify_login(self):
         if self.cookie is None:
@@ -104,7 +169,7 @@ class SeerAuth:
                 self.help_message_displayed = True
 
     def get_cookie_path(self):
-        return '/.seerpy/cookie-dev' if self.dev else '/.seerpy/cookie'
+        return f'/.seerpy/${self.credential_namespace}'
 
     def write_cookie(self):
         try:
@@ -124,9 +189,18 @@ class SeerAuth:
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
 
-    def destroy_cookie(self):
-        home = os.path.expanduser('~')
-        cookie_file = home + self.get_cookie_path()
-        if os.path.isfile(cookie_file):
-            os.remove(cookie_file)
-        self.cookie = None
+
+class DevConnectionFactory(DefaultConnectionFactory):
+    """
+    Creatses a connection factory for generating dev server connections.
+
+    Similar functionality to DefaultConnectionFactory
+    """
+
+    def __init__(self, api_url, email=None, password=None):
+        super(DevConnectionFactory, self).__init__(
+            api_url,
+            email,
+            password,
+            cookie_key='seerdev.sid',
+            credential_namespace='cookie-dev')

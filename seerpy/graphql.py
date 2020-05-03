@@ -320,6 +320,19 @@ def get_organisations_query_string():
             }
         }"""
 
+def get_user_from_patient_query_string(patient_id):
+    return """
+        query {
+            patient (id: "%s") {
+                id
+                user {
+                    id
+                    fullName
+                    shortName
+                    email
+                }
+            }
+        }""" % patient_id
 
 def get_patients_query_string():
     return """

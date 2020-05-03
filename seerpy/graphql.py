@@ -348,6 +348,15 @@ def get_patients_query_string():
             }
         }"""
 
+def get_diary_created_at_query_string(patient_id):
+    return """
+        query {
+            patient (id: "%s") {
+                diary {
+                    createdAt
+                }
+            }
+        }""" % patient_id
 
 def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration):
     return """
@@ -356,6 +365,7 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                 id
                 diary {
                     id
+                    createdAt
                     labelGroups (filters: [{name: "labelType", value:"%s"}]) {
                         id
                         labelType

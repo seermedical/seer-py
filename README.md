@@ -32,32 +32,52 @@ To start a Jupyter notebook, run `jupyter notebook` in a command/bash window. Fu
 
 ## Authenticating
 
-To access data from the Seer platform you must first register for an account 
+To access data from the Seer platform you must first register for an account
 at https://app.seermedical.com/. You can then use seer-py to authenticate with
 the API.
 
-Create an instance of the `SeerAuth` class (defined in _auth.py_) and provide
-your email address and password using one of the following options:
+seer-py will prompt for the username and password that you use to log in to the
+Seer App. The simplest way to authenticate is to create an instance of
+`SeerConnect`:
 
-1. Pass them as arguments when instantiating the `SeerAuth` object.
-2. In your home directory, create a  _.seerpy/_ folder, and within it a file
-  named _credentials_. Save your email address on the first line and your
-  password on the second line with no other text.
-3. If you don't use one of the previous options, you will be prompted for your
-  email address and password in the terminal or Jupyter notebook before you can
-  retrieve any data.
+```
+from seerpy import SeerConnect
+
+client = SeerConnect()
+```
+
+Alternatively, you can provide your `email` and `password` as arguments
+`SeerConnect`
+
+```
+client = SeerConnect(email='user@website.com', password='....')
+```
+
+You can also store your credentials by creating a _.seerpy/_ folder in your home
+directory. Within the folder, create a file named _credentials_. Save your email
+address on the first line and your password on the second line with no other
+text. You can then call SeerConnect as above:
+
+```
+client = SeerConnect()
+```
 
 ## Running with other API endpoints
 
-To run seer-py against other environments (for instance against a development API server), perform the following steps:
+To run seer-py in other environments (for instance against a development
+API server), then you can use one of the preconfigured authentication methods:
 
-1. Run the `seer-api` server following the relevant documentation in the API repository
-2. Run a `seer-graphiql` server (which includes the required proxies), ensuring that `HTTPS` is set to `OFF` in the startup script,
-3. Call `SeerConnect` with the alternative endpoint, and setting `dev` to `True`. For example:
-
-```python
-client = SeerConnect(api_url='http://localhost:3090/api/development', dev=True)
 ```
+from seerpy import auth, SeerConnect
+client = SeerConnect(auth=auth.SeerDevAuth('http://localhost:8000'))
+```
+
+When running an API server locally, you may also need to:
+
+1. Run the `seer-api` server following the relevant documentation in the API
+   repository
+2. Run a `seer-graphiql` server (which includes the required proxies), ensuring
+   that `HTTPS` is set to `OFF` in the startup script
 
 ## Troubleshooting
 

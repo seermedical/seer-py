@@ -1,5 +1,8 @@
-# Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
+Authenticate a connection by verifying a user's credentials against the auth endpoint.
 
+Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
 import getpass
 import os
 import json
@@ -46,6 +49,20 @@ class SeerAuth(BaseAuth):
 
     def __init__(self, api_url=None, email=None, password=None, cookie_key=DEFAULT_COOKIE_KEY,
                  credential_namespace='cookie'):
+        """
+        Authenticate session using email address and password
+
+        Parameters
+        ----------
+        api_url : str
+            Base URL of API endpoint
+        email : str
+            The email address for a user's Seer account
+        password : str
+            The password for a user's Seer account
+        dev : bool
+            Flag to query the dev rather than production endpoint
+        """
 
         super(SeerAuth, self).__init__(
             api_url if api_url is not None else "https://api.seermedical.com/api"
@@ -120,6 +137,10 @@ class SeerAuth(BaseAuth):
                 raise InterruptedError('Authentication Failed')
 
     def _verify_login(self):
+        """
+        Attempt to verify user by making a GET request with the current session cookie.
+        If successful, save cookie to disk. Returns response status code.
+        """
         if self.cookie is None:
             return 401
 
@@ -139,6 +160,9 @@ class SeerAuth(BaseAuth):
         return response.status_code
 
     def _login_details(self):
+        """
+        Get user's email address and password, either from file or stdin.
+        """
         home = os.path.expanduser('~')
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
@@ -155,9 +179,11 @@ class SeerAuth(BaseAuth):
                 self.help_message_displayed = True
 
     def _get_cookie_path(self):
+        """Get the path to the local cookie file"""
         return f'/.seerpy/${self.credential_namespace}'
 
     def _write_cookie(self):
+        """Save the current cookie to file"""
         try:
             home = os.path.expanduser('~')
             cookie_file = home + self._get_cookie_path()
@@ -169,6 +195,7 @@ class SeerAuth(BaseAuth):
             pass
 
     def _read_cookie(self):
+        """Read the latest cookie saved to file"""
         home = os.path.expanduser('~')
         cookie_file = home + self._get_cookie_path()
         if os.path.isfile(cookie_file):

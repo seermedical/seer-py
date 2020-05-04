@@ -54,11 +54,11 @@ class SeerAuth(BaseAuth):
         self.cookie = None
         self.cookie_key = cookie_key
         self.credential_namespace = credential_namespace
-        self.__read_cookie()
+        self._read_cookie()
 
         self.email = email
         self.password = password
-        self.__attempt_login()
+        self._attempt_login()
 
     def get_connection_parameters(self, party_id=None):
         return super().get_connection_parameters(party_id=party_id)
@@ -86,13 +86,13 @@ class SeerAuth(BaseAuth):
 
     def logout(self):
         home = os.path.expanduser('~')
-        cookie_file = home + self.__get_cookie_path()
+        cookie_file = home + self._get_cookie_path()
         if os.path.isfile(cookie_file):
             os.remove(cookie_file)
         self.cookie = None
 
-    def __attempt_login(self):
-        if self.__verify_login() == 200:
+    def _attempt_login(self):
+        if self._verify_login() == 200:
             print('Login Successful')
             return
 
@@ -100,9 +100,9 @@ class SeerAuth(BaseAuth):
 
         for i in range(allowed_attempts):
             if not self.email or not self.password:
-                self.__login_details()
+                self._login_details()
             self.login()
-            response = self.__verify_login()
+            response = self._verify_login()
 
             if response == requests.codes.ok:  # pylint: disable=maybe-no-member
                 print('Login Successful')
@@ -119,7 +119,7 @@ class SeerAuth(BaseAuth):
                 self.password = None
                 raise InterruptedError('Authentication Failed')
 
-    def __verify_login(self):
+    def _verify_login(self):
         if self.cookie is None:
             return 401
 
@@ -135,10 +135,10 @@ class SeerAuth(BaseAuth):
             print("api verify call did not return an active session")
             return 401
 
-        self.__write_cookie()
+        self._write_cookie()
         return response.status_code
 
-    def __login_details(self):
+    def _login_details(self):
         home = os.path.expanduser('~')
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
@@ -154,13 +154,13 @@ class SeerAuth(BaseAuth):
                 print("See README.md - 'Authenticating' for details\n")
                 self.help_message_displayed = True
 
-    def __get_cookie_path(self):
+    def _get_cookie_path(self):
         return f'/.seerpy/${self.credential_namespace}'
 
-    def __write_cookie(self):
+    def _write_cookie(self):
         try:
             home = os.path.expanduser('~')
-            cookie_file = home + self.__get_cookie_path()
+            cookie_file = home + self._get_cookie_path()
             if not os.path.isdir(home + '/.seerpy'):
                 os.mkdir(home + '/.seerpy')
             with open(cookie_file, 'w') as f:
@@ -168,9 +168,9 @@ class SeerAuth(BaseAuth):
         except Exception:  # pylint:disable=broad-except
             pass
 
-    def __read_cookie(self):
+    def _read_cookie(self):
         home = os.path.expanduser('~')
-        cookie_file = home + self.__get_cookie_path()
+        cookie_file = home + self._get_cookie_path()
         if os.path.isfile(cookie_file):
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())

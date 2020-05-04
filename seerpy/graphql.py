@@ -123,47 +123,46 @@ def get_study_with_data_query_string(study_id):
         }""" % study_id
 
 
-def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
-                            from_time, to_time, limit, offset):
-    return """
-        query {
-            study (id: "%s") {
+def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
+    return f"""
+        query {{{{
+            study (id: "{study_id}") {{{{
                 id
                 name
-                labelGroup (labelGroupId: "%s") {
+                labelGroup (labelGroupId: "{label_group_id}") {{{{
                     id
                     name
                     labelType
                     description
                     numberOfLabels
-                    labels (limit: %.0f, offset: %.0f, fromTime: %.0f, toTime: %.0f) {
+                    labels (limit: {{limit}}, offset: {{offset}}, fromTime: {from_time}, toTime: {to_time}) {{{{
                         id
                         note
                         startTime
                         duration
                         timezone
                         confidence
-                        createdBy {
+                        createdBy {{{{
                             fullName
-                        }
+                        }}}}
                         updatedAt
                         createdAt
-                        tags {
+                        tags {{{{
                             id
-                            tagType {
+                            tagType {{{{
                                 id
-                                category {
+                                category {{{{
                                     id
                                     name
                                     description
-                                }
+                                }}}}
                                 value
-                            }
-                        }
-                    }
-                }
-            }
-        }""" % (study_id, label_group_id, limit, offset, from_time, to_time)
+                            }}}}
+                        }}}}
+                    }}}}
+                }}}}
+            }}}}
+        }}}}"""
 
 
 def get_labels_string_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
@@ -602,30 +601,29 @@ def get_diary_study_label_groups_string(patient_id, limit, offset):
     """ % (patient_id, limit, offset)
 
 
-def get_labels_for_diary_study_query_string(patient_id, label_group_id,  # pylint:disable=too-many-arguments
-                                            from_time, to_time, limit, offset):
-    return """
-        query {
-            patient (id: "%s") {
+def get_labels_for_diary_study_paged_query_string(patient_id, label_group_id, from_time, to_time):
+    return f"""
+        query {{{{
+            patient (id: "{patient_id}") {{{{
                 id
-                diaryStudy {
-                    labelGroup (labelGroupId: "%s") {
+                diaryStudy {{{{
+                    labelGroup (labelGroupId: "{label_group_id}") {{{{
                         id
-                        labels (limit: %.0f, offset: %.0f, from: %.0f, to: %.0f) {
+                        labels (limit: {{limit}}, offset: {{offset}}, from: {from_time}, to: {to_time}) {{{{
                             id
                             startTime
                             timezone
                             duration
-                            tags {
-                                tagType {
+                            tags {{{{
+                                tagType {{{{
                                     value
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }""" % (patient_id, label_group_id, limit, offset, from_time, to_time)
+                                }}}}
+                            }}}}
+                        }}}}
+                    }}}}
+                }}}}
+            }}}}
+        }}}}"""
 
 
 def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
@@ -654,18 +652,18 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
         }""" % (patient_id, from_time, to_time)
 
 
-def get_study_ids_in_study_cohort_query_string(study_cohort_id, limit, offset):
-    return """
-        query {
-            studyCohort(id: "%s") {
+def get_study_ids_in_study_cohort_paged_query_string(study_cohort_id):
+    return f"""
+        query {{{{
+            studyCohort(id: "{study_cohort_id}") {{{{
                 id
                 name
-                studies(limit: %0.f, offset: %0.f) {
+                studies(limit: {{limit}}, offset: {{offset}}) {{{{
                     id
-                }
-            }
-        }
-    """ % (study_cohort_id, limit, offset)
+                }}}}
+            }}}}
+        }}}}
+    """
 
 
 def create_study_cohort_mutation_string(name, description=None, key=None, study_ids=None):
@@ -730,39 +728,36 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
     )
 
 
-def get_mood_survey_results_query_string(survey_template_ids, limit, offset):
-    return """
-    query {
-        surveys(surveyTemplateIds: [%s], limit: %0.f, offset: %0.f) {
-            completer {
+def get_mood_survey_results_paged_query_string(survey_template_ids):
+    return f"""
+        query {{{{
+            surveys(surveyTemplateIds: {get_json_list(survey_template_ids)}, limit: {{limit}}, offset: {{offset}}) {{{{
+                completer {{{{
+                    id
+                }}}}
                 id
-            }
-            id
-            fields {
-                key
-                value
-            }
-            lastSubmittedAt
-        }
-    }
-    """ % (
-        ','.join([f'"{survey_template_id}"' for survey_template_id in survey_template_ids]),
-        limit,
-        offset
-    )
+                fields {{{{
+                    key
+                    value
+                }}}}
+                lastSubmittedAt
+            }}}}
+        }}}}
+    """
 
-def get_user_ids_in_user_cohort_query_string(user_cohort_id, limit, offset):
-    return """
-        query {
-            userCohort(id: "%s") {
+
+def get_user_ids_in_user_cohort_paged_query_string(user_cohort_id):
+    return f"""
+        query {{{{
+            userCohort(id: "{user_cohort_id}") {{{{
                 id
                 name
-                users(limit: %0.f, offset: %0.f) {
+                users(limit: {{limit}}, offset: {{offset}}) {{{{
                     id
-                }
-            }
-        }
-    """ % (user_cohort_id, limit, offset)
+                }}}}
+            }}}}
+        }}}}
+    """
 
 
 def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):

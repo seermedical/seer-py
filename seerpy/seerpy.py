@@ -148,19 +148,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             raise
 
-    def get_paginated_response(self, query_string, object_name, limit=250, party_id=None):
+    def get_paginated_response(self, query_string, limit, object_keys=None, child_keys=None,
+                               party_id=None):
         """
-        For queries expecting a large number of objects returned, split query
-        into iterative calls to `execute_query()`.
+        For queries expecting a large number of objects returned, split query into iterative calls
+        to `execute_query()`.
 
         Parameters
         ----------
         query_string : str
             The formatted GraphQL query
-        object_name : str
-            Key to retrieve from the response object, e.g. 'studies'
-        limit : int, optional
+        limit : int
             Batch size for repeated API calls
+        object_keys : list of str, optional
+            None (default), one, or more levels of Key giving the path to the object of iterest
+            e.g. 'studies'
+        child_keys : list of str, optional
+            None (default), one, or more levels of Key giving the path to the node of iteration. If
+            None then the iteration happens at the path given by object_keys (or the root if None)
         party_id : str, optional
             The organisation/entity to specify for the query
 
@@ -170,16 +175,34 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             List of query result dictionaries
         """
         offset = 0
-        objects = []
+        result = []
+
         while True:
             formatted_query_string = query_string.format(limit=limit, offset=offset)
-            response = self.execute_query(formatted_query_string, party_id)[object_name]
-            if not response:
+            response = self.execute_query(formatted_query_string, party_id)
+            if object_keys:
+                for key in object_keys:
+                    response = response[key]
+
+            response_child = response
+            if child_keys:
+                for key in child_keys:
+                    response_child = response_child[key]
+            if not response_child:
                 break
+
+            if not result:
+                result = response
             else:
-                objects = objects + response
+                result_child = result
+                if child_keys:
+                    for key in child_keys:
+                        result_child = result_child[key]
+                result_child.extend(response_child)
+
             offset += limit
-        return objects
+
+        return result
 
     @staticmethod  # maybe this could move to a utility class
     def pandas_flatten(parent, parent_name, child_name):
@@ -441,7 +464,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             - patient
         """
         studies_query_string = graphql.get_studies_by_search_term_paged_query_string(search_term)
-        return self.get_paginated_response(studies_query_string, 'studies', limit, party_id)
+        return self.get_paginated_response(studies_query_string, limit, ['studies'],
+                                           party_id=party_id)
 
     def get_studies_dataframe(self, limit=50, search_term='', party_id=None):
         """
@@ -534,7 +558,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if isinstance(study_ids, str):
             study_ids = [study_ids]
         studies_query_string = graphql.get_studies_by_study_id_paged_query_string(study_ids)
-        return self.get_paginated_response(studies_query_string, 'studies', limit)
+        return self.get_paginated_response(studies_query_string, limit, ['studies'])
 
     def get_channel_groups(self, study_id):
         """
@@ -683,24 +707,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels : dict
             Has a 'labelGroup' key which indexes to a nested dict with a 'labels' key
         """
-        label_results = None
-
-        while True:
-            query_string = graphql.get_labels_query_string(study_id, label_group_id, from_time,
-                                                           to_time, limit, offset)
-            response = self.execute_query(query_string)['study']
-            labels = response['labelGroup']['labels']
-            if not labels:
-                break
-
-            if label_results is None:
-                label_results = response
-            else:
-                label_results['labelGroup']['labels'].extend(labels)
-
-            offset += limit
-
-        return label_results
+        query_string = graphql.get_labels_paged_query_string(study_id, label_group_id, from_time,
+                                                             to_time)
+        return self.get_paginated_response(query_string, limit, ['study'], ['labelGroup', 'labels'])
 
     def get_labels_dataframe(self, study_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
@@ -753,8 +762,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         query_string = graphql.get_labels_string_query_string(study_id, label_group_id, from_time,
                                                            to_time)
-        response = self.execute_query(query_string)['study']
-        return response
+        response = self.execute_query(query_string)
+        return response['study']
 
     def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12):
@@ -802,7 +811,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             study_ids = [study_ids]
 
         labels_query_string = graphql.get_label_groups_for_study_ids_paged_query_string(study_ids)
-        return self.get_paginated_response(labels_query_string, 'studies', limit)
+        return self.get_paginated_response(labels_query_string, limit, ['studies'])
 
     def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
         """
@@ -879,8 +888,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Dictionaries with organisation 'id' and 'name' keys
         """
         query_string = graphql.get_organisations_query_string()
-        response = self.execute_query(query_string)['organisations']
-        return response
+        response = self.execute_query(query_string)
+        return response['organisations']
 
     def get_organisations_dataframe(self):
         """
@@ -909,8 +918,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Patient details, with keys 'id' and 'user'
         """
         query_string = graphql.get_user_from_patient_query_string(patient_id)
-        response = self.execute_query(query_string)['patient']
-        return response
+        response = self.execute_query(query_string)
+        return response['patient']
 
     def get_user_from_patient_dataframe(self, patient_id):
         """
@@ -944,8 +953,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Patient details, with keys 'id' and 'user'
         """
         query_string = graphql.get_patients_query_string()
-        response = self.execute_query(query_string, party_id)['patients']
-        return response
+        response = self.execute_query(query_string, party_id)
+        return response['patients']
 
     def get_patients_dataframe(self, party_id=None):
         """
@@ -986,7 +995,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if isinstance(study_ids, str):
             study_ids = [study_ids]
         documents_query_string = graphql.get_documents_for_study_ids_paged_query_string(study_ids)
-        return self.get_paginated_response(documents_query_string, 'studies', limit)
+        return self.get_paginated_response(documents_query_string, limit, ['studies'])
 
     def get_documents_for_studies_dataframe(self, study_ids, limit=50):
         """
@@ -1010,8 +1019,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_created_at(self, patient_id):
         query_string = graphql.get_diary_created_at_query_string(patient_id)
-        response = self.execute_query(query_string)['patient']['diary']['createdAt']
-        return response
+        response = self.execute_query(query_string)
+        return response['patient']['diary']['createdAt']
 
     def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
@@ -1130,9 +1139,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
              with a 'labels' key that indexes list of dict with keys 'doses',
              'alert', 'startTime', 'scheduledTime' etc.
         """
-        query_string = graphql.get_diary_medication_alerts_query_string(patient_id, from_time, to_time)
-        response = self.execute_query(query_string)['patient']['diary']
-        return response
+        query_string = graphql.get_diary_medication_alerts_query_string(patient_id, from_time,
+                                                                        to_time)
+        response = self.execute_query(query_string)
+        return response['patient']['diary']
 
     def get_diary_medication_alerts_dataframe(self, patient_id, from_time=0, to_time=9e12):
         """
@@ -1151,6 +1161,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels = self.pandas_flatten(alerts, '', 'labels')
         return labels
 
+    # TODO: is there a reason to_time is not 9e12?
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """
         Get all medication compliance records for a given patient.
@@ -1170,9 +1181,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Has a single key, 'patient', which indexes a nested dictionary with a
             'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
         """
-        query_string = graphql.get_diary_medication_compliance_query_string(patient_id, from_time, to_time)
-        response = self.execute_query(query_string)
-        return response
+        query_string = graphql.get_diary_medication_compliance_query_string(patient_id, from_time,
+                                                                            to_time)
+        return self.execute_query(query_string)
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
         """
@@ -1320,7 +1331,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
             Timestamp in msec - only retrieve data up until this point
-    
+
         Returns
         -------
         data_df : pd.DataFrame
@@ -1379,7 +1390,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Timestamp in msec - find studies active after this point
         end_time : int
             Timestamp in msec - find studies active before this point
-        
+
         Returns
         -------
         bookings_df : pd.DataFrame
@@ -1417,9 +1428,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
         query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
-        response = self.execute_query(query_string)['patient']['diaryStudy']
-        label_groups = response['labelGroups']
-        return label_groups
+        response = self.execute_query(query_string)
+        return response['patient']['diaryStudy']['labelGroups']
 
     def get_diary_data_groups_dataframe(self, patient_id, limit=20, offset=0):
         """
@@ -1464,24 +1474,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             A dict with one key, 'labelGroup', which indexes to a dict with
         a 'labels' key. Labels include ['id', 'startTime', 'duration', 'tags', 'timezone']
         """
-        label_results = None
-
-        while True:
-            query_string = graphql.get_labels_for_diary_study_query_string(patient_id, label_group_id, from_time,
-                                                           to_time, limit, offset)
-            response = self.execute_query(query_string)['patient']['diaryStudy']
-            labels = response['labelGroup']['labels']
-            if not labels:
-                break
-
-            if label_results is None:
-                label_results = response
-            else:
-                label_results['labelGroup']['labels'].extend(labels)
-
-            offset += limit
-
-        return label_results
+        query_string = graphql.get_labels_for_diary_study_paged_query_string(
+            patient_id, label_group_id, from_time, to_time)
+        return self.get_paginated_response(query_string, limit, ['patient', 'diaryStudy'],
+                                           ['labelGroup', 'labels'])
 
     def get_diary_data_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
@@ -1620,23 +1616,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'completer', 'lastSubmittedAt', and 'fields', which indexes to a
             list of dictionaries with keys 'key' and 'value'
         """
-        current_offset = offset
-        results = []
-
-        while True:
-            query_string = graphql.get_mood_survey_results_query_string(
-                survey_template_ids, limit, current_offset)
-            current_offset += limit
-
-            response = self.execute_query(query_string)['surveys']
-
-            if not response:
-                break
-
-            results += response
-
-        return results
-
+        query_string = graphql.get_mood_survey_results_paged_query_string(survey_template_ids)
+        return self.get_paginated_response(query_string, limit, ['surveys'])
 
     def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0):
         """
@@ -1679,20 +1660,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_ids : list of str
             Unique IDs, each identifying a study
         """
-        current_offset = offset
-        results = []
-        while True:
-            query_string = graphql.get_study_ids_in_study_cohort_query_string(
-                study_cohort_id, limit, current_offset)
-            response = self.execute_query(query_string)['studyCohort']['studies']
-
-            if not response:
-                break
-
-            results += [study['id'] for study in response]
-            current_offset += limit
-
-        return results
+        query_string = graphql.get_study_ids_in_study_cohort_paged_query_string(study_cohort_id)
+        results = self.get_paginated_response(query_string, limit, ['studyCohort', 'studies'])
+        return [study['id'] for study in results]
 
     def create_study_cohort(self, name, description=None, key=None, study_ids=None):
         """
@@ -1776,20 +1746,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         user_ids : list of str
             User IDs that are in the cohort
         """
-        current_offset = offset
-        results = []
-        while True:
-            query_string = graphql.get_user_ids_in_user_cohort_query_string(
-                user_cohort_id, limit, current_offset)
-            response = self.execute_query(query_string)['userCohort']['users']
-
-            if not response:
-                break
-
-            results += [user['id'] for user in response]
-            current_offset += limit
-
-        return results
+        query_string = graphql.get_user_ids_in_user_cohort_paged_query_string(user_cohort_id)
+        results = self.get_paginated_response(query_string, limit, ['userCohort', 'users'])
+        return [user['id'] for user in results]
 
     def create_user_cohort(self, name, description=None, key=None, user_ids=None):
         """

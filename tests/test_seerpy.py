@@ -661,3 +661,41 @@ class TestUserCohorts:
             }
         }
     """
+
+
+@mock.patch('time.sleep', return_value=None)
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestGetTagIds:
+    def test_success(self, seer_auth, gql_client, unused_sleep):
+        # setup
+        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
+        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
+
+        expected_result = [
+            {'category': {'description': None, 'id': 'algorithm', 'name': 'Algorithm'},
+             'forDiary': None, 'forStudy': True, 'id': 'tag-1-id', 'value': 'Needs Review'},
+            {'category': {'description': None, 'id': 'algorithm', 'name': 'Algorithm'},
+             'forDiary': None, 'forStudy': False, 'id': 'tag-2-id', 'value': 'Epileptiform'}
+        ]
+        gql_client.return_value.execute.return_value = {'labelTags': expected_result}
+
+        # run test
+        result = SeerConnect().get_tag_ids()
+
+        # check result
+        assert result == expected_result
+
+    def test_empty(self, seer_auth, gql_client, unused_sleep):
+        # setup
+        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
+        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
+
+        expected_result = []
+        gql_client.return_value.execute.return_value = {'labelTags': expected_result}
+
+        # run test
+        result = SeerConnect().get_tag_ids()
+
+        # check result
+        assert result == expected_result

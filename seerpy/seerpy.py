@@ -52,8 +52,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def create_client(self):
         def graphql_client(party_id=None):
             connection_params = self.seer_auth.get_connection_parameters(party_id)
-            print(connection_params)
-
             return GQLClient(
                 transport=RequestsHTTPTransport(**connection_params)
             )
@@ -525,7 +523,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if not patient:
             return pd.DataFrame({})
         return json_normalize(patient).sort_index(axis=1)
-        
+
     def get_patients(self, party_id=None):
         query_string = graphql.get_patients_query_string()
         response = self.execute_query(query_string, party_id)['patients']

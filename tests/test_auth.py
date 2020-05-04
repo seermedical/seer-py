@@ -23,7 +23,7 @@ class TestAuth:
     # if there is an existing cookie then readCookie will interfere with the test
     @mock.patch.object(
         SeerAuth,
-        "_SeerAuth__read_cookie",
+        "_read_cookie",
         autospec=True
     )
     def test_success(self, read_cookie, requests_post,  # pylint:disable=unused-argument

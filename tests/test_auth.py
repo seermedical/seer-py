@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from seerpy.auth import SeerAuth, DEFAULT_COOKIE_KEY
+from seerpy.auth import BaseAuth, SeerAuth, DEFAULT_COOKIE_KEY
 
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
@@ -54,3 +54,21 @@ class TestAuth:
 
         with pytest.raises(InterruptedError):
             SeerAuth("api-url")
+
+
+class TestBaseAuth:
+    def test_get_connection_parameters_with_party_id(self):
+        auth = BaseAuth('abcd')
+        params = auth.get_connection_parameters('1234')
+        assert params['url'] == 'abcd/graphql?partyId=1234'
+
+    def test_correct_parameters_are_returned(self):
+        auth = BaseAuth('abcd')
+        params = auth.get_connection_parameters()
+
+        assert params == {
+            'url': 'abcd/graphql',
+            'headers': {},
+            'use_json': True,
+            'timeout': 30
+        }

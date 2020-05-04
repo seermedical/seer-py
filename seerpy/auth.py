@@ -43,18 +43,15 @@ class SeerAuth(BaseAuth):
 
     def __init__(
             self,
-            api_url,
+            api_url=None,
             email=None,
             password=None,
-            region='',
             cookie_key=DEFAULT_COOKIE_KEY,
             credential_namespace='cookie'):
 
-        # default to no region unless specified
-        use_region = region if len(region) > 0 and region.lower() != 'au' else ''
-
         super(SeerAuth, self).__init__(
-            api_url if api_url is not None else f"https://api{use_region}.seermedical.com/api"
+            api_url if api_url is not None \
+                else f"https://api.seermedical.com/api"
         )
 
         self.cookie = None
@@ -156,7 +153,8 @@ class SeerAuth(BaseAuth):
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
             if not self.help_message_displayed:
-                print(f"\nHint: To skip this in future, save your details to {pswdfile}")
+                print(
+                    f"\nHint: To skip this in future, save your details to {pswdfile}")
                 print("See README.md - 'Authenticating' for details\n")
                 self.help_message_displayed = True
 

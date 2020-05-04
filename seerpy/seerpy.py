@@ -11,7 +11,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from . import auth
+from .auth import SeerAuth
 from . import utils
 from . import graphql
 
@@ -38,22 +38,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
 
         if auth is None:
-            self.seer_auth = auth.SeerDefaultAuth(api_url, email, password)
+            self.seer_auth = SeerAuth(api_url, email, password)
         else:
             self.seer_auth = auth
 
         self.seer_auth.login()
+        self.create_client()
 
         self.last_query_time = time.time()
         self.api_limit_expire = 300
         self.api_limit = 580
 
-    def login(self):
+    def create_client(self):
         def graphql_client(party_id=None):
+            connection_params = self.seer_auth.get_connection_parameters(party_id)
+            print(connection_params)
+
             return GQLClient(
-                transport=RequestsHTTPTransport(
-                    **self.seer_auth.get_connection(party_id)
-                )
+                transport=RequestsHTTPTransport(**connection_params)
             )
 
         self.graphql_client = graphql_client
@@ -83,7 +85,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                    max(self.last_query_time + self.api_limit_expire - time.time(),
                                        0)))
                 invocations += 1
-                self.login()
+
+                self.seer_auth.login()
                 return self.execute_query(query_string, party_id, invocations=invocations)
 
             raise

@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from seerpy.auth import DefaultConnectionFactory, DEFAULT_COOKIE_KEY
+from seerpy.auth import SeerAuth, DEFAULT_COOKIE_KEY
 
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
@@ -21,7 +21,11 @@ from seerpy.auth import DefaultConnectionFactory, DEFAULT_COOKIE_KEY
 class TestAuth:
 
     # if there is an existing cookie then readCookie will interfere with the test
-    @mock.patch.object(DefaultConnectionFactory, "read_cookie", autospec=True)
+    @mock.patch.object(
+        SeerAuth,
+        "_SeerAuth__read_cookie",
+        autospec=True
+    )
     def test_success(self, read_cookie, requests_post,  # pylint:disable=unused-argument
                      requests_get, email_input, password_getpass):  # pylint:disable=unused-argument
         requests_post.return_value.status_code = 200
@@ -29,7 +33,7 @@ class TestAuth:
         requests_get.return_value.status_code = 200
         requests_get.return_value.json.return_value = {"session": "active"}
 
-        result = DefaultConnectionFactory("api-url")
+        result = SeerAuth("api-url")
 
         assert result.cookie[DEFAULT_COOKIE_KEY] == "cookie"
 
@@ -40,7 +44,7 @@ class TestAuth:
         requests_get.return_value.status_code = 401
 
         with pytest.raises(InterruptedError):
-            DefaultConnectionFactory("api-url")
+            SeerAuth("api-url")
 
     def test_other_error(self, requests_post, requests_get,
                          email_input, password_getpass):  # pylint:disable=unused-argument
@@ -49,4 +53,4 @@ class TestAuth:
         requests_get.return_value.status_code = "undefined"
 
         with pytest.raises(InterruptedError):
-            DefaultConnectionFactory("api-url")
+            SeerAuth("api-url")

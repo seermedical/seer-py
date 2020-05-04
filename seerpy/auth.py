@@ -1,6 +1,5 @@
 # Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 
-from abc import ABC, abstractmethod
 import getpass
 import os
 import json
@@ -10,11 +9,11 @@ import requests
 DEFAULT_COOKIE_KEY = 'seer.sid'
 
 
-class BaseConnectionFactory(ABC):
+class BaseAuth:
     def __init__(self, api_url):
         self.api_url = api_url
 
-    def get_connection(self, party_id=None):
+    def get_connection_parameters(self, party_id=None):
         url_suffix = '?partyId=' + party_id if party_id else ''
 
         return {
@@ -24,11 +23,9 @@ class BaseConnectionFactory(ABC):
             'timeout': 30
         }
 
-    @abstractmethod
     def login(self):
         pass
 
-    @abstractmethod
     def logout(self):
         pass
 
@@ -36,18 +33,7 @@ class BaseConnectionFactory(ABC):
         return {}
 
 
-class EmptyConnectionFactory(BaseConnectionFactory):
-    """
-    Creates an empty connection factory, used for testing purposes
-    """
-    def login(self):
-        return True
-
-    def logout(self):
-        return True
-
-
-class DefaultConnectionFactory(BaseConnectionFactory):
+class SeerAuth(BaseAuth):
     """
     Creates a default connection factory, which should be used
     for most API use cases.
@@ -57,7 +43,7 @@ class DefaultConnectionFactory(BaseConnectionFactory):
 
     def __init__(
             self,
-            api_url="https://api.seermedical.com/api",
+            api_url,
             email=None,
             password=None,
             region='',
@@ -67,43 +53,21 @@ class DefaultConnectionFactory(BaseConnectionFactory):
         # default to no region unless specified
         use_region = region if len(region) > 0 and region.lower() != 'au' else ''
 
-        super(DefaultConnectionFactory, self).__init__(
+        super(SeerAuth, self).__init__(
             api_url if api_url is not None else f"https://api{use_region}.seermedical.com/api"
         )
 
         self.cookie = None
         self.cookie_key = cookie_key
         self.credential_namespace = credential_namespace
-        self.read_cookie()
-
-        if self.verify_login() == 200:
-            print('Login Successful')
-            return
+        self.__read_cookie()
 
         self.email = email
         self.password = password
-        allowed_attempts = 3
+        self.__attempt_login()
 
-        for i in range(allowed_attempts):
-            if not self.email or not self.password:
-                self.login_details()
-            self.login()
-            response = self.verify_login()
-
-            if response == requests.codes.ok:  # pylint: disable=maybe-no-member
-                print('Login Successful')
-                break
-
-            if i < allowed_attempts - 1:
-                print('\nLogin error, please re-enter your email and password: \n')
-                self.cookie = None
-                self.password = None
-            else:
-                print('Login failed. please check your username and password or go to',
-                      'app.seermedical.com to reset your password')
-                self.cookie = None
-                self.password = None
-                raise InterruptedError('Authentication Failed')
+    def get_connection_parameters(self, party_id=None):
+        return super().get_connection_parameters(party_id=party_id)
 
     def get_headers(self):
         cookie = self.cookie
@@ -128,12 +92,40 @@ class DefaultConnectionFactory(BaseConnectionFactory):
 
     def logout(self):
         home = os.path.expanduser('~')
-        cookie_file = home + self.get_cookie_path()
+        cookie_file = home + self.__get_cookie_path()
         if os.path.isfile(cookie_file):
             os.remove(cookie_file)
         self.cookie = None
 
-    def verify_login(self):
+    def __attempt_login(self):
+        if self.__verify_login() == 200:
+            print('Login Successful')
+            return
+
+        allowed_attempts = 3
+
+        for i in range(allowed_attempts):
+            if not self.email or not self.password:
+                self.__login_details()
+            self.login()
+            response = self.__verify_login()
+
+            if response == requests.codes.ok:  # pylint: disable=maybe-no-member
+                print('Login Successful')
+                break
+
+            if i < allowed_attempts - 1:
+                print('\nLogin error, please re-enter your email and password: \n')
+                self.cookie = None
+                self.password = None
+            else:
+                print('Login failed. please check your username and password or go to',
+                      'app.seermedical.com to reset your password')
+                self.cookie = None
+                self.password = None
+                raise InterruptedError('Authentication Failed')
+
+    def __verify_login(self):
         if self.cookie is None:
             return 401
 
@@ -149,10 +141,10 @@ class DefaultConnectionFactory(BaseConnectionFactory):
             print("api verify call did not return an active session")
             return 401
 
-        self.write_cookie()
+        self.__write_cookie()
         return response.status_code
 
-    def login_details(self):
+    def __login_details(self):
         home = os.path.expanduser('~')
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
@@ -168,13 +160,13 @@ class DefaultConnectionFactory(BaseConnectionFactory):
                 print("See README.md - 'Authenticating' for details\n")
                 self.help_message_displayed = True
 
-    def get_cookie_path(self):
+    def __get_cookie_path(self):
         return f'/.seerpy/${self.credential_namespace}'
 
-    def write_cookie(self):
+    def __write_cookie(self):
         try:
             home = os.path.expanduser('~')
-            cookie_file = home + self.get_cookie_path()
+            cookie_file = home + self.__get_cookie_path()
             if not os.path.isdir(home + '/.seerpy'):
                 os.mkdir(home + '/.seerpy')
             with open(cookie_file, 'w') as f:
@@ -182,23 +174,22 @@ class DefaultConnectionFactory(BaseConnectionFactory):
         except Exception:  # pylint:disable=broad-except
             pass
 
-    def read_cookie(self):
+    def __read_cookie(self):
         home = os.path.expanduser('~')
-        cookie_file = home + self.get_cookie_path()
+        cookie_file = home + self.__get_cookie_path()
         if os.path.isfile(cookie_file):
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
 
 
-class DevConnectionFactory(DefaultConnectionFactory):
+class SeerDevAuth(SeerAuth):
     """
-    Creatses a connection factory for generating dev server connections.
-
-    Similar functionality to DefaultConnectionFactory
+    Creates an auth instance for connecting to dev servers, based on the default
+    SeerAuth authentication approach.
     """
 
     def __init__(self, api_url, email=None, password=None):
-        super(DevConnectionFactory, self).__init__(
+        super(SeerDevAuth, self).__init__(
             api_url,
             email,
             password,

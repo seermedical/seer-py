@@ -410,7 +410,7 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
                                 startTime
                                 scheduledTime
                                 alert {
-                                    name   
+                                    name
                                 }
                                 scheduledTime
                                 startTime
@@ -611,7 +611,7 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
 def get_study_ids_in_study_cohort_query_string(study_cohort_id, limit, offset):
     return """
         query {
-            studyCohort(id: %s) {
+            studyCohort(id: "%s") {
                 id
                 name
                 studies(limit: %0.f, offset: %0.f) {
@@ -619,7 +619,7 @@ def get_study_ids_in_study_cohort_query_string(study_cohort_id, limit, offset):
                 }
             }
         }
-    """ % (utils.quote_str(study_cohort_id), limit, offset)
+    """ % (study_cohort_id, limit, offset)
 
 
 def create_study_cohort_mutation_string(name, description=None, key=None, study_ids=None):
@@ -652,7 +652,7 @@ def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
     return """
         mutation {
             addStudiesToStudyCohort(
-                studyCohortId: %s,
+                studyCohortId: "%s",
                 studyIds: %s
             ) {
                 studyCohort {
@@ -661,7 +661,7 @@ def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
             }
         }
     """ % (
-        utils.quote_str(study_cohort_id),
+        study_cohort_id,
         get_json_list(study_ids)
     )
 
@@ -670,7 +670,7 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
     return """
         mutation {
             removeStudiesFromStudyCohort(
-                studyCohortId: %s,
+                studyCohortId: "%s",
                 studyIds: %s
             ) {
                 studyCohort {
@@ -679,7 +679,7 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
             }
         }
     """ % (
-        utils.quote_str(study_cohort_id),
+        study_cohort_id,
         get_json_list(study_ids)
     )
 
@@ -708,7 +708,7 @@ def get_mood_survey_results_query_string(survey_template_ids, limit, offset):
 def get_user_ids_in_user_cohort_query_string(user_cohort_id, limit, offset):
     return """
         query {
-            userCohort(id: %s) {
+            userCohort(id: "%s") {
                 id
                 name
                 users(limit: %0.f, offset: %0.f) {
@@ -716,7 +716,7 @@ def get_user_ids_in_user_cohort_query_string(user_cohort_id, limit, offset):
                 }
             }
         }
-    """ % (utils.quote_str(user_cohort_id), limit, offset)
+    """ % (user_cohort_id, limit, offset)
 
 
 def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):
@@ -749,7 +749,7 @@ def get_add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
     return """
         mutation {
             addUsersToUserCohort(
-                userCohortId: %s,
+                userCohortId: "%s",
                 userIds: %s
             ) {
                 userCohort {
@@ -758,7 +758,7 @@ def get_add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
             }
         }
     """ % (
-        utils.quote_str(user_cohort_id),
+        user_cohort_id,
         get_json_list(user_ids)
     )
 
@@ -767,7 +767,7 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
     return """
         mutation {
             removeUsersFromUserCohort(
-                userCohortId: %s,
+                userCohortId: "%s",
                 userIds: %s
             ) {
                 userCohort {
@@ -776,6 +776,6 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
             }
         }
     """ % (
-        utils.quote_str(user_cohort_id),
+        user_cohort_id,
         get_json_list(user_ids)
     )

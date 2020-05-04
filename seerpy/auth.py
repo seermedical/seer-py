@@ -10,6 +10,10 @@ DEFAULT_COOKIE_KEY = 'seer.sid'
 
 
 class BaseAuth:
+    """
+    An authenticated connection to the Seer API. Should not be used directly,
+    instead use one of the deriving classes.
+    """
     def __init__(self, api_url):
         self.api_url = api_url
 
@@ -35,23 +39,16 @@ class BaseAuth:
 
 class SeerAuth(BaseAuth):
     """
-    Creates a default connection factory, which should be used
-    for most API use cases.
+    Creates an authenticated connection to the Seer API. This is the default for most use cases.
     """
 
     help_message_displayed = False
 
-    def __init__(
-            self,
-            api_url=None,
-            email=None,
-            password=None,
-            cookie_key=DEFAULT_COOKIE_KEY,
-            credential_namespace='cookie'):
+    def __init__(self, api_url=None, email=None, password=None, cookie_key=DEFAULT_COOKIE_KEY,
+                 credential_namespace='cookie'):
 
         super(SeerAuth, self).__init__(
-            api_url if api_url is not None \
-                else f"https://api.seermedical.com/api"
+            api_url if api_url is not None else f"https://api.seermedical.com/api"
         )
 
         self.cookie = None
@@ -153,8 +150,7 @@ class SeerAuth(BaseAuth):
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
             if not self.help_message_displayed:
-                print(
-                    f"\nHint: To skip this in future, save your details to {pswdfile}")
+                print(f"\nHint: To skip this in future, save your details to {pswdfile}")
                 print("See README.md - 'Authenticating' for details\n")
                 self.help_message_displayed = True
 

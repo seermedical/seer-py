@@ -48,7 +48,7 @@ class SeerAuth(BaseAuth):
                  credential_namespace='cookie'):
 
         super(SeerAuth, self).__init__(
-            api_url if api_url is not None else f"https://api.seermedical.com/api"
+            api_url if api_url is not None else "https://api.seermedical.com/api"
         )
 
         self.cookie = None

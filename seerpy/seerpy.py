@@ -419,7 +419,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         limit : int, optional
             Batch size for repeated API calls
         search_term : str, optional
-            Filter results to study names matching this string
+            Filter results to studies that match this string on their study name,
+            study description, study code, and/or patient name
         party_id : str, optional
             The organisation/entity to specify for the query
 
@@ -1460,8 +1461,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_data_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
         """
-        Get all diary study labels for a given patient and study label group as
-        a DataFrame. See `get_diary_data_labels()` for details.
+        Get all diary study labels for a given patient and diary label group,
+        returned as a DataFrame. See `get_diary_data_labels()` for details.
 
         Returns
         -------

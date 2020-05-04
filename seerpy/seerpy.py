@@ -5,10 +5,14 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 
 Concepts
 --------
-- study: A defined period of time monitoring a patient, typically with EEG-ECG-video
+- study: A defined period of time monitoring a patient, typically with EEG-ECG-video.
+    A patient may have multiple studies, and a given study may or may not be
+    attached to a patient.
 - diary: Use of the Seer app by a patient to record events such as seizures
     ("labels") and "alerts" for medication use
-- diary study: Use of a wearable, such as a Fitbit, to record patient data
+- diary study: A patient study which is not time-bound. May include data from
+    devices such as smart phones or watches. A diary study must be attached to
+    a patient, and there can only be one diary study per patient.
 - channel group: A mode of monitoring data, dependent on the study type.
     Study: EEG, ECG, video
     Diary study: Wearable data, e.g. heart rate, step count
@@ -18,9 +22,8 @@ Concepts
     Study: clinical annotations, e.g. Abnormal / Epileptiform, Normal / Routine
     Diary: self-reported annotations of events, e.g. Seizure / Other
     Diary study: labels from a wearable device, e.g. Sleep annotations
-- label: An instance of a label group. Labels typically involve the following
-    fields: id, startTime, duration, timezone, note, tags, confidence,
-    createdAt, createdBy
+- label: Belongs to a label group. Labels typically involve the following fields:
+    id, startTime, duration, timezone, note, tags, confidence, createdAt, createdBy
 - tag: An ontology of "attributes" that may be atached to a label to provide
     info or clarifications, e.g. Jaw clenching, Beta, Exemplar, Generalised, Sleep.
     Tags are arranged into categories, e.g. Band, Brain area, Channel, Seizure type, Sleep
@@ -30,9 +33,9 @@ Concepts
     reassembled to yield a complete segment
 - party ID: The ID associated with e.g. an organisation, which will filter the
     values returned
-- API response: Data returned from the GraphQL endpoint. Returned as JSON format,
-    so get a dictionary with string keys and values that may be strings, numbers,
-    bools, dictionaries, lists of dicts etc.
+- API response: Data returned from the GraphQL endpoint, as a dictionary with
+    string-type keys, and values that may be strings, numbers, bools, dictionaries,
+    lists of dicts etc.
 """
 import math
 import time
@@ -250,13 +253,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_id : str
-            Seer study ID
+            A unique ID identifying a study
         name : str
-            Name of the new label
+            Name of the new label group
         description : str
-            Free text explanation of the label group
+            Free text description of the label group
         label_type : str, optional
-            Seer label type ID
+            Label type ID
         party_id : str, optional
             The organisation/entity to specify for the query
 
@@ -277,7 +280,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         group_id : str
-            Seer label group ID to delete
+            Label group ID to delete
 
         Returns
         -------
@@ -294,7 +297,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         label_group_id : str
-            Seer label group ID
+            Label group ID
         labels: pd.DateFrame or list of dict
             Should include columns/keys as per `add_labels()`
         batch_size: int, optional
@@ -317,7 +320,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         group_id : str
-            Seer label group ID
+            Label group ID
         labels : pd.DateFrame or list of dict
             Should include the following columns/keys:
             - note : str
@@ -336,8 +339,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         labels_added : dict
-            A dict with a single key, 'addLabelsToLabelGroup', that indexes to
-            a list of dicts, each with an 'id' key indicating an added label
+            A dict with a single key, 'addLabelsToLabelGroup', that maps to a
+            list of dicts, each with an 'id' key indicating an added label
         """
         if isinstance(labels, pd.DataFrame):
             labels = labels.to_dict('records')
@@ -346,16 +349,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def add_document(self, study_id, document_name, document_path):
         """
-        Upload a local document and associate it with a study.
+        Upload a document and associate it with a study.
 
         Parameters
         ----------
         study_id : str
-            Seer study ID
+            A unique ID identifying a study
         document_name : str
             Name to assign document after upload
         document_path : str
-            Path to document on local device
+            Path to document
 
         Returns
         -------
@@ -423,7 +426,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         study_ids : list of str
-            A list of all study IDs
+            Unique IDs, each identifying a study
         """
         studies = self.get_studies(limit, search_term, party_id)
         return [study['id'] for study in studies]
@@ -484,7 +487,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_names : str or list of str
-            Seer study names to retrieve
+            Study names to retrieve
         party_id : str, optional
             The organisation/entity to specify for the query
 
@@ -514,14 +517,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_names : str or list of str
-            Seer study name or names to look up
+            Study name or names to look up
         party_id : str, optional
             The organisation/entity to specify for the query
 
         Returns
         -------
         study_ids: list of str
-            IDs matching the provided study
+            Unique IDs, each identifying a study
         """
         return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()
 
@@ -532,7 +535,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_ids : str or list of str
-            Seer study IDs to get details for
+            One or more unique IDs, each identifying a study
         limit : int, optional
             Batch size for repeated API calls
 
@@ -553,11 +556,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_id : str
-            Seer study ID
+            A unique ID identifying a study
 
         Returns
         -------
-        study_id : list of dict
+        channel_groups : list of dict
             Details for each channel group, with dicts including keys:
             - name
             - sampleRate
@@ -612,9 +615,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         s3_urls : bool, optional
             Return download URLs for S3 (otherwise return URLs for Cloudfront)
         from_time : int, optional
-            Timestamp in msec - only retrieve data after this point
+            Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data before this point
+            Timestamp in msec - only retrieve data up until this point
         limit : int, options
             Batch size for repeated API calls
 
@@ -676,13 +679,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_id : str
-            Seer study ID
+            A unique ID identifying a study
         label_group_id : str
-            Label group ID string
+            Label group ID
         from_time : int, optional
-            Timestamp in msec - only retrieve data after this point
+            Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data before this point
+            Timestamp in msec - only retrieve data up until this point
         limit : int, optional
             Batch size for repeated API calls
         offset : int, optional
@@ -747,13 +750,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_id : str
-            Seer study ID
+            A unique ID identifying a study
         label_group_id : str
-            Label group ID string
+            Label group ID
         from_time : int, optional
-            Timestamp in msec - only retrieve data after this point
+            Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data before this point
+            Timestamp in msec - only retrieve data up until this point
 
         Returns
         -------
@@ -798,8 +801,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Parameters
         ----------
-        study_ids : str
-            Seer study IDs to retrieve label groups for
+        study_ids : str or list of str
+            One or more unique IDs, each identifying a study
         limit : int, optional
             Batch size for repeated API calls
 
@@ -845,7 +848,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_id : str
-            Seer study ID
+            A unique ID identifying a study
         limit : int, optional
             Batch size for repeated API calls
         offset : int, optional
@@ -945,12 +948,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_documents_for_studies(self, study_ids, limit=50):
         """
-        Get details of all documents associated with given study ID(s). 
+        Get details of all documents associated with given study ID(s).
 
         Parameters
         ----------
         study_id : str or list of str
-            Iterable of Seer study ID
+            One or more unique IDs, each identifying a study
         limit : int, optional
             Batch size for repeated API calls
 
@@ -992,7 +995,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         patient_id : str
-            Seer patient ID
+            The patient ID for which to retrieve diary labels
         label_type : str, optional
             The type of label to retrieve. Default = 'all'. Options = 'seizure',
             'medications', 'cardiac'.
@@ -1002,10 +1005,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Batch size for repeated API calls
         from_time : int, optional
             UTC timestamp to apply a range filter on label start times.
-            Retrieves labels after the given from_time
+            Retrieves labels from the given time onward
         to_time : int, optional
             UTC timestamp to apply a range filter label start times.
-            Retrieves labels before the given to_time
+            Retrieves labels up until the given time
         from_duration : int, optional
             Time in millseconds to apply a range filter on the duration of labels.
             Retrieves labels of duration > from_duration
@@ -1088,11 +1091,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         patient_id : str
-            The Seer patient ID for which to retrieve diary labels
+            The patient ID for which to retrieve diary medications
         from_time : int, optional
-            Timestamp in msec - only retrieve data after this point
+            Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data before this point
+            Timestamp in msec - only retrieve data up until this point
 
         Returns
         -------
@@ -1129,11 +1132,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         patient_id : str
-            The Seer patient ID for which to retrieve diary labels
+            The patient ID for which to retrieve medication compliance
         from_time : int, optional
-            Timestamp in msec - only retrieve data after this point
+            Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data before this point
+            Timestamp in msec - only retrieve data up until this point
 
         Returns
         -------
@@ -1193,8 +1196,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_ids : list of str, optional
-            A list of study IDs. If not provided, data will be returned for all
-            available studies.
+            Unique IDs, each identifying a study. If not provided, data will be
+            returned for all available studies.
 
         Returns
         -------
@@ -1242,7 +1245,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_ids : list of str
-            Iterable of study IDs
+            Unique IDs, each identifying a study
 
         Returns
         -------
@@ -1273,7 +1276,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                          download_function=requests.get, threads=None, from_time=0, to_time=9e12):
         """
         Download raw data for all channel groups and segments listed in a given
-        metadata DataFrame and wrangle into a new DataFrame.
+        metadata DataFrame and return as a new DataFrame.
 
         Parameters
         ----------
@@ -1288,9 +1291,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Number of threads to use. If > 1 will use multiprocessing. If None
             (default), will use 1 on Windows and 5 on Linux/MacOS.
         from_time : int, optional
-            Timestamp in msec - only retrieve data after this point
+            Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data before this point
+            Timestamp in msec - only retrieve data up until this point
     
         Returns
         -------
@@ -1369,12 +1372,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     # DIARY STUDY (FITBIT) ANALYSIS
     def get_diary_data_groups(self, patient_id, limit=20, offset=0):
         """
-        Get wearable label groups (e.g. heart rate, steps) for a patient diary study.
+        Get diary label groups (e.g. heart rate, steps) for a patient diary study.
 
         Parameters
         ----------
         patient_id : str
-            The Seer patient ID for which to retrieve diary data
+            The patient ID for which to retrieve diary data
         limit : int, optional
             The maximum number of results to return
         offset : int optional
@@ -1394,7 +1397,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_data_groups_dataframe(self, patient_id, limit=20, offset=0):
         """
-        Get wearable label groups (e.g. heart rate, steps) for a patient diary
+        Get diary label groups (e.g. heart rate, steps) for a patient diary
         study as a DataFrame. See `get_diary_data_groups()` for details.
 
         Returns
@@ -1411,19 +1414,19 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_data_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
         """
-        Get all diary study labels for a given patient and wearable label group,
+        Get all diary study labels for a given patient and diary label group,
         e.g. heart rate.
 
         Parameters
         ----------
         patient_id : str
-            The Seer patient ID for which to retrieve diary labels
+            The patient ID for which to retrieve diary labels
         label_group_id : str
             The ID of the diary study label group for which to retrieve labels
         from_time : int, optional
-            Timestamp in msec - find diary labels after this point
+            Timestamp in msec - find diary labels from this point onward
         to_time : int, optional
-            Timestamp in msec - find diary labels before this point
+            Timestamp in msec - find diary labels up until this point
         limit : int, optional
             Batch size for repeated API calls
         offset : int, optional
@@ -1457,9 +1460,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_data_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
                              from_time=0, to_time=9e12, limit=200, offset=0):
         """
-        Get all diary study labels for a given patient and wearble label group
-        as a DataFrame.
-        See `get_diary_data_labels()` for details.
+        Get all diary study labels for a given patient and study label group as
+        a DataFrame. See `get_diary_data_labels()` for details.
 
         Returns
         -------
@@ -1484,17 +1486,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_channel_groups(self, patient_id, from_time, to_time):
         """
-        Get all diary study channel groups (e.g. heart rate) and associated
-        segment information for a given patient.
+        Get all diary study channel groups and associated segment information for a given patient.
 
         Parameters
         ----------
         patient_id : str
-            The Seer patient ID for which to retrieve diary channel groups
+            The patient ID for which to retrieve diary channel groups
         from_time : int
-            Timestamp in msec - find segments after this point
+            Timestamp in msec - find segments from this point onward
         to_time : int
-            Timestamp in msec - find segments before this point
+            Timestamp in msec - find segments up until this point
 
         Returns
         -------
@@ -1650,7 +1651,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         study_ids : list of str
-            All study IDs in the given cohort
+            Unique IDs, each identifying a study
         """
         current_offset = offset
         results = []
@@ -1680,7 +1681,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         key: str, optional
             An optional key to describe the cohort. Defaults to the ID
         study_ids: list of str, optional
-            A list of study IDs to add to the study cohort
+            Unique IDs, each identifying a study to add to the study cohort
 
         Returns
         -------
@@ -1700,7 +1701,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_cohort_id : str
             The ID of the study cohort to modify
         study_ids : list of str
-            A list of study IDs to add to the study cohort
+            Unique IDs, each identifying a study to add to the study cohort
 
         Returns
         -------
@@ -1720,7 +1721,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_cohort_id : str
             The ID of the study cohort to modify
         study_ids : list of str
-            A list of study IDs to remove from the study cohort
+            Unique IDs, each identifying a study to remove from the study cohort
 
         Returns
         -------

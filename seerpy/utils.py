@@ -180,7 +180,7 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
 def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-arguments
                      download_function=requests.get, threads=None, from_time=0, to_time=9e12):
     """
-    Download data chunks and stich together into a single DataFrame.
+    Download data chunks and stitch together into a single DataFrame.
 
     Parameters
     ----------
@@ -195,9 +195,9 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
         Number of threads to use. If > 1 then will use multiprocessing. If None
         (default), it will use 1 on Windows and 5 on Linux/MacOS
     from_time : int, optional
-        Timestamp in msec - only retrieve data after this point
+        Timestamp in msec - only retrieve data from this point onward
     to_time : int, optional
-        Timestamp in msec - only retrieve data before this point
+        Timestamp in msec - only retrieve data up until this point
 
     Returns
     -------
@@ -268,7 +268,7 @@ def get_channel_data(all_data, segment_urls,  # pylint:disable=too-many-argument
 
 def get_channel_names_or_ids(metadata):
     """
-    Get a list of unique channel names, or IDs where name is null or duplicated.
+    Get a list of unique channel names, using ID instead if a name is null or duplicated.
 
     Parameters
     ----------
@@ -380,7 +380,7 @@ def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
 
 def butter_bandstop(lowcut, highcut, fs, order=5):
     """
-    Get second-order-sections representation of and IIR Butterworth digital
+    Get second-order-sections representation of an IIR Butterworth digital
     bandstop filter.
 
     Parameters
@@ -437,7 +437,7 @@ def butter_bandstop_filter(data, lowcut, highcut, fs, order=5):
 
 def butter_bandpass(lowcut, highcut, fs, order=5):
     """
-    Get second-order-sections representation of and IIR Butterworth digital
+    Get second-order-sections representation of an IIR Butterworth digital
     bandpass filter.
 
     Parameters
@@ -494,8 +494,8 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
 
 def get_diary_fitbit_data(data_url):
     """
-    Download Fitbit data from a given URL and wrangle into a DataFrame.
-    
+    Download Fitbit data from a given URL and return as a DataFrame.
+
     Parameters
     ----------
     data_url : str

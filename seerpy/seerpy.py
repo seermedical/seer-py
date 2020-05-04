@@ -37,6 +37,7 @@ Concepts
     string-type keys, and values that may be strings, numbers, bools, dictionaries,
     lists of dicts etc.
 """
+from datetime import datetime
 import math
 import time
 import json
@@ -46,16 +47,16 @@ from gql.transport.requests import RequestsHTTPTransport
 import pandas as pd
 from pandas.io.json import json_normalize
 import requests
-from datetime import datetime
 
-from .auth import SeerAuth, COOKIE_KEY_DEV, COOKIE_KEY_PROD
+from .auth import SeerAuth
 from . import utils
 from . import graphql
 
 
 class SeerConnect:  # pylint: disable=too-many-public-methods
+    graphql_client = None
 
-    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None, dev=False):
+    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None, auth=None):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -70,42 +71,26 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             dev: Flag to query the development rather than production endpoint
         """
 
-        self.api_url = api_url
-        self.dev = dev
+        if auth is None:
+            self.seer_auth = SeerAuth(api_url, email, password)
+        else:
+            self.seer_auth = auth
 
-        self.login(email, password)
+        self.seer_auth.login()
+        self.create_client()
 
         self.last_query_time = time.time()
         self.api_limit_expire = 300
         self.api_limit = 580
 
-    def login(self, email=None, password=None):
+    def create_client(self):
         """
-        Authenticate with the API endpoint and set up the GraphQL client with
-        the correct URL address and cookie value headers.
+        Create a GraphQL client with parameters from the current SeerAuth object.
         """
-        self.seer_auth = SeerAuth(self.api_url, email, password, self.dev)
-        cookie = self.seer_auth.cookie
-
-        key = COOKIE_KEY_DEV if self.dev else COOKIE_KEY_PROD
-        header =  {
-            'Cookie': f'{key}={cookie[key]}'
-        }
-
         def graphql_client(party_id=None):
-            """
-            Return a GraphQL client with parameters configured for the correct
-            URL and cookie header.
-            """
-            url_suffix = '?partyId=' + party_id if party_id else ''
-            url = self.api_url + '/graphql' + url_suffix
+            connection_params = self.seer_auth.get_connection_parameters(party_id)
             return GQLClient(
-                transport=RequestsHTTPTransport(
-                    url=url,
-                    headers=header,
-                    use_json=True,
-                    timeout=30
-                )
+                transport=RequestsHTTPTransport(**connection_params)
             )
 
         self.graphql_client = graphql_client
@@ -150,14 +135,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             error_string = str(ex)
             if any(api_error in error_string for api_error in resolvable_api_errors):
                 if 'NOT_AUTHENTICATED' in error_string:
-                    self.seer_auth.destroy_cookie()
+                    self.seer_auth.logout()
                 else:
                     print('"', error_string, '" raised, trying again after a short break')
                     time.sleep(min(30 * (invocations+1)**2,
                                    max(self.last_query_time + self.api_limit_expire - time.time(),
                                        0)))
                 invocations += 1
-                self.login()
+
+                self.seer_auth.login()
                 return self.execute_query(query_string, party_id, invocations=invocations)
 
             raise
@@ -910,6 +896,39 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return orgs
         return pd.DataFrame(orgs)
 
+    def get_user_from_patient(self, patient_id):
+        """
+        Get user ID and info from patient ID.
+        Parameters
+        ----------
+        patient_id : str
+            The patient ID
+        Returns
+        -------
+        patient : dict
+            Patient details, with keys 'id' and 'user'
+        """
+        query_string = graphql.get_user_from_patient_query_string(patient_id)
+        response = self.execute_query(query_string)['patient']
+        return response
+
+    def get_user_from_patient_dataframe(self, patient_id):
+        """
+        Get user ID and info from patient ID.
+        Parameters
+        ----------
+        patient_id : str
+            The patient ID
+        Returns
+        -------
+        patient : pd.DataFrame
+            Patient details as pandas DataFrame
+        """
+        patient = self.get_user_from_patient(patient_id)
+        if not patient:
+            return pd.DataFrame({})
+        return json_normalize(patient).sort_index(axis=1)
+
     def get_patients(self, party_id=None):
         """
         Get available patient IDs and user names.
@@ -988,6 +1007,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 document['name'] = study['name']
                 documents.append(document)
         return pd.DataFrame(documents)
+
+    def get_diary_created_at(self, patient_id):
+        query_string = graphql.get_diary_created_at_query_string(patient_id)
+        response = self.execute_query(query_string)['patient']['diary']['createdAt']
+        return response
 
     def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
@@ -1083,6 +1107,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = label_groups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
         label_groups = label_groups.rename({'id':'labelGroups.id'})
         label_groups['id'] = patient_id
+        label_groups['createdAt'] = label_results['createdAt']
         return label_groups
 
     def get_diary_medication_alerts(self, patient_id, from_time=0, to_time=9e12):

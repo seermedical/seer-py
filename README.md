@@ -37,8 +37,8 @@ at https://app.seermedical.com/. You can then use seer-py to authenticate with
 the API.
 
 seer-py will prompt for the username and password that you use to log in to the
-The simplest way to authenticate is to create an instance of `SeerConnect`.
-Seer App.
+Seer App. The simplest way to authenticate is to create an instance of
+`SeerConnect`:
 
 ```
 from seerpy import SeerConnect

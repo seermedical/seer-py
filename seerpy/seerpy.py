@@ -1172,7 +1172,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels = self.pandas_flatten(alerts, '', 'labels')
         return labels
 
-    # TODO: is there a reason to_time is not 9e12?
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """
         Get all medication compliance records for a given patient.
@@ -1184,7 +1183,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         from_time : int, optional
             Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data up until this point
+            Timestamp in msec - only retrieve data up until this point. The default value of 0 means
+            up until this point in time for this query
 
         Returns
         -------

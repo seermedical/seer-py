@@ -286,7 +286,31 @@ class TestGetSegmentUrls:
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabels:
 
-    def test_success(self, seer_auth, gql_client, unused_sleep):
+    def test_success_single(self, seer_auth, gql_client, unused_sleep):
+        # setup
+        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
+        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
+
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "labels_1.json", "r") as f:
+            query_data = json.load(f)
+        side_effects.append(query_data)
+        # this is the "no more data" response for get_labels()
+        with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = query_data['study']
+
+        # run test
+        result = SeerConnect().get_labels("study-1-id", "label-group-1-id")
+
+        # check result
+        assert result == expected_result
+
+    def test_success_multiple(self, seer_auth, gql_client, unused_sleep):
         # setup
         seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
@@ -305,6 +329,26 @@ class TestGetLabels:
 
         with open(TEST_DATA_DIR / "labels_result.json", "r") as f:
             expected_result = json.load(f)
+
+        # run test
+        result = SeerConnect().get_labels("study-1-id", "label-group-1-id")
+
+        # check result
+        assert result == expected_result
+
+    def test_success_empty(self, seer_auth, gql_client, unused_sleep):
+        # setup
+        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
+        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
+
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = []
 
         # run test
         result = SeerConnect().get_labels("study-1-id", "label-group-1-id")

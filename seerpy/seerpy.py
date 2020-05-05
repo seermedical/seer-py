@@ -148,11 +148,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             raise
 
-    def get_paginated_response(self, query_string, limit, object_keys=None, child_keys=None,
+    def get_paginated_response(self, query_string, limit, object_path, iteration_path=None,
                                party_id=None):
         """
         For queries expecting a large number of objects returned, split query into iterative calls
         to `execute_query()`.
+        The object_path parameter controls which part of the query result is returned, and the
+        iteration_path parameter indicates where the results vary for each iteration.
 
         Parameters
         ----------
@@ -160,12 +162,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             The formatted GraphQL query
         limit : int
             Batch size for repeated API calls
-        object_keys : list of str, optional
-            None (default), one, or more levels of Key giving the path to the object of iterest
-            e.g. 'studies'
-        child_keys : list of str, optional
-            None (default), one, or more levels of Key giving the path to the node of iteration. If
-            None then the iteration happens at the path given by object_keys (or the root if None)
+        object_path : list of str
+            One or more levels of key giving the path to the object to be returned
+            e.g. ['userCohort', 'users'] for a query result of
+            {"userCohort": {"users": [{"id": "user1"}, {"id": "user2"}]}}
+            would give [{"id": "user1"}, {"id": "user2"}]
+        iteration_path : list of str, optional
+            None (default), one, or more levels of key giving the path to the node where results
+            can vary with each query iteration. If None then the results vary at the path given
+            by object_keys
         party_id : str, optional
             The organisation/entity to specify for the query
 
@@ -180,25 +185,31 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         while True:
             formatted_query_string = query_string.format(limit=limit, offset=offset)
             response = self.execute_query(formatted_query_string, party_id)
-            if object_keys:
-                for key in object_keys:
-                    response = response[key]
 
-            response_child = response
-            if child_keys:
-                for key in child_keys:
-                    response_child = response_child[key]
-            if not response_child:
+            # select the part of the result we are interested in
+            for key in object_path:
+                response = response[key]
+
+            # select the part of the response which can vary. if iteration_path is None this will be
+            # the same as the part of the result we are interested in
+            response_increment = response
+            if iteration_path:
+                for key in iteration_path:
+                    response_increment = response_increment[key]
+            if not response_increment:
+                # if the part of the response which varies is empty, we are finished iterating
                 break
 
             if not result:
+            # if this is the first response, save the whole thing
                 result = response
             else:
-                result_child = result
-                if child_keys:
-                    for key in child_keys:
-                        result_child = result_child[key]
-                result_child.extend(response_child)
+                # otherwise add the response increment to the existing response at the correct level
+                result_increment_container = result
+                if iteration_path:
+                    for key in iteration_path:
+                        result_increment_container = result_increment_container[key]
+                result_increment_container.extend(response_increment)
 
             offset += limit
 

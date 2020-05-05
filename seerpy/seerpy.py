@@ -153,8 +153,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         For queries expecting a large number of objects returned, split query into iterative calls
         to `execute_query()`.
-        The object_path parameter controls which part of the query result is returned, and the
-        iteration_path parameter indicates where the results vary for each iteration.
+        The object_path parameter controls which part of the query response is returned, and the
+        iteration_path parameter indicates where the response can vary for each iteration.
 
         Parameters
         ----------
@@ -164,13 +164,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Batch size for repeated API calls
         object_path : list of str
             One or more levels of key giving the path to the object to be returned
-            e.g. ['userCohort', 'users'] for a query result of
+            e.g. ['userCohort', 'users'] for a query response of
             {"userCohort": {"users": [{"id": "user1"}, {"id": "user2"}]}}
             would give [{"id": "user1"}, {"id": "user2"}]
         iteration_path : list of str, optional
-            None (default), one, or more levels of key giving the path to the node where results
-            can vary with each query iteration. If None then the results vary at the path given
-            by object_keys
+            None (default), one, or more levels of key giving the path to the node where the
+            response can vary with each query iteration. If None then the response varies at the
+            path given by object_path
         party_id : str, optional
             The organisation/entity to specify for the query
 
@@ -186,12 +186,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             formatted_query_string = query_string.format(limit=limit, offset=offset)
             response = self.execute_query(formatted_query_string, party_id)
 
-            # select the part of the result we are interested in
+            # select the part of the response we are interested in
             for key in object_path:
                 response = response[key]
 
             # select the part of the response which can vary. if iteration_path is None this will be
-            # the same as the part of the result we are interested in
+            # the same as the part of the response we are interested in
             response_increment = response
             if iteration_path:
                 for key in iteration_path:
@@ -201,10 +201,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 break
 
             if not result:
-            # if this is the first response, save the whole thing
+            # if this is the first response, save it
                 result = response
             else:
-                # otherwise add the response increment to the existing response at the correct level
+                # otherwise add the response increment to the existing result at the correct level
                 result_increment_container = result
                 if iteration_path:
                     for key in iteration_path:

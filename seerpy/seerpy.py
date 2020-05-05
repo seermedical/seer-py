@@ -901,12 +901,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_group
 
 
-    def get_diary_study_channel_groups(self, patient_id, from_time, to_time):
+    def get_diary_study_channel_groups(self, patient_id, from_time=0, to_time=9e12):
         query_string = graphql.get_diary_study_channel_groups_query_string(patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
-    def get_diary_study_channel_groups_dataframe(self, patient_id, from_time=0, to_time=90000000000000):
+    def get_diary_study_channel_groups_dataframe(self, patient_id, from_time=0, to_time=9e12):
         metadata = self.get_diary_study_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
         if channel_groups.empty:

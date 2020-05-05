@@ -389,6 +389,7 @@ def get_patients_query_string():
                     fullName
                     shortName
                     email
+                    lastActive
                 }
             }
         }"""

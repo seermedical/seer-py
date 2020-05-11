@@ -87,6 +87,8 @@ class SeerAuth(BaseAuth):
 
     def login(self):
         login_url = self.api_url + '/auth/login'
+        if not self.email or not self.password:
+            self._login_details()
         body = {'email': self.email, 'password': self.password}
         response = requests.post(url=login_url, data=body)
         print("login status_code", response.status_code)

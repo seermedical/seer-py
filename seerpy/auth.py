@@ -81,9 +81,8 @@ class SeerAuth(BaseAuth):
         return super().get_connection_parameters(party_id=party_id)
 
     def get_headers(self):
-        cookie = self.cookie
         return {
-            'Cookie': f'{self.cookie_key}={cookie[self.cookie_key]}'
+            'Cookie': f'{self.cookie_key}={self.cookie[self.cookie_key]}'
         }
 
     def login(self):
@@ -180,7 +179,7 @@ class SeerAuth(BaseAuth):
 
     def _get_cookie_path(self):
         """Get the path to the local cookie file"""
-        return f'/.seerpy/${self.credential_namespace}'
+        return f'/.seerpy/{self.credential_namespace}'
 
     def _write_cookie(self):
         """Save the current cookie to file"""

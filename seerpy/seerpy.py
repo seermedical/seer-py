@@ -254,13 +254,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         child_list = []
         for i in range(len(parent)):
             parent_id = parent[parent_name+'id'][i]
-            child = json_normalize(parent[parent_name+child_name][i]).sort_index(axis=1)
-            child.columns = [child_name+'.' + str(col) for col in child.columns]
-            child[parent_name+'id'] = parent_id
-            child_list.append(child)
+            cell_to_flatten = parent[parent_name+child_name][i]
+            if isinstance(cell_to_flatten, list):
+                child = json_normalize(cell_to_flatten).sort_index(axis=1)
+                child.columns = [child_name+'.' + str(col) for col in child.columns]
+                child[parent_name+'id'] = parent_id
+                child_list.append(child)
 
         if child_list:
-            child = pd.concat(child_list).reset_index(drop=True)
+            child = pd.concat(child_list, sort=True).reset_index(drop=True)
         if not child_list or child.empty:
             columns = [parent_name + 'id', child_name + '.id']
             child = pd.DataFrame(columns=columns)

@@ -262,7 +262,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 child_list.append(child)
 
         if child_list:
-            child = pd.concat(child_list).reset_index(drop=True, sort=True)
+            child = pd.concat(child_list, sort=True).reset_index(drop=True)
         if not child_list or child.empty:
             columns = [parent_name + 'id', child_name + '.id']
             child = pd.DataFrame(columns=columns)

@@ -887,7 +887,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         label_results = self.get_diary_study_labels(patient_id, label_group_id, from_time, to_time, limit, offset)
         if label_results is None:
-            return label_results
+            return pd.DataFrame({})
         label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')

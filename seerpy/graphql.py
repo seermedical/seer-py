@@ -420,6 +420,7 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                         numberOfLabels
                         labels(limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
                             id
+                            createdAt
                             startTime
                             timezone
                             duration

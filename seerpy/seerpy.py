@@ -1441,8 +1441,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
         query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
-        response = self.execute_query(query_string)
-        return response['patient']['diaryStudy']['labelGroups']
+        response = self.execute_query(query_string)['patient']['diaryStudy']
+        label_groups = response['labelGroups']
+        start_time = response['startTime']
+        return label_groups, start_time
 
     def get_diary_data_groups_dataframe(self, patient_id, limit=20, offset=0):
         """
@@ -1454,11 +1456,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups : pd.DataFrame
             Dataframe of diary study label groups
         """
-        label_group_results = self.get_diary_data_groups(patient_id, limit, offset)
+        label_group_results, start_time = self.get_diary_data_groups(patient_id, limit, offset)
         if label_group_results is None:
             return label_group_results
         label_groups = json_normalize(label_group_results).sort_index(axis=1)
-        return label_groups
+        return label_groups, start_time
 
     def get_diary_data_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):

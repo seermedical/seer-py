@@ -43,6 +43,36 @@ class TestSeerConnect:
             SeerConnect()
 
 
+@mock.patch('time.sleep', return_value=None)
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
+class TestPassingQueryVariables:
+    def test_query_variables_are_passed(self, seer_auth, gql_client, unused_sleep):
+        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
+        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
+
+        gql_client.return_value.execute.side_effect = [None]
+
+        SeerConnect().execute_query("query Q { test { id } }", variable_values={'a': 'b'})
+        assert gql_client.return_value.execute.call_count == 1
+        assert gql_client.return_value.execute.call_args[1]['variable_values'] == {'a': 'b'}
+
+    def test_query_variables_are_passed_on_initial_failure(self, seer_auth, gql_client,
+                                                           unused_sleep):
+        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
+        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
+
+        gql_client.return_value.execute.side_effect = [
+            Exception('503 Server Error'),
+            None
+        ]
+
+        SeerConnect().execute_query("query Q { test { id } }", variable_values={'a': 'b'})
+
+        assert gql_client.return_value.execute.call_count == 2
+        assert gql_client.return_value.execute.call_args[1]['variable_values'] == {'a': 'b'}
+
+
 @mock.patch.object(SeerConnect, "get_all_study_metadata_by_ids", autospec=True)
 @mock.patch.object(SeerConnect, "__init__", autospec=True, return_value=None)
 class TestGetAllStudyMetaDataDataframeByIds:

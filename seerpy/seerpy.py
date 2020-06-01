@@ -96,7 +96,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.graphql_client = graphql_client
         self.last_query_time = time.time()
 
-    def execute_query(self, query_string, party_id=None, invocations=0):
+    def execute_query(self, query_string, party_id=None, invocations=0, variable_values=None):
         """
         Execute a GraphQL query and return response. Handle retrying upon
         failure and rate limiting requests.
@@ -125,7 +125,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         try:
             time.sleep(max(0, ((self.api_limit_expire / self.api_limit)
                                - (time.time() - self.last_query_time))))
-            response = self.graphql_client(party_id).execute(gql(query_string))
+            response = self.graphql_client(party_id).execute(
+                gql(query_string),
+                variable_values=variable_values)
             self.last_query_time = time.time()
             return response
         except Exception as ex:
@@ -144,7 +146,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 invocations += 1
 
                 self.seer_auth.login()
-                return self.execute_query(query_string, party_id, invocations=invocations)
+                return self.execute_query(
+                    query_string,
+                    party_id,
+                    invocations=invocations,
+                    variable_values=variable_values)
 
             raise
 

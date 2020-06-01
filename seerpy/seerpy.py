@@ -119,7 +119,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -----
         See queries in graphql.py for structure of results returned
         """
-        resolvable_api_errors = ['502 Server Error', '503 Server Error', '504 Server Error'
+        resolvable_api_errors = ['502 Server Error', '503 Server Error', '504 Server Error',
                                  'Read timed out.', 'NOT_AUTHENTICATED']
 
         try:

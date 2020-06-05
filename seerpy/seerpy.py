@@ -733,7 +733,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return self.get_paginated_response(query_string, limit, ['study'], ['labelGroup', 'labels'])
 
     def get_labels_dataframe(self, study_id, label_group_id,  # pylint:disable=too-many-arguments
-                             from_time=0, to_time=9e12, limit=200, offset=0):
+                             tag_group_ids="null", from_time=0, to_time=9e12, limit=200, offset=0):
         """
         Get all labels for a given study and label group as a DataFrame.
         See `get_labels()` for details.
@@ -743,7 +743,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels_df : pd.DataFrame
             Details of all matching labels
         """
-        label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
+        label_results = self.get_labels(study_id, label_group_id, tag_group_ids, from_time, to_time, limit, offset)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)

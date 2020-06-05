@@ -712,6 +712,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             A unique ID identifying a study
         label_group_id : str
             Label group ID
+        tag_group_ids: list or str
+            Tag group IDs used to filter labels
         from_time : int, optional
             Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional

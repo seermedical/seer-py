@@ -641,7 +641,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time, to_time, from_duration, to_duration)
         if not label_results:
-            return label_results
+            return pd.DataFrame(())
 
         label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)
         if label_groups.empty:

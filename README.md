@@ -84,3 +84,9 @@ When running an API server locally, you may also need to:
 ### Downloading hangs on Windows
 
 There is a known issue with using python's multiprocessing module on Windows with spyder. The function `getLinks` uses `multiprocessing.Pool` to run multiple downloads simultaneously, which can cause the process to run indefinitely. The workaround for this is to ensure that the current working directory is set to the directory containing your script. Running the script from a command window will also solve this problem. Alternatively, setting `threads=1` in the `getLinks` function will stop in from using `multiprocessing` altogether.
+
+
+## Development
+
+1. To format the code using yapf, run `yapf -ir seerpy tests`
+2. To run pylint on the code, run `pylint seerpy tests`

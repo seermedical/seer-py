@@ -394,7 +394,6 @@ def get_patients_query_string():
             }
         }"""
 
-
 def get_insights_query_string(patient_id, limit, offset):
     return """
         query {
@@ -414,7 +413,6 @@ def get_insights_query_string(patient_id, limit, offset):
                     }
                 }
             }""" % (patient_id, limit, offset)
-
 
 def get_diary_created_at_query_string(patient_id):
     return """

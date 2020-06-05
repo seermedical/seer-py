@@ -701,7 +701,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return data_chunk_urls
 
-    def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
+    def get_labels(self, study_id, label_group_id, tag_group_ids="null", from_time=0,  # pylint:disable=too-many-arguments
                    to_time=9e12, limit=200, offset=0):
         """
         Get labels for a given study and label group.
@@ -726,7 +726,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels : dict
             Has a 'labelGroup' key which indexes to a nested dict with a 'labels' key
         """
-        query_string = graphql.get_labels_paged_query_string(study_id, label_group_id, from_time,
+        query_string = graphql.get_labels_paged_query_string(study_id, label_group_id, tag_group_ids, from_time,
                                                              to_time)
         return self.get_paginated_response(query_string, limit, ['study'], ['labelGroup', 'labels'])
 

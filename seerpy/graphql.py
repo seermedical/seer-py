@@ -123,7 +123,7 @@ def get_study_with_data_query_string(study_id):
         }""" % study_id
 
 
-def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
+def get_labels_paged_query_string(study_id, label_group_id, tag_group_ids, from_time, to_time):
     return f"""
         query {{{{
             study (id: "{study_id}") {{{{
@@ -135,7 +135,7 @@ def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
                     labelType
                     description
                     numberOfLabels
-                    labels (limit: {{limit}}, offset: {{offset}}, fromTime: {from_time}, toTime: {to_time}) {{{{
+                    labels (limit: {{limit}}, offset: {{offset}}, fromTime: {from_time}, toTime: {to_time}, tagFilters: {tag_group_ids}) {{{{
                         id
                         note
                         startTime

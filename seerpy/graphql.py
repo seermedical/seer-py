@@ -394,25 +394,27 @@ def get_patients_query_string():
             }
         }"""
 
-def get_insights_query_string(patient_id, limit, offset):
-    return """
-        query {
-            patient (id: "%s") {
+
+def get_diary_insights_paged_query_string(patient_id, limit, offset):
+    return f"""
+        query {{{{
+            patient (id: "{patient_id}") {{{{
                 id	
-                insights (limit: %.0f, offset: %.0f) {
+                insights (limit: {{limit}}, offset: {{offset}}) {{{{
                     id
-                    report {
+                    report {{{{
                         id
-                    }
+                    }}}}
                     reportDate
                     reportPeriod
                     emailNotificationSent
                     emailLinkOpened
                     createdAt
                     updatedAt
-                    }
-                }
-            }""" % (patient_id, limit, offset)
+                    }}}}
+                }}}}
+            }}}}"""
+
 
 def get_diary_created_at_query_string(patient_id):
     return """

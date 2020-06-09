@@ -207,7 +207,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 break
 
             if not result:
-            # if this is the first response, save it
+                # if this is the first response, save it
                 result = response
             else:
                 # otherwise add the response increment to the existing result at the correct level
@@ -1036,7 +1036,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 documents.append(document)
         return pd.DataFrame(documents)
 
-    def get_insights(self, patient_id, limit=50, offset=0):
+    def get_diary_insights(self, patient_id, limit=50, offset=0):
         """
         Retrieve patient insights JSON report.
 
@@ -1053,9 +1053,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         result : dict
             Returns a dictionary patient insights.
         """
-        query_string = graphql.get_insights_query_string(patient_id, limit, offset)
-        response = self.execute_query(query_string)
-        return response['patient']
+        query_string = graphql.get_diary_insights_paged_query_string(patient_id, limit, offset)
+        return self.get_paginated_response(query_string, limit, ['patient'], ['insights'])
 
     def get_diary_created_at(self, patient_id):
         query_string = graphql.get_diary_created_at_query_string(patient_id)

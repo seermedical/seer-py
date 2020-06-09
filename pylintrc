@@ -29,7 +29,6 @@ disable=print-statement,
         raw-checker-failed,
         bad-inline-option,
         locally-disabled,
-        locally-enabled,
         file-ignored,
         suppressed-message,
         useless-suppression,
@@ -97,14 +96,6 @@ disable=print-statement,
         exception-escape,
         comprehension-escape,  # messages after here are added for this project
         missing-docstring
-
-
-[TYPECHECK]
-
-# List of members which are set dynamically and missed by pylint inference
-# system, and so shouldn't trigger E1101 when accessed. Python regular
-# expressions are accepted.
-generated-members=torch.*
 
 
 [FORMAT]

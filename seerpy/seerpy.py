@@ -1167,11 +1167,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID for which to retrieve diary medications
         from_time : int, optional
-            Timestamp in msec - only retrieve alerts with a startTime 
-            from this point onward
+            Timestamp in msec - only retrieve data from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve alerts with a startTime 
-            up until this point
+            Timestamp in msec - only retrieve data up until this point
 
         Returns
         -------

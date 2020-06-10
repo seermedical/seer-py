@@ -396,6 +396,27 @@ def get_patients_query_string():
             }
         }"""
 
+  
+def get_diary_insights_paged_query_string(patient_id, limit, offset):
+    return f"""
+        query {{{{
+            patient (id: "{patient_id}") {{{{
+                id	
+                insights (limit: {{limit}}, offset: {{offset}}) {{{{
+                    id
+                    report {{{{
+                        id
+                    }}}}
+                    reportDate
+                    reportPeriod
+                    emailNotificationSent
+                    emailLinkOpened
+                    createdAt
+                    updatedAt
+                    }}}}
+                }}}}
+            }}}}"""
+
 
 def get_diary_created_at_query_string(patient_id):
     return """

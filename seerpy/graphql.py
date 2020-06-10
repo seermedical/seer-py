@@ -165,8 +165,8 @@ def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
         }}}}"""
 
 
-def get_labels_string_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
-                                   from_time, to_time):
+# pylint:disable=too-many-arguments
+def get_labels_string_query_string(study_id, label_group_id, from_time, to_time):
     return """
         query {
             study (id: "%s") {
@@ -365,6 +365,7 @@ def get_organisations_query_string():
             }
         }"""
 
+
 def get_user_from_patient_query_string(patient_id):
     return """
         query {
@@ -378,6 +379,7 @@ def get_user_from_patient_query_string(patient_id):
                 }
             }
         }""" % patient_id
+
 
 def get_patients_query_string():
     return """
@@ -394,7 +396,7 @@ def get_patients_query_string():
             }
         }"""
 
-
+  
 def get_diary_insights_paged_query_string(patient_id, limit, offset):
     return f"""
         query {{{{
@@ -426,7 +428,9 @@ def get_diary_created_at_query_string(patient_id):
             }
         }""" % patient_id
 
-def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration):
+
+def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time,
+                                  from_duration, to_duration):
     return """
         query {
             patient (id: "%s") {
@@ -462,7 +466,9 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                     }
                 }
             }
-        }""" % (patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration)
+        }""" % (patient_id, label_type, limit, offset, from_time, to_time, from_duration,
+                to_duration)
+
 
 def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
 
@@ -498,6 +504,7 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
                 }
             }""" % (patient_id, from_time, to_time)
 
+
 def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):
 
     return """
@@ -514,6 +521,7 @@ def get_diary_medication_compliance_query_string(patient_id, from_time, to_time)
                 }
             }
         }""" % (patient_id, from_time, to_time)
+
 
 def get_documents_for_study_ids_paged_query_string(study_ids):
     study_ids_string = get_json_list(study_ids)
@@ -699,8 +707,7 @@ def create_study_cohort_mutation_string(name, description=None, key=None, study_
         args.append(('key', utils.quote_str(key)))
 
     if study_ids is not None:
-        args.append(
-            ('studyIds', get_json_list(study_ids)))
+        args.append(('studyIds', get_json_list(study_ids)))
 
     return """
         mutation {
@@ -727,10 +734,7 @@ def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
                 }
             }
         }
-    """ % (
-        study_cohort_id,
-        get_json_list(study_ids)
-    )
+    """ % (study_cohort_id, get_json_list(study_ids))
 
 
 def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids):
@@ -745,10 +749,7 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
                 }
             }
         }
-    """ % (
-        study_cohort_id,
-        get_json_list(study_ids)
-    )
+    """ % (study_cohort_id, get_json_list(study_ids))
 
 
 def get_mood_survey_results_paged_query_string(survey_template_ids):
@@ -793,8 +794,7 @@ def get_create_user_cohort_mutation_string(name, description=None, key=None, use
         args.append(('key', utils.quote_str(key)))
 
     if user_ids is not None:
-        args.append(
-            ('userIds', get_json_list(user_ids)))
+        args.append(('userIds', get_json_list(user_ids)))
 
     return """
         mutation {
@@ -821,10 +821,7 @@ def get_add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
                 }
             }
         }
-    """ % (
-        user_cohort_id,
-        get_json_list(user_ids)
-    )
+    """ % (user_cohort_id, get_json_list(user_ids))
 
 
 def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
@@ -839,7 +836,4 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
                 }
             }
         }
-    """ % (
-        user_cohort_id,
-        get_json_list(user_ids)
-    )
+    """ % (user_cohort_id, get_json_list(user_ids))

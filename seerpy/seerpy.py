@@ -56,7 +56,8 @@ from . import graphql
 class SeerConnect:  # pylint: disable=too-many-public-methods
     graphql_client = None
 
-    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None, auth=None):
+    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None,
+                 auth=None):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -89,9 +90,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         def graphql_client(party_id=None):
             connection_params = self.seer_auth.get_connection_parameters(party_id)
-            return GQLClient(
-                transport=RequestsHTTPTransport(**connection_params)
-            )
+            return GQLClient(transport=RequestsHTTPTransport(**connection_params))
 
         self.graphql_client = graphql_client
         self.last_query_time = time.time()
@@ -119,15 +118,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -----
         See queries in graphql.py for structure of results returned
         """
-        resolvable_api_errors = ['502 Server Error', '503 Server Error', '504 Server Error',
-                                 'Read timed out.', 'NOT_AUTHENTICATED']
+        resolvable_api_errors = [
+            '502 Server Error', '503 Server Error', '504 Server Error', 'Read timed out.',
+            'NOT_AUTHENTICATED'
+        ]
 
         try:
-            time.sleep(max(0, ((self.api_limit_expire / self.api_limit)
-                               - (time.time() - self.last_query_time))))
-            response = self.graphql_client(party_id).execute(
-                gql(query_string),
-                variable_values=variable_values)
+            time.sleep(
+                max(0, ((self.api_limit_expire / self.api_limit) -
+                        (time.time() - self.last_query_time))))
+            response = self.graphql_client(party_id).execute(gql(query_string),
+                                                             variable_values=variable_values)
             self.last_query_time = time.time()
             return response
         except Exception as ex:
@@ -140,17 +141,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                     self.seer_auth.logout()
                 else:
                     print('"', error_string, '" raised, trying again after a short break')
-                    time.sleep(min(30 * (invocations+1)**2,
-                                   max(self.last_query_time + self.api_limit_expire - time.time(),
-                                       0)))
+                    time.sleep(
+                        min(30 * (invocations + 1)**2,
+                            max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
                 invocations += 1
 
                 self.seer_auth.login()
-                return self.execute_query(
-                    query_string,
-                    party_id,
-                    invocations=invocations,
-                    variable_values=variable_values)
+                return self.execute_query(query_string, party_id, invocations=invocations,
+                                          variable_values=variable_values)
 
             raise
 
@@ -259,12 +257,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         child_list = []
         for i in range(len(parent)):
-            parent_id = parent[parent_name+'id'][i]
-            cell_to_flatten = parent[parent_name+child_name][i]
+            parent_id = parent[parent_name + 'id'][i]
+            cell_to_flatten = parent[parent_name + child_name][i]
             if isinstance(cell_to_flatten, list):
                 child = json_normalize(cell_to_flatten).sort_index(axis=1)
-                child.columns = [child_name+'.' + str(col) for col in child.columns]
-                child[parent_name+'id'] = parent_id
+                child.columns = [child_name + '.' + str(col) for col in child.columns]
+                child[parent_name + 'id'] = parent_id
                 child_list.append(child)
 
         if child_list:
@@ -398,13 +396,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         with open(document_path, 'rb') as f:
             response_put = requests.put(response_add['uploadFileUrl'], data=f)
         if response_put.status_code == 200:
-            query_string = graphql.get_confirm_document_mutation_string(study_id,
-                                                                    response_add['id'])
+            query_string = graphql.get_confirm_document_mutation_string(
+                study_id, response_add['id'])
             response_confirm = self.execute_query(query_string)
             return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
         else:
-            raise RuntimeError('Error uploading document: status code ' +
-                               str(response_put.status_code))
+            raise RuntimeError('Error uploading document: status code '
+                               + str(response_put.status_code))
 
     def get_tag_ids(self):
         """
@@ -625,8 +623,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             segment_ids_batch = segment_ids[int(counter * limit):int((counter + 1) * limit)]
             query_string = graphql.get_segment_urls_query_string(segment_ids_batch)
             response = self.execute_query(query_string)
-            segments.extend([segment for segment in response['studyChannelGroupSegments']
-                             if segment is not None])
+            segments.extend([
+                segment for segment in response['studyChannelGroupSegments'] if segment is not None
+            ])
             counter += 1
         segment_urls = pd.DataFrame(segments)
         segment_urls = segment_urls.rename(columns={'id': 'segments.id'})
@@ -662,13 +661,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             - chunk_url
         """
         if study_metadata.empty:
-            return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
-                                         'chunk_url'])
+            return pd.DataFrame(
+                columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end', 'chunk_url'])
 
         study_metadata = study_metadata.drop_duplicates('segments.id')
         study_metadata = study_metadata[study_metadata['segments.startTime'] <= to_time]
-        study_metadata = study_metadata[study_metadata['segments.startTime'] +
-                                        study_metadata['segments.duration'] >= from_time]
+        study_metadata = study_metadata[study_metadata['segments.startTime']
+                                        + study_metadata['segments.duration'] >= from_time]
 
         data_chunks = []
         chunk_metadata = []
@@ -682,27 +681,32 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 chunk_end = chunk_start + chunk_period
                 if chunk_start >= from_time and chunk_end <= to_time:
                     data_chunks.append({'segmentId': row[3], 'chunkIndex': i})
-                    chunk_metadata.append({'segments.id': row[3], 'chunkIndex': i,
-                                           'chunk_start': chunk_start, 'chunk_end': chunk_end})
+                    chunk_metadata.append({
+                        'segments.id': row[3],
+                        'chunkIndex': i,
+                        'chunk_start': chunk_start,
+                        'chunk_end': chunk_end
+                    })
         if not data_chunks:
-            return pd.DataFrame(columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
-                                         'chunk_url'])
+            return pd.DataFrame(
+                columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end', 'chunk_url'])
         chunks = []
         counter = 0
         while int(counter * limit) < len(data_chunks):
             data_chunks_batch = data_chunks[int(counter * limit):int((counter + 1) * limit)]
             query_string = graphql.get_data_chunk_urls_query_string(data_chunks_batch, s3_urls)
             response = self.execute_query(query_string)
-            chunks.extend([chunk for chunk in response['studyChannelGroupDataChunkUrls']
-                           if chunk is not None])
+            chunks.extend([
+                chunk for chunk in response['studyChannelGroupDataChunkUrls'] if chunk is not None
+            ])
             counter += 1
         data_chunk_urls = pd.DataFrame(chunk_metadata)
         data_chunk_urls['chunk_url'] = chunks
 
         return data_chunk_urls
 
-    def get_labels(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                   to_time=9e12, limit=200, offset=0):
+    # pylint:disable=too-many-arguments
+    def get_labels(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200, offset=0):
         """
         Get labels for a given study and label group.
 
@@ -730,8 +734,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                                              to_time)
         return self.get_paginated_response(query_string, limit, ['study'], ['labelGroup', 'labels'])
 
-    def get_labels_dataframe(self, study_id, label_group_id,  # pylint:disable=too-many-arguments
-                             from_time=0, to_time=9e12, limit=200, offset=0):
+    # pylint:disable=too-many-arguments
+    def get_labels_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200,
+                             offset=0):
         """
         Get all labels for a given study and label group as a DataFrame.
         See `get_labels()` for details.
@@ -780,12 +785,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             3 keys per label: 'id', 's' (for startTime), and 'd' (for duration)
         """
         query_string = graphql.get_labels_string_query_string(study_id, label_group_id, from_time,
-                                                           to_time)
+                                                              to_time)
         response = self.execute_query(query_string)
         return response['study']
 
-    def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                   to_time=9e12):
+    # pylint:disable=too-many-arguments
+    def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12):
         """
         Get all labels for a given study and label group in an abridged string
         representation, as a DataFrame. See `get_labels_string()` for details.
@@ -800,14 +805,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
-        label_group['labelGroup.labelString'] = (label_group['labelGroup.labelString']
-                                                    .apply(json.loads))
+        label_group['labelGroup.labelString'] = (label_group['labelGroup.labelString'].apply(
+            json.loads))
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labelString')
         label_group = label_group.drop('labelGroup.labelString', errors='ignore', axis='columns')
         label_group = label_group.merge(labels, how='left', on='labelGroup.id', suffixes=('', '_y'))
-        label_group=label_group.rename(columns = {'labelString.d': 'labels.duration',
-                                                  'labelString.id': 'labels.id',
-                                                  'labelString.s': 'labels.startTime'})
+        label_group = label_group.rename(
+            columns={
+                'labelString.d': 'labels.duration',
+                'labelString.id': 'labels.id',
+                'labelString.s': 'labels.startTime'
+            })
         return label_group
 
     def get_label_groups_for_studies(self, study_ids, limit=50):
@@ -1061,7 +1069,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['patient']['diary']['createdAt']
 
-    def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
+    def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0,
+                         to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Retrieve diary label groups and labels for a given patient.
 
@@ -1103,7 +1112,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             if not query_flag:
                 break
 
-            query_string = graphql.get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration)
+            query_string = graphql.get_diary_labels_query_string(patient_id, label_type, limit,
+                                                                 offset, from_time, to_time,
+                                                                 from_duration, to_duration)
             response = self.execute_query(query_string)['patient']['diary']
             label_groups = response['labelGroups']
 
@@ -1120,7 +1131,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
                 if label_results is None:
                     label_results = response
-                    if any([index['numberOfLabels'] for index in response['labelGroups'] if index['numberOfLabels'] >= limit]):
+                    if any([
+                            index['numberOfLabels']
+                            for index in response['labelGroups']
+                            if index['numberOfLabels'] >= limit
+                    ]):
                         query_flag = True
                     break
 
@@ -1131,7 +1146,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-    def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
+    def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100,
+                                   from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Get all diary label groups and labels for a given patient as a DataFrame.
         See `get_diary_labels()` for details.
@@ -1141,7 +1157,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         diary_labels_df : pd.DataFrame
             DataFrame with diary label information
         """
-        label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time, to_time, from_duration, to_duration)
+        label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time,
+                                              to_time, from_duration, to_duration)
         if label_results is None:
             return label_results
 
@@ -1153,7 +1170,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels = labels.drop('labels.tags', errors='ignore', axis='columns')
         label_groups = label_groups.merge(labels, how='left', on='id', suffixes=('', '_y'))
         label_groups = label_groups.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
-        label_groups = label_groups.rename({'id':'labelGroups.id'})
+        label_groups = label_groups.rename({'id': 'labelGroups.id'})
         label_groups['id'] = patient_id
         label_groups['createdAt'] = label_results['createdAt']
         return label_groups
@@ -1178,8 +1195,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
              with a 'labels' key that indexes list of dict with keys 'doses',
              'alert', 'startTime', 'scheduledTime' etc.
         """
-        query_string = graphql.get_diary_medication_alerts_query_string(patient_id, from_time,
-                                                                        to_time)
+        query_string = graphql.get_diary_medication_alerts_query_string(
+            patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response['patient']['diary']
 
@@ -1220,8 +1237,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Has a single key, 'patient', which indexes a nested dictionary with a
             'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
         """
-        query_string = graphql.get_diary_medication_compliance_query_string(patient_id, from_time,
-                                                                            to_time)
+        query_string = graphql.get_diary_medication_compliance_query_string(
+            patient_id, from_time, to_time)
         return self.execute_query(query_string)
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
@@ -1238,7 +1255,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if results is None:
             return results
 
-        medication_compliance = json_normalize(results['patient']['diary']['medicationCompliance']).sort_index(axis=1)
+        medication_compliance = json_normalize(
+            results['patient']['diary']['medicationCompliance']).sort_index(axis=1)
         medication_compliance['id'] = patient_id
         return medication_compliance
 
@@ -1286,12 +1304,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if study_ids is None:
             study_ids = self.get_study_ids()
         elif not study_ids:  # treat empty list as asking for nothing, not everything
-            return {'studies' : []}
+            return {'studies': []}
 
-        result = [self.execute_query(graphql.get_study_with_data_query_string(study_id))['study']
-                  for study_id in study_ids]
+        result = [
+            self.execute_query(graphql.get_study_with_data_query_string(study_id))['study']
+            for study_id in study_ids
+        ]
 
-        return {'studies' : result}
+        return {'studies': result}
 
     def get_all_study_metadata_dataframe_by_names(self, study_names=None):
         """
@@ -1347,9 +1367,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return all_data
 
-    # pylint:disable=too-many-locals
-    def get_channel_data(self, all_data, segment_urls=None,  # pylint:disable=too-many-arguments
-                         download_function=requests.get, threads=None, from_time=0, to_time=9e12):
+    # pylint:disable=too-many-locals,too-many-arguments
+    def get_channel_data(self, all_data, segment_urls=None, download_function=requests.get,
+                         threads=None, from_time=0, to_time=9e12):
         """
         Download raw data for all channel groups and segments listed in a given
         metadata DataFrame and return as a new DataFrame.
@@ -1486,8 +1506,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups = json_normalize(label_group_results).sort_index(axis=1)
         return label_groups
 
-    def get_diary_data_labels(self, patient_id, label_group_id, from_time=0,  # pylint:disable=too-many-arguments
-                   to_time=9e12, limit=200, offset=0):
+    # pylint:disable=too-many-arguments
+    def get_diary_data_labels(self, patient_id, label_group_id, from_time=0, to_time=9e12,
+                              limit=200, offset=0):
         """
         Get all diary study labels for a given patient and diary label group,
         e.g. heart rate.
@@ -1518,8 +1539,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return self.get_paginated_response(query_string, limit, ['patient', 'diaryStudy'],
                                            ['labelGroup', 'labels'])
 
-    def get_diary_data_labels_dataframe(self, patient_id, label_group_id,  # pylint:disable=too-many-arguments
-                             from_time=0, to_time=9e12, limit=200, offset=0):
+    # pylint:disable=too-many-arguments
+    def get_diary_data_labels_dataframe(self, patient_id, label_group_id, from_time=0, to_time=9e12,
+                                        limit=200, offset=0):
         """
         Get all diary study labels for a given patient and diary label group,
         returned as a DataFrame. See `get_diary_data_labels()` for details.
@@ -1529,7 +1551,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data_labels_df : pd.DataFrame
             DataFrame with information about labels for a diary study
         """
-        label_results = self.get_diary_data_labels(patient_id, label_group_id, from_time, to_time, limit, offset)
+        label_results = self.get_diary_data_labels(patient_id, label_group_id, from_time, to_time,
+                                                   limit, offset)
         if label_results is None:
             return label_results
         label_group = json_normalize(label_results).sort_index(axis=1)
@@ -1543,7 +1566,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_group = label_group.merge(tags, how='left', on='labels.id', suffixes=('', '_y'))
 
         return label_group
-
 
     def get_diary_channel_groups(self, patient_id, from_time, to_time):
         """
@@ -1563,7 +1585,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         diary_channel_groups : list of dicts
             Diary channel group details, with keys 'id', 'name', 'startTime', 'segments'
         """
-        query_string = graphql.get_diary_study_channel_groups_query_string(patient_id, from_time, to_time)
+        query_string = graphql.get_diary_study_channel_groups_query_string(
+            patient_id, from_time, to_time)
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
@@ -1589,10 +1612,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         segments = segments.drop('segments.dataChunks', errors='ignore', axis='columns')
 
         channel_groups = channel_groups.merge(segments, how='left', on='id', suffixes=('', '_y'))
-        channel_groups = channel_groups.merge(data_chunks, how='left', on='segments.id', suffixes=('', '_y'))
+        channel_groups = channel_groups.merge(data_chunks, how='left', on='segments.id',
+                                              suffixes=('', '_y'))
 
         return channel_groups
-
 
     def get_diary_fitbit_data(self, segments):
         """
@@ -1620,7 +1643,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data_list = []
         for idx, url in enumerate(segment_urls):
             # timestamps are returned in their utc time
-            start_time = datetime.utcfromtimestamp(start_times[idx]/1000)
+            start_time = datetime.utcfromtimestamp(start_times[idx] / 1000)
             new_data = utils.get_diary_fitbit_data(url)
             # convert timestamps to true utc datetime
             new_data['timestamp'] = start_time + pd.to_timedelta(new_data['timestamp'], unit='ms')
@@ -1723,8 +1746,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         cohort_id : str
             The study cohort ID
         """
-        query_string = graphql.create_study_cohort_mutation_string(
-            name, description, key, study_ids)
+        query_string = graphql.create_study_cohort_mutation_string(name, description, key,
+                                                                   study_ids)
         return self.execute_query(query_string)
 
     def add_studies_to_study_cohort(self, study_cohort_id, study_ids):
@@ -1809,8 +1832,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         cohort_id : str
             The user cohort ID
         """
-        query_string = graphql.get_create_user_cohort_mutation_string(
-            name, description, key, user_ids)
+        query_string = graphql.get_create_user_cohort_mutation_string(name, description, key,
+                                                                      user_ids)
         return self.execute_query(query_string)
 
     def add_users_to_user_cohort(self, user_cohort_id, user_ids):

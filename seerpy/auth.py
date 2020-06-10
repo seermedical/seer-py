@@ -64,9 +64,8 @@ class SeerAuth(BaseAuth):
             Flag to query the dev rather than production endpoint
         """
 
-        super(SeerAuth, self).__init__(
-            api_url if api_url is not None else "https://api.seermedical.com/api"
-        )
+        super(SeerAuth,
+              self).__init__(api_url if api_url is not None else "https://api.seermedical.com/api")
 
         self.cookie = None
         self.cookie_key = cookie_key
@@ -81,9 +80,7 @@ class SeerAuth(BaseAuth):
         return super().get_connection_parameters(party_id=party_id)
 
     def get_headers(self):
-        return {
-            'Cookie': f'{self.cookie_key}={self.cookie[self.cookie_key]}'
-        }
+        return {'Cookie': f'{self.cookie_key}={self.cookie[self.cookie_key]}'}
 
     def login(self):
         if not self.email or not self.password:
@@ -146,8 +143,7 @@ class SeerAuth(BaseAuth):
         verify_url = self.api_url + '/auth/verify'
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
-            print("api verify call returned",
-                  response.status_code, "status code")
+            print("api verify call returned", response.status_code, "status code")
             return 401
 
         json_response = response.json()
@@ -207,11 +203,6 @@ class SeerDevAuth(SeerAuth):
     Creates an auth instance for connecting to dev servers, based on the default
     SeerAuth authentication approach.
     """
-
     def __init__(self, api_url, email=None, password=None):
-        super(SeerDevAuth, self).__init__(
-            api_url,
-            email,
-            password,
-            cookie_key='seerdev.sid',
-            credential_namespace='cookie-dev')
+        super(SeerDevAuth, self).__init__(api_url, email, password, cookie_key='seerdev.sid',
+                                          credential_namespace='cookie-dev')

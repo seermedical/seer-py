@@ -1044,6 +1044,26 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 documents.append(document)
         return pd.DataFrame(documents)
 
+    def get_diary_insights(self, patient_id, limit=50, offset=0):
+        """
+        Retrieve patient insights JSON report.
+
+        Parameters
+        ----------
+        patient_id : str
+            The patient ID
+        limit : int, optional
+            Optional batch size for repeated API calls
+        offset : int, optional
+            Optional index of first record to return
+        Returns
+        -------
+        result : dict
+            Returns a dictionary patient insights.
+        """
+        query_string = graphql.get_diary_insights_paged_query_string(patient_id, limit, offset)
+        return self.get_paginated_response(query_string, limit, ['patient'], ['insights'])
+
     def get_diary_created_at(self, patient_id):
         query_string = graphql.get_diary_created_at_query_string(patient_id)
         response = self.execute_query(query_string)

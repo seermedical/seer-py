@@ -1,7 +1,34 @@
+"""
+GraphQL queries used by various seerpy.SeerConnect methods.
+"""
 from . import utils
 
 
 def get_json_list(list_of_strings, include_brackets=True):
+    """
+    Convert a list of strings into a single string representation, suitable for
+    inclusion in GraphQL queries.
+
+    Parameters
+    ---------
+    list_of_strings : list of str
+        Strings to convert to single string
+    include_backets : bool
+        Whether to include square braces in the returned string
+
+    Returns
+    -------
+    stringified_list : str
+        String representation of the input list
+
+    Example
+    -------
+    >>> get_json_list(['cat', 'dog'])
+    '["cat", "dog"]'
+
+    >>> get_json_list(['cat', 'dog'], include_brackets=False)
+    '"cat", "dog"'
+    """
     json_list = ', '.join('"%s"' % string for string in list_of_strings)
     if include_brackets:
         json_list = '[' + json_list + ']'
@@ -9,6 +36,25 @@ def get_json_list(list_of_strings, include_brackets=True):
 
 
 def get_string_from_list_of_dicts(list_of_dicts):
+    """
+    Convert a list of dicts into a flattened string representation.
+
+    Parameters
+    ---------
+    list_of_dicts : list of dict
+        Arbitrary dictionaries to convert to string
+
+    Returns
+    -------
+    stringified_dicts : str
+        String representation of the input list of dicts
+
+    Example
+    -------
+    >>> dicts = [{'a': 'this', 'b': 'that', 'c': {'the other'}}, {'d': 'then'}]
+    >>> get_string_from_list_of_dicts(dicts)
+    ' { a: "this", b: "that", c: {\'the other\'}}, { d: "then"}'
+    """
     labels_string = ''
     for d in list_of_dicts:
         labels_string += ' {'
@@ -77,51 +123,50 @@ def get_study_with_data_query_string(study_id):
         }""" % study_id
 
 
-def get_labels_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
-                            from_time, to_time, limit, offset):
-    return """
-        query {
-            study (id: "%s") {
+def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
+    return f"""
+        query {{{{
+            study (id: "{study_id}") {{{{
                 id
                 name
-                labelGroup (labelGroupId: "%s") {
+                labelGroup (labelGroupId: "{label_group_id}") {{{{
                     id
                     name
                     labelType
                     description
                     numberOfLabels
-                    labels (limit: %.0f, offset: %.0f, fromTime: %.0f, toTime: %.0f) {
+                    labels (limit: {{limit}}, offset: {{offset}}, fromTime: {from_time}, toTime: {to_time}) {{{{
                         id
                         note
                         startTime
                         duration
                         timezone
                         confidence
-                        createdBy {
+                        createdBy {{{{
                             fullName
-                        }
+                        }}}}
                         updatedAt
                         createdAt
-                        tags {
+                        tags {{{{
                             id
-                            tagType {
+                            tagType {{{{
                                 id
-                                category {
+                                category {{{{
                                     id
                                     name
                                     description
-                                }
+                                }}}}
                                 value
-                            }
-                        }
-                    }
-                }
-            }
-        }""" % (study_id, label_group_id, limit, offset, from_time, to_time)
+                            }}}}
+                        }}}}
+                    }}}}
+                }}}}
+            }}}}
+        }}}}"""
 
 
-def get_labels_string_query_string(study_id, label_group_id,  # pylint:disable=too-many-arguments
-                                   from_time, to_time):
+# pylint:disable=too-many-arguments
+def get_labels_string_query_string(study_id, label_group_id, from_time, to_time):
     return """
         query {
             study (id: "%s") {
@@ -320,6 +365,7 @@ def get_organisations_query_string():
             }
         }"""
 
+
 def get_user_from_patient_query_string(patient_id):
     return """
         query {
@@ -334,6 +380,7 @@ def get_user_from_patient_query_string(patient_id):
             }
         }""" % patient_id
 
+
 def get_patients_query_string():
     return """
         query {
@@ -344,9 +391,32 @@ def get_patients_query_string():
                     fullName
                     shortName
                     email
+                    lastActive
                 }
             }
         }"""
+
+  
+def get_diary_insights_paged_query_string(patient_id, limit, offset):
+    return f"""
+        query {{{{
+            patient (id: "{patient_id}") {{{{
+                id	
+                insights (limit: {{limit}}, offset: {{offset}}) {{{{
+                    id
+                    report {{{{
+                        id
+                    }}}}
+                    reportDate
+                    reportPeriod
+                    emailNotificationSent
+                    emailLinkOpened
+                    createdAt
+                    updatedAt
+                    }}}}
+                }}}}
+            }}}}"""
+
 
 def get_diary_created_at_query_string(patient_id):
     return """
@@ -358,7 +428,9 @@ def get_diary_created_at_query_string(patient_id):
             }
         }""" % patient_id
 
-def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration):
+
+def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time,
+                                  from_duration, to_duration):
     return """
         query {
             patient (id: "%s") {
@@ -394,7 +466,9 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                     }
                 }
             }
-        }""" % (patient_id, label_type, limit, offset, from_time, to_time, from_duration, to_duration)
+        }""" % (patient_id, label_type, limit, offset, from_time, to_time, from_duration,
+                to_duration)
+
 
 def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
 
@@ -410,7 +484,7 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
                                 startTime
                                 scheduledTime
                                 alert {
-                                    name   
+                                    name
                                 }
                                 scheduledTime
                                 startTime
@@ -430,6 +504,7 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
                 }
             }""" % (patient_id, from_time, to_time)
 
+
 def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):
 
     return """
@@ -446,6 +521,7 @@ def get_diary_medication_compliance_query_string(patient_id, from_time, to_time)
                 }
             }
         }""" % (patient_id, from_time, to_time)
+
 
 def get_documents_for_study_ids_paged_query_string(study_ids):
     study_ids_string = get_json_list(study_ids)
@@ -556,30 +632,29 @@ def get_diary_study_label_groups_string(patient_id, limit, offset):
     """ % (patient_id, limit, offset)
 
 
-def get_labels_for_diary_study_query_string(patient_id, label_group_id,  # pylint:disable=too-many-arguments
-                                            from_time, to_time, limit, offset):
-    return """
-        query {
-            patient (id: "%s") {
+def get_labels_for_diary_study_paged_query_string(patient_id, label_group_id, from_time, to_time):
+    return f"""
+        query {{{{
+            patient (id: "{patient_id}") {{{{
                 id
-                diaryStudy {
-                    labelGroup (labelGroupId: "%s") {
+                diaryStudy {{{{
+                    labelGroup (labelGroupId: "{label_group_id}") {{{{
                         id
-                        labels (limit: %.0f, offset: %.0f, from: %.0f, to: %.0f) {
+                        labels (limit: {{limit}}, offset: {{offset}}, from: {from_time}, to: {to_time}) {{{{
                             id
                             startTime
                             timezone
                             duration
-                            tags {
-                                tagType {
+                            tags {{{{
+                                tagType {{{{
                                     value
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }""" % (patient_id, label_group_id, limit, offset, from_time, to_time)
+                                }}}}
+                            }}}}
+                        }}}}
+                    }}}}
+                }}}}
+            }}}}
+        }}}}"""
 
 
 def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
@@ -608,18 +683,18 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
         }""" % (patient_id, from_time, to_time)
 
 
-def get_study_ids_in_study_cohort_query_string(study_cohort_id, limit, offset):
-    return """
-        query {
-            studyCohort(id: %s) {
+def get_study_ids_in_study_cohort_paged_query_string(study_cohort_id):
+    return f"""
+        query {{{{
+            studyCohort(id: "{study_cohort_id}") {{{{
                 id
                 name
-                studies(limit: %0.f, offset: %0.f) {
+                studies(limit: {{limit}}, offset: {{offset}}) {{{{
                     id
-                }
-            }
-        }
-    """ % (utils.quote_str(study_cohort_id), limit, offset)
+                }}}}
+            }}}}
+        }}}}
+    """
 
 
 def create_study_cohort_mutation_string(name, description=None, key=None, study_ids=None):
@@ -632,8 +707,7 @@ def create_study_cohort_mutation_string(name, description=None, key=None, study_
         args.append(('key', utils.quote_str(key)))
 
     if study_ids is not None:
-        args.append(
-            ('studyIds', get_json_list(study_ids)))
+        args.append(('studyIds', get_json_list(study_ids)))
 
     return """
         mutation {
@@ -652,7 +726,7 @@ def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
     return """
         mutation {
             addStudiesToStudyCohort(
-                studyCohortId: %s,
+                studyCohortId: "%s",
                 studyIds: %s
             ) {
                 studyCohort {
@@ -660,17 +734,14 @@ def add_studies_to_study_cohort_mutation_string(study_cohort_id, study_ids):
                 }
             }
         }
-    """ % (
-        utils.quote_str(study_cohort_id),
-        get_json_list(study_ids)
-    )
+    """ % (study_cohort_id, get_json_list(study_ids))
 
 
 def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids):
     return """
         mutation {
             removeStudiesFromStudyCohort(
-                studyCohortId: %s,
+                studyCohortId: "%s",
                 studyIds: %s
             ) {
                 studyCohort {
@@ -678,45 +749,39 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
                 }
             }
         }
-    """ % (
-        utils.quote_str(study_cohort_id),
-        get_json_list(study_ids)
-    )
+    """ % (study_cohort_id, get_json_list(study_ids))
 
 
-def get_mood_survey_results_query_string(survey_template_ids, limit, offset):
-    return """
-    query {
-        surveys(surveyTemplateIds: [%s], limit: %0.f, offset: %0.f) {
-            completer {
+def get_mood_survey_results_paged_query_string(survey_template_ids):
+    return f"""
+        query {{{{
+            surveys(surveyTemplateIds: {get_json_list(survey_template_ids)}, limit: {{limit}}, offset: {{offset}}) {{{{
+                completer {{{{
+                    id
+                }}}}
                 id
-            }
-            id
-            fields {
-                key
-                value
-            }
-            lastSubmittedAt
-        }
-    }
-    """ % (
-        ','.join([f'"{survey_template_id}"' for survey_template_id in survey_template_ids]),
-        limit,
-        offset
-    )
+                fields {{{{
+                    key
+                    value
+                }}}}
+                lastSubmittedAt
+            }}}}
+        }}}}
+    """
 
-def get_user_ids_in_user_cohort_query_string(user_cohort_id, limit, offset):
-    return """
-        query {
-            userCohort(id: %s) {
+
+def get_user_ids_in_user_cohort_paged_query_string(user_cohort_id):
+    return f"""
+        query {{{{
+            userCohort(id: "{user_cohort_id}") {{{{
                 id
                 name
-                users(limit: %0.f, offset: %0.f) {
+                users(limit: {{limit}}, offset: {{offset}}) {{{{
                     id
-                }
-            }
-        }
-    """ % (utils.quote_str(user_cohort_id), limit, offset)
+                }}}}
+            }}}}
+        }}}}
+    """
 
 
 def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):
@@ -729,8 +794,7 @@ def get_create_user_cohort_mutation_string(name, description=None, key=None, use
         args.append(('key', utils.quote_str(key)))
 
     if user_ids is not None:
-        args.append(
-            ('userIds', get_json_list(user_ids)))
+        args.append(('userIds', get_json_list(user_ids)))
 
     return """
         mutation {
@@ -749,7 +813,7 @@ def get_add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
     return """
         mutation {
             addUsersToUserCohort(
-                userCohortId: %s,
+                userCohortId: "%s",
                 userIds: %s
             ) {
                 userCohort {
@@ -757,17 +821,14 @@ def get_add_users_to_user_cohort_mutation_string(user_cohort_id, user_ids):
                 }
             }
         }
-    """ % (
-        utils.quote_str(user_cohort_id),
-        get_json_list(user_ids)
-    )
+    """ % (user_cohort_id, get_json_list(user_ids))
 
 
 def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
     return """
         mutation {
             removeUsersFromUserCohort(
-                userCohortId: %s,
+                userCohortId: "%s",
                 userIds: %s
             ) {
                 userCohort {
@@ -775,7 +836,4 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
                 }
             }
         }
-    """ % (
-        utils.quote_str(user_cohort_id),
-        get_json_list(user_ids)
-    )
+    """ % (user_cohort_id, get_json_list(user_ids))

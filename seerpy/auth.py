@@ -1,43 +1,127 @@
-# Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
+Authenticate a connection by verifying a user's credentials against the auth endpoint.
 
+Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
+"""
 import getpass
 import os
 import json
 
 import requests
 
-
-COOKIE_KEY_PROD = 'seer.sid'
-COOKIE_KEY_DEV = 'seerdev.sid'
+DEFAULT_COOKIE_KEY = 'seer.sid'
 
 
-class SeerAuth:
+class BaseAuth:
+    """
+    An authenticated connection to the Seer API. Should not be used directly,
+    instead use one of the deriving classes.
+    """
+    def __init__(self, api_url):
+        self.api_url = api_url
+
+    def get_connection_parameters(self, party_id=None):
+        url_suffix = '?partyId=' + party_id if party_id else ''
+
+        return {
+            'url': self.api_url + '/graphql' + url_suffix,
+            'headers': self.get_headers(),
+            'use_json': True,
+            'timeout': 30
+        }
+
+    def login(self):
+        pass
+
+    def logout(self):
+        pass
+
+    def get_headers(self):
+        return {}
+
+
+class SeerAuth(BaseAuth):
+    """
+    Creates an authenticated connection to the Seer API. This is the default for most use cases.
+    """
 
     help_message_displayed = False
 
-    def __init__(self, api_url, email=None, password=None, dev=False):
-        self.api_url = api_url
-        self.cookie = None
-        self.dev = dev
+    def __init__(self, api_url=None, email=None, password=None, cookie_key=DEFAULT_COOKIE_KEY,
+                 credential_namespace='cookie'):
+        """
+        Authenticate session using email address and password
 
-        self.read_cookie()
-        if self.verify_login() == 200:
-            print('Login Successful')
-            return
+        Parameters
+        ----------
+        api_url : str
+            Base URL of API endpoint
+        email : str
+            The email address for a user's Seer account
+        password : str
+            The password for a user's Seer account
+        dev : bool
+            Flag to query the dev rather than production endpoint
+        """
+
+        super(SeerAuth,
+              self).__init__(api_url if api_url is not None else "https://api.seermedical.com/api")
+
+        self.cookie = None
+        self.cookie_key = cookie_key
+        self.credential_namespace = credential_namespace
+        self._read_cookie()
 
         self.email = email
         self.password = password
+        self._attempt_login()
+
+    def get_connection_parameters(self, party_id=None):
+        return super().get_connection_parameters(party_id=party_id)
+
+    def get_headers(self):
+        return {'Cookie': f'{self.cookie_key}={self.cookie[self.cookie_key]}'}
+
+    def login(self):
+        if not self.email or not self.password:
+            self._login_details()
+        body = {'email': self.email, 'password': self.password}
+        login_url = self.api_url + '/auth/login'
+        response = requests.post(url=login_url, data=body)
+        print("login status_code", response.status_code)
+        if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
+                and response.cookies):
+
+            seer_sid = response.cookies.get(self.cookie_key, False)
+            self.cookie = {}
+            self.cookie[self.cookie_key] = seer_sid
+
+        else:
+            self.cookie = None
+
+    def logout(self):
+        home = os.path.expanduser('~')
+        cookie_file = home + self._get_cookie_path()
+        if os.path.isfile(cookie_file):
+            os.remove(cookie_file)
+        self.cookie = None
+
+    def _attempt_login(self):
+        if self._verify_login() == 200:
+            print('Login Successful')
+            return
+
         allowed_attempts = 3
 
         for i in range(allowed_attempts):
-            if not self.email or not self.password:
-                self.login_details()
             self.login()
-            response = self.verify_login()
+            response = self._verify_login()
+
             if response == requests.codes.ok:  # pylint: disable=maybe-no-member
                 print('Login Successful')
                 break
-            elif i < allowed_attempts - 1:
+
+            if i < allowed_attempts - 1:
                 print('\nLogin error, please re-enter your email and password: \n')
                 self.cookie = None
                 self.password = None
@@ -48,35 +132,18 @@ class SeerAuth:
                 self.password = None
                 raise InterruptedError('Authentication Failed')
 
-    def login(self):
-        login_url = self.api_url + '/auth/login'
-        body = {'email': self.email, 'password': self.password}
-        response = requests.post(url=login_url, data=body)
-        print("login status_code", response.status_code)
-        if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
-                and response.cookies):
-
-            seer_sid = response.cookies.get(COOKIE_KEY_PROD, False)
-            seerdev_sid = response.cookies.get(COOKIE_KEY_DEV, False)
-
-            self.cookie = {}
-            if seer_sid:
-                self.cookie[COOKIE_KEY_PROD] = seer_sid
-            elif seerdev_sid:
-                self.cookie[COOKIE_KEY_DEV] = seerdev_sid
-
-        else:
-            self.cookie = None
-
-    def verify_login(self):
+    def _verify_login(self):
+        """
+        Attempt to verify user by making a GET request with the current session cookie.
+        If successful, save cookie to disk. Returns response status code.
+        """
         if self.cookie is None:
             return 401
 
         verify_url = self.api_url + '/auth/verify'
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
-            print("api verify call returned",
-                  response.status_code, "status code")
+            print("api verify call returned", response.status_code, "status code")
             return 401
 
         json_response = response.json()
@@ -84,10 +151,13 @@ class SeerAuth:
             print("api verify call did not return an active session")
             return 401
 
-        self.write_cookie()
+        self._write_cookie()
         return response.status_code
 
-    def login_details(self):
+    def _login_details(self):
+        """
+        Get user's email address and password, either from file or stdin.
+        """
         home = os.path.expanduser('~')
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
@@ -103,13 +173,15 @@ class SeerAuth:
                 print("See README.md - 'Authenticating' for details\n")
                 self.help_message_displayed = True
 
-    def get_cookie_path(self):
-        return '/.seerpy/cookie-dev' if self.dev else '/.seerpy/cookie'
+    def _get_cookie_path(self):
+        """Get the path to the local cookie file"""
+        return f'/.seerpy/{self.credential_namespace}'
 
-    def write_cookie(self):
+    def _write_cookie(self):
+        """Save the current cookie to file"""
         try:
             home = os.path.expanduser('~')
-            cookie_file = home + self.get_cookie_path()
+            cookie_file = home + self._get_cookie_path()
             if not os.path.isdir(home + '/.seerpy'):
                 os.mkdir(home + '/.seerpy')
             with open(cookie_file, 'w') as f:
@@ -117,16 +189,20 @@ class SeerAuth:
         except Exception:  # pylint:disable=broad-except
             pass
 
-    def read_cookie(self):
+    def _read_cookie(self):
+        """Read the latest cookie saved to file"""
         home = os.path.expanduser('~')
-        cookie_file = home + self.get_cookie_path()
+        cookie_file = home + self._get_cookie_path()
         if os.path.isfile(cookie_file):
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
 
-    def destroy_cookie(self):
-        home = os.path.expanduser('~')
-        cookie_file = home + self.get_cookie_path()
-        if os.path.isfile(cookie_file):
-            os.remove(cookie_file)
-        self.cookie = None
+
+class SeerDevAuth(SeerAuth):
+    """
+    Creates an auth instance for connecting to dev servers, based on the default
+    SeerAuth authentication approach.
+    """
+    def __init__(self, api_url, email=None, password=None):
+        super(SeerDevAuth, self).__init__(api_url, email, password, cookie_key='seerdev.sid',
+                                          credential_namespace='cookie-dev')

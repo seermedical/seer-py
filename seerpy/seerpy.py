@@ -1199,10 +1199,22 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels = self.pandas_flatten(alerts, '', 'labels')
         return labels
 
+    def get_diary_medication_alert_windows(self, patient_id):
+        """
+        Gets all medication alert windows for a given patient.
+         Returns
+        -------
+        medication_alert_windows : dict
+           Medication information with key 'alerts', which indexes to a dictionary
+             with a 'windows' key that indexes list of dict with keys 'startTime',
+             'timezone', and 'endTime'.
+        """
+        query_string = graphql.get_diary_medication_alert_windows_query_string(patient_id)
+        return self.execute_query(query_string)['patient']['diary']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """
-        Get all medication compliance records for a given patient.
+        Gets all medication compliance records for a given patient.
 
         Parameters
         ----------

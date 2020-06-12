@@ -1569,7 +1569,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_group
 
-    def get_diary_study_channel_groups(self, patient_id, from_time, to_time):
+    def get_diary_study_channel_groups(self, patient_id, from_time=0, to_time=9e12):
         """
         Get all diary study channel groups and associated segment information for a given patient.
 
@@ -1592,7 +1592,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
-    def get_diary_study_channel_groups_dataframe(self, patient_id, from_time=0, to_time=9e13):
+    def get_diary_study_channel_groups_dataframe(self, patient_id, from_time=0, to_time=9e12):
         """
         Get all diary study channel groups and associated segment information for a given
         patient, as a DataFrame. See `get_diary_channel_groups()` for details.

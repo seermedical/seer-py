@@ -505,6 +505,27 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
             }""" % (patient_id, from_time, to_time)
 
 
+def get_diary_medication_alert_windows_query_string(patient_id, is_active):
+    return """
+        query {
+                patient (id: "%s") {
+                    diary {
+                        id
+                        alerts {
+                            id
+                            name
+                          	windows (filters: [{name: "isActive", value: "%s"}]) {
+                              startTime
+                              timezone
+                              endTime
+                            }
+                        }
+                      
+                    }
+                }
+            }""" % (patient_id, is_active)
+
+
 def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):
 
     return """

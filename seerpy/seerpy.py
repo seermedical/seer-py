@@ -1184,9 +1184,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID for which to retrieve diary medications
         from_time : int, optional
-            Timestamp in msec - only retrieve data from this point onward
+            Timestamp in msec - only retrieve alert labels with a startTime
+            from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve data up until this point
+            Timestamp in msec - only retrieve alert labels with a startTime
+            up until this point
 
         Returns
         -------
@@ -1217,9 +1219,30 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels = self.pandas_flatten(alerts, '', 'labels')
         return labels
 
+    def get_diary_medication_alert_windows(self, patient_id, is_active="both"):
+        """
+        Gets all medication alert windows for a given patient.
+        Parameters
+        ----------
+        patient_id : str
+            The patient ID for which to retrieve medication compliance
+        is_active : string, optional
+            Filters alert windows to active, not active or both. Options: "true",
+            "false", or "both". Default is "both"
+        Returns
+        -------
+        medication_alert_windows : dict
+            Medication information with key 'alerts', which indexes to a dictionary
+            with a 'windows' key that indexes list of dict with keys 'startTime',
+            'timezone', and 'endTime'.
+        """
+        query_string = graphql.get_diary_medication_alert_windows_query_string(
+            patient_id, is_active)
+        return self.execute_query(query_string)['patient']['diary']
+
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """
-        Get all medication compliance records for a given patient.
+        Gets all medication compliance records for a given patient.
 
         Parameters
         ----------

@@ -1163,8 +1163,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return pd.DataFrame()
 
         label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)
-        if label_groups.empty:
-            return pd.DataFrame(label_results)
         labels = self.pandas_flatten(label_groups, '', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
 

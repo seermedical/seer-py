@@ -962,7 +962,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         patient = self.get_user_from_patient(patient_id)
         if not patient:
-            return pd.DataFrame({})
+            return pd.DataFrame()
         return json_normalize(patient).sort_index(axis=1)
 
     def get_patients(self, party_id=None):
@@ -1160,7 +1160,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time,
                                               to_time, from_duration, to_duration)
         if label_results is None:
-            return pd.DataFrame({})
+            return pd.DataFrame()
 
         label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)
         if label_groups.empty:
@@ -1556,7 +1556,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = self.get_diary_study_labels(patient_id, label_group_id, from_time, to_time,
                                                     limit, offset)
         if label_results is None:
-            return pd.DataFrame({})
+            return pd.DataFrame()
         label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
@@ -1605,7 +1605,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         metadata = self.get_diary_study_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
         if channel_groups.empty:
-            return pd.DataFrame({})
+            return pd.DataFrame()
 
         segments = self.pandas_flatten(channel_groups, '', 'segments')
         data_chunks = self.pandas_flatten(segments, 'segments.', 'dataChunks')
@@ -1658,7 +1658,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if data_list:
             data = pd.concat(data_list)
         else:
-            data = pd.DataFrame({})
+            data = pd.DataFrame()
 
         return data
 

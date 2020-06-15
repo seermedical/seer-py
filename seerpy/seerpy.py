@@ -962,7 +962,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         patient = self.get_user_from_patient(patient_id)
         if not patient:
-            return pd.DataFrame({})
+            return pd.DataFrame()
         return json_normalize(patient).sort_index(axis=1)
 
     def get_patients(self, party_id=None):
@@ -1104,7 +1104,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Returns a dictionary with a 'labelGroups' key that indexes to a list
             of dictionaries including keys 'labelType', 'name', 'labels', 'numberOfLabels' etc.
         """
-        label_results = None
+        label_results = {}
         # set true if we need to fetch labels
         query_flag = True
 
@@ -1129,7 +1129,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 if len(labels) >= limit:
                     query_flag = True
 
-                if label_results is None:
+                if not label_results:
                     label_results = response
                     if any([
                             index['numberOfLabels']
@@ -1159,8 +1159,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time,
                                               to_time, from_duration, to_duration)
-        if label_results is None:
-            return label_results
+        if not label_results:
+            return pd.DataFrame()
 
         label_groups = json_normalize(label_results['labelGroups']).sort_index(axis=1)
         labels = self.pandas_flatten(label_groups, '', 'labels')
@@ -1466,7 +1466,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return bookings.drop_duplicates().reset_index(drop=True)
 
     # DIARY STUDY (FITBIT) ANALYSIS
-    def get_diary_data_groups(self, patient_id, limit=20, offset=0):
+    def get_diary_study_label_groups(self, patient_id, limit=20, offset=0):
         """
         Get diary label groups (e.g. heart rate, steps) for a patient diary study.
 
@@ -1490,7 +1490,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['labelGroups']
 
-    def get_diary_data_groups_dataframe(self, patient_id, limit=20, offset=0):
+    def get_diary_study_label_groups_dataframe(self, patient_id, limit=20, offset=0):
         """
         Get diary label groups (e.g. heart rate, steps) for a patient diary
         study as a DataFrame. See `get_diary_data_groups()` for details.
@@ -1500,15 +1500,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups : pd.DataFrame
             Dataframe of diary study label groups
         """
-        label_group_results = self.get_diary_data_groups(patient_id, limit, offset)
+        label_group_results = self.get_diary_study_label_groups(patient_id, limit, offset)
         if label_group_results is None:
             return label_group_results
         label_groups = json_normalize(label_group_results).sort_index(axis=1)
         return label_groups
 
     # pylint:disable=too-many-arguments
-    def get_diary_data_labels(self, patient_id, label_group_id, from_time=0, to_time=9e12,
-                              limit=200, offset=0):
+    def get_diary_study_labels(self, patient_id, label_group_id, from_time=0, to_time=9e12,
+                               limit=200, offset=0):
         """
         Get all diary study labels for a given patient and diary label group,
         e.g. heart rate.
@@ -1540,8 +1540,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                            ['labelGroup', 'labels'])
 
     # pylint:disable=too-many-arguments
-    def get_diary_data_labels_dataframe(self, patient_id, label_group_id, from_time=0, to_time=9e12,
-                                        limit=200, offset=0):
+    def get_diary_study_labels_dataframe(self, patient_id, label_group_id, from_time=0,
+                                         to_time=9e12, limit=200, offset=0):
         """
         Get all diary study labels for a given patient and diary label group,
         returned as a DataFrame. See `get_diary_data_labels()` for details.
@@ -1551,10 +1551,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data_labels_df : pd.DataFrame
             DataFrame with information about labels for a diary study
         """
-        label_results = self.get_diary_data_labels(patient_id, label_group_id, from_time, to_time,
-                                                   limit, offset)
+        label_results = self.get_diary_study_labels(patient_id, label_group_id, from_time, to_time,
+                                                    limit, offset)
         if label_results is None:
-            return label_results
+            return pd.DataFrame()
         label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
@@ -1567,7 +1567,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_group
 
-    def get_diary_channel_groups(self, patient_id, from_time, to_time):
+    def get_diary_study_channel_groups(self, patient_id, from_time=0, to_time=9e12):
         """
         Get all diary study channel groups and associated segment information for a given patient.
 
@@ -1590,7 +1590,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['patient']['diaryStudy']['channelGroups']
 
-    def get_diary_channel_groups_dataframe(self, patient_id, from_time=0, to_time=9e13):
+    def get_diary_study_channel_groups_dataframe(self, patient_id, from_time=0, to_time=9e12):
         """
         Get all diary study channel groups and associated segment information for a given
         patient, as a DataFrame. See `get_diary_channel_groups()` for details.
@@ -1600,10 +1600,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         diary_channel_groups_df : pd.DataFrame
             Diary channel groups with columns 'id', 'name', 'startTime', 'segments'
         """
-        metadata = self.get_diary_channel_groups(patient_id, from_time, to_time)
+        metadata = self.get_diary_study_channel_groups(patient_id, from_time, to_time)
         channel_groups = json_normalize(metadata).sort_index(axis=1)
         if channel_groups.empty:
-            return None
+            return pd.DataFrame()
 
         segments = self.pandas_flatten(channel_groups, '', 'segments')
         data_chunks = self.pandas_flatten(segments, 'segments.', 'dataChunks')
@@ -1635,6 +1635,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Fitbit data DataFrame with timestamp (adjusted), value, and group name
 
         """
+        if not 'dataChunks.url' in segments.columns:
+            return pd.DataFrame(columns=['name', 'timestamp', 'value'])
         segment_urls = segments['dataChunks.url']
         group_names = segments['name']
         start_times = segments['segments.startTime']
@@ -1654,7 +1656,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if data_list:
             data = pd.concat(data_list)
         else:
-            data = None
+            data = pd.DataFrame()
 
         return data
 

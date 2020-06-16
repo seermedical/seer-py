@@ -283,8 +283,8 @@ def get_studies_by_study_id_paged_query_string(study_ids):
 
 def get_add_labels_mutation_string():
     return """
-        mutation addLabelsToLabelGroup($groupId: String,
-                                       $labels: [NewStudyLabel]) {
+        mutation addLabelsToLabelGroup($groupId: String!,
+                                       $labels: [NewStudyLabel]!) {
             addLabelsToLabelGroup(groupId: $groupId,
                                   labels: $labels) {
                 id

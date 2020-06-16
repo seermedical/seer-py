@@ -1219,7 +1219,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels = self.pandas_flatten(alerts, '', 'labels')
         return labels
 
-    def get_diary_medication_alert_windows(self, patient_id, is_active="both"):
+    def get_diary_medication_alert_windows(self, patient_id, is_active=None):
         """
         Gets all medication alert windows for a given patient.
         Parameters
@@ -1228,7 +1228,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             The patient ID for which to retrieve medication compliance
         is_active : string, optional
             Filters alert windows to active, not active or both. Options: "true",
-            "false", or "both". Default is "both"
+            "false". Default is None
         Returns
         -------
         medication_alert_windows : dict
@@ -1236,8 +1236,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             with a 'windows' key that indexes list of dict with keys 'startTime',
             'timezone', and 'endTime'.
         """
+        filter_string = f'(filters: [{{name: "isActive", value: "{is_active}"}}])' if is_active else ''
         query_string = graphql.get_diary_medication_alert_windows_query_string(
-            patient_id, is_active)
+            patient_id, filter_string)
         return self.execute_query(query_string)['patient']['diary']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):

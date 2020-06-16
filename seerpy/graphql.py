@@ -396,7 +396,7 @@ def get_patients_query_string():
             }
         }"""
 
-  
+
 def get_diary_insights_paged_query_string(patient_id, limit, offset):
     return f"""
         query {{{{
@@ -505,7 +505,7 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
             }""" % (patient_id, from_time, to_time)
 
 
-def get_diary_medication_alert_windows_query_string(patient_id, is_active):
+def get_diary_medication_alert_windows_query_string(patient_id, filter_string):
     return """
         query {
                 patient (id: "%s") {
@@ -514,7 +514,7 @@ def get_diary_medication_alert_windows_query_string(patient_id, is_active):
                         alerts {
                             id
                             name
-                          	windows (filters: [{name: "isActive", value: "%s"}]) {
+                          	windows %s {
                               startTime
                               timezone
                               endTime
@@ -523,7 +523,7 @@ def get_diary_medication_alert_windows_query_string(patient_id, is_active):
                       
                     }
                 }
-            }""" % (patient_id, is_active)
+            }""" % (patient_id, filter_string)
 
 
 def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):

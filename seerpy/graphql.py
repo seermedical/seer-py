@@ -281,18 +281,15 @@ def get_studies_by_study_id_paged_query_string(study_ids):
         }}}}"""
 
 
-def get_add_labels_mutation_string(group_id, labels):
-    labels_string = get_string_from_list_of_dicts(labels)
-
+def get_add_labels_mutation_string():
     return """
-        mutation {
-            addLabelsToLabelGroup(
-                groupId: "%s",
-                labels: [%s]
-            ) {
+        mutation addLabelsToLabelGroup($groupId: String,
+                                       $labels: [NewStudyLabel]) {
+            addLabelsToLabelGroup(groupId: $groupId,
+                                  labels: $labels) {
                 id
             }
-        }""" % (group_id, labels_string)
+        }"""
 
 
 def get_tag_id_query_string():
@@ -396,12 +393,12 @@ def get_patients_query_string():
             }
         }"""
 
-  
+
 def get_diary_insights_paged_query_string(patient_id, limit, offset):
     return f"""
         query {{{{
             patient (id: "{patient_id}") {{{{
-                id	
+                id
                 insights (limit: {{limit}}, offset: {{offset}}) {{{{
                     id
                     report {{{{

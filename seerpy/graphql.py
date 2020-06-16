@@ -392,6 +392,7 @@ def get_patients_query_string():
                     shortName
                     email
                     lastActive
+                    preferredTimezone
                 }
             }
         }"""

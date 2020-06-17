@@ -515,9 +515,9 @@ def get_diary_medication_alert_windows_query_string(patient_id, filter_string):
                             id
                             name
                           	windows %s {
-                              startTime
-                              timezone
-                              endTime
+                                startTime
+                                timezone
+                                endTime
                             }
                         }
                       

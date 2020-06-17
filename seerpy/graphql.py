@@ -445,7 +445,7 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                         labelSourceType
                         name
                         numberOfLabels
-                        labels(limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
+                        labels (limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
                             id
                             startTime
                             timezone
@@ -805,6 +805,7 @@ def get_user_ids_in_user_cohort_paged_query_string(user_cohort_id):
         }}}}
     """
 
+def 
 
 def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):
     args = [('name', utils.quote_str(name))]

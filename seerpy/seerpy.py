@@ -1904,5 +1904,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
 
-    def add_user_timezone(self, patient_id, timezones):
-        return
+    def add_user_timezone(self, user_id, timezone):
+        query_string = graphql.get_add_user_timezone_mutation_string(user_id, timezone)
+        return self.execute_query(query_string)

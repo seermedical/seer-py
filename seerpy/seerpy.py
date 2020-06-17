@@ -1227,8 +1227,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID for which to retrieve medication compliance
         is_active : string, optional
-            Filters alert windows to active, not active or both. Options: "true",
-            "false". Default is None
+            Filters alert windows to active, not active or both. Options: True, 
+            False, None. Default is None
         Returns
         -------
         medication_alert_windows : dict
@@ -1236,10 +1236,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             with a 'windows' key that indexes list of dict with keys 'startTime',
             'timezone', and 'endTime'.
         """
-        filter_string = f'(filters: [{{name: "isActive", value: "{is_active}"}}])' if is_active else ''
+        if is_active is not None:
+            filter_value = "true" if is_active else "false"
+        filter_string = f'(filters: [{{name: "isActive", value: "{filter_value}"}}])' if is_active else ''
         query_string = graphql.get_diary_medication_alert_windows_query_string(
             patient_id, filter_string)
-        return self.execute_query(query_string)['patient']['diary']
+        return self.execute_query(query_string)['patient']['diary']['alerts']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """
@@ -1901,3 +1903,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_remove_users_from_user_cohort_mutation_string(
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
+
+    def add_user_timezone(self, patient_id, timezones):
+        return

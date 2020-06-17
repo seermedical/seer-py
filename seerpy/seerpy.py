@@ -1237,8 +1237,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'timezone', and 'endTime'.
         """
         if is_active is not None:
-            filter_value = "true" if is_active else "false"
-        filter_string = f'(filters: [{{name: "isActive", value: "{filter_value}"}}])' if is_active else ''
+            filter_string = f'(filters: [{{name: "isActive", value: "{"true" if is_active else "false"}"}}])'
+        else:
+            filter_string = ''
         query_string = graphql.get_diary_medication_alert_windows_query_string(
             patient_id, filter_string)
         return self.execute_query(query_string)['patient']['diary']['alerts']

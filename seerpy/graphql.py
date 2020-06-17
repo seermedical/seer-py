@@ -805,7 +805,6 @@ def get_user_ids_in_user_cohort_paged_query_string(user_cohort_id):
         }}}}
     """
 
-def 
 
 def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):
     args = [('name', utils.quote_str(name))]
@@ -860,3 +859,15 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
             }
         }
     """ % (user_cohort_id, get_json_list(user_ids))
+
+
+def get_add_user_timezone_mutation_string(user_id, timezone):
+    return """ 
+        mutation  {
+            editUser(
+                id: "%s",
+                preferredTimezone: "%s") {
+        id
+        preferredTimezone
+        }
+  }""" % (user_id, timezone)

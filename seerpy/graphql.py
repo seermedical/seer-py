@@ -520,7 +520,6 @@ def get_diary_medication_alert_windows_query_string(patient_id, filter_string):
                                 endTime
                             }
                         }
-                      
                     }
                 }
             }""" % (patient_id, filter_string)

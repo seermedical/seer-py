@@ -389,6 +389,7 @@ def get_patients_query_string():
                     shortName
                     email
                     lastActive
+                    preferredTimezone
                 }
             }
         }"""
@@ -441,7 +442,7 @@ def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_ti
                         labelSourceType
                         name
                         numberOfLabels
-                        labels(limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
+                        labels (limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
                             id
                             startTime
                             timezone
@@ -854,3 +855,15 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
             }
         }
     """ % (user_cohort_id, get_json_list(user_ids))
+
+
+def get_add_user_timezone_mutation_string(user_id, timezone):
+    return """ 
+        mutation  {
+            editUser(
+                id: "%s",
+                preferredTimezone: "%s") {
+        id
+        preferredTimezone
+        }
+  }""" % (user_id, timezone)

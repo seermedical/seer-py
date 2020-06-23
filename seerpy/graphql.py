@@ -639,6 +639,7 @@ def get_diary_study_label_groups_string(patient_id, limit, offset):
             patient (id: "%s") {
                 id
                 diaryStudy {
+                    startTime
                     labelGroups(limit: %.0f, offset: %.0f) {
                         id
                         name

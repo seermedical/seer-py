@@ -1228,7 +1228,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID for which to retrieve medication compliance
         is_active : string, optional
-            Filters alert windows to active, not active or both. Options: True, 
+            Filters alert windows to active, not active or both. Options: True,
             False, None. Default is None
         Returns
         -------
@@ -1516,7 +1516,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         # TODO use limit/offset for pagination (unlikely to be more than 20 label groups for a while)
         query_string = graphql.get_diary_study_label_groups_string(patient_id, limit, offset)
         response = self.execute_query(query_string)
-        return response['patient']['diaryStudy']['labelGroups']
+        return response['patient']['diaryStudy']
 
     def get_diary_study_label_groups_dataframe(self, patient_id, limit=20, offset=0):
         """
@@ -1529,9 +1529,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Dataframe of diary study label groups
         """
         label_group_results = self.get_diary_study_label_groups(patient_id, limit, offset)
-        if label_group_results is None:
-            return label_group_results
-        label_groups = json_normalize(label_group_results).sort_index(axis=1)
+        if not label_group_results:
+            return pd.DataFrame()
+
+        label_groups = json_normalize(label_group_results['labelGroups']).sort_index(axis=1)
+        label_groups['startTime'] = label_group_results['startTime']
         return label_groups
 
     # pylint:disable=too-many-arguments
@@ -1581,7 +1583,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         label_results = self.get_diary_study_labels(patient_id, label_group_id, from_time, to_time,
                                                     limit, offset)
-        if label_results is None:
+        if not label_results:
             return pd.DataFrame()
         label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')

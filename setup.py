@@ -2,12 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='seerpy',
-    version='0.2.1',
+    version='0.2.2',
     description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',
-    author='Shannon Clarke',
-    author_email='shannon@seermedical.com',
+    author='Brendan Doyle',
+    author_email='brendan@seermedical.com',
     license='MIT',
     classifiers=[
         'Development Status :: Pre-Alpha',

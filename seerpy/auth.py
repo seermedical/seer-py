@@ -6,6 +6,8 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 import getpass
 import os
 import json
+import random
+import time
 
 import requests
 
@@ -121,16 +123,20 @@ class SeerAuth(BaseAuth):
                 print('Login Successful')
                 break
 
-            if i < allowed_attempts - 1:
+            if i >= allowed_attempts:
+                print('Login failed. please check your username and password or go to',
+                      'app.seermedical.com to reset your password')
+                raise InterruptedError('Authentication Failed')
+
+            if response == 401:
                 print('\nLogin error, please re-enter your email and password: \n')
                 self.cookie = None
                 self.password = None
             else:
-                print('Login failed. please check your username and password or go to',
-                      'app.seermedical.com to reset your password')
-                self.cookie = None
-                self.password = None
-                raise InterruptedError('Authentication Failed')
+                # Sleep for ~5, 20, 60 seconds, with jitter to avoid thundering heard problem
+                sleep_time = 5 + 5 * i + 11 * i**2 + random.uniform(0, 5)
+                print(f'\nLogin failed, retrying in {sleep_time:d} seconds...')
+                time.sleep(sleep_time)
 
     def _verify_login(self):
         """
@@ -144,12 +150,12 @@ class SeerAuth(BaseAuth):
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
             print("api verify call returned", response.status_code, "status code")
-            return 401
+            return response.status_code
 
         json_response = response.json()
         if not json_response or not json_response['session'] == "active":
             print("api verify call did not return an active session")
-            return 401
+            return response.status_code
 
         self._write_cookie()
         return response.status_code

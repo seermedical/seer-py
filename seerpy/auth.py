@@ -6,6 +6,7 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 import getpass
 import os
 import json
+import random
 import time
 
 import requests
@@ -132,8 +133,9 @@ class SeerAuth(BaseAuth):
                 self.cookie = None
                 self.password = None
             else:
-                sleep_time = (allowed_attempts + 3)**2
-                print('\nLogin failed, retrying in', sleep_time, 'seconds...')
+                # Sleep for ~5, 20, 60 seconds, with jitter to avoid thundering heard problem
+                sleep_time = 5 + 5 * i + 11 * i**2 + random.uniform(0, 5)
+                print(f'\nLogin failed, retrying in {sleep_time:d} seconds...')
                 time.sleep(sleep_time)
 
     def _verify_login(self):

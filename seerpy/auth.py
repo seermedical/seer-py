@@ -114,8 +114,20 @@ class SeerAuth(BaseAuth):
             print('Login Successful')
             return
 
-        allowed_attempts = 3
+        allowed_attempts = 4
         for i in range(allowed_attempts):
+            self.login()
+            response = self._verify_login()
+
+            if response == requests.codes.ok:  # pylint: disable=maybe-no-member
+                print('Login Successful')
+                return
+
+            if i >= allowed_attempts - 1:
+                print('Login failed. please check your username and password or go to',
+                      'app.seermedical.com to reset your password')
+                raise InterruptedError('Authentication Failed')
+
             if response == 401:
                 print('\nLogin error, please re-enter your email and password: \n')
                 self.cookie = None
@@ -125,17 +137,6 @@ class SeerAuth(BaseAuth):
                 sleep_time = 5 + 5 * i + 11 * i**2 + random.uniform(0, 5)
                 print(f'\nLogin failed, retrying in {sleep_time:.0f} seconds...')
                 time.sleep(sleep_time)
-
-            self.login()
-            response = self._verify_login()
-
-            if response == requests.codes.ok:  # pylint: disable=maybe-no-member
-                print('Login Successful')
-                return
-
-        print('Login failed. please check your username and password or go to',
-              'app.seermedical.com to reset your password')
-        raise InterruptedError('Authentication Failed')
 
     def _verify_login(self):
         """

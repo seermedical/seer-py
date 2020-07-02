@@ -30,6 +30,36 @@ class TestCreateDataChunkUrls:
         # check result
         assert result.equals(expected_result)
 
+    def test_success_from_to_on_segment_borders(self):
+        # setup
+        meta_data = pd.read_csv(TEST_DATA_DIR / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(TEST_DATA_DIR / "segment_urls_3.csv", index_col=0)
+
+        expected_result = pd.read_csv(TEST_DATA_DIR / "study1_data_chunk_urls_short.csv",
+                                      index_col=0)
+
+        # run test
+        result = utils.create_data_chunk_urls(meta_data, segment_urls, from_time=1526275685734.375,
+                                              to_time=1526275725734.375)
+
+        # check result
+        assert result.equals(expected_result)
+
+    def test_success_from_to_within_segments(self):
+        # setup
+        meta_data = pd.read_csv(TEST_DATA_DIR / "study1_metadata_short_durations.csv", index_col=0)
+        segment_urls = pd.read_csv(TEST_DATA_DIR / "segment_urls_3.csv", index_col=0)
+
+        expected_result = pd.read_csv(TEST_DATA_DIR / "study1_data_chunk_urls_short.csv",
+                                      index_col=0)
+
+        # run test
+        result = utils.create_data_chunk_urls(meta_data, segment_urls, from_time=1526275685834.375,
+                                              to_time=1526275725634.375)
+
+        # check result
+        assert result.equals(expected_result)
+
     def test_empty_input(self):
         # setup
         meta_data = pd.read_csv(TEST_DATA_DIR / "empty_metadata.csv", index_col=0)

@@ -101,10 +101,15 @@ def download_channel_data(data_q, download_function):
         data['channelGroups.id'] = channel_groups_id
         data['segments.id'] = segments_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
+
+        # data chunks seem to always be 10 seconds even if they don't contain that much data
+        # also caters for case where the data we want doesn't line up with start and end of chunks
         segment_start = meta_data['segments.startTime']
         segment_end = segment_start + meta_data['segments.duration']
         data = data[(data['time'] >= segment_start) & (data['time'] < segment_end)]
+
         return data
+
     except Exception as ex:
         print(ex)
         print(study_id)

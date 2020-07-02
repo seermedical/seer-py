@@ -14,6 +14,7 @@ from seerpy.auth import BaseAuth, SeerAuth, DEFAULT_COOKIE_KEY
 # pylint:disable=too-many-arguments
 
 
+@mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.auth.getpass.getpass', autospec=True, return_value="password")
 @mock.patch('builtins.input', autospec=True, return_value="email")
 @mock.patch('seerpy.auth.requests.get', autospec=True)
@@ -23,7 +24,7 @@ class TestAuth:
     # if there is an existing cookie then readCookie will interfere with the test
     @mock.patch.object(SeerAuth, "_read_cookie", autospec=True)
     def test_success(self, unused_read_cookie, requests_post, requests_get, unused_email_input,
-                     unused_password_getpass):
+                     unused_password_getpass, unused_sleep):
         requests_post.return_value.status_code = 200
         requests_post.return_value.cookies = {DEFAULT_COOKIE_KEY: "cookie"}
         requests_get.return_value.status_code = 200
@@ -32,25 +33,27 @@ class TestAuth:
         result = SeerAuth("api-url")
 
         assert result.cookie[DEFAULT_COOKIE_KEY] == "cookie"
+        unused_sleep.assert_not_called()
 
     def test_401_error(self, requests_post, requests_get, unused_email_input,
-                       unused_password_getpass):
+                       unused_password_getpass, unused_sleep):
         requests_post.return_value.status_code = 200
         requests_post.return_value.cookies = {DEFAULT_COOKIE_KEY: "cookie"}
         requests_get.return_value.status_code = 401
 
         with pytest.raises(InterruptedError):
             SeerAuth("api-url")
+        unused_sleep.assert_not_called()
 
     def test_other_error(self, requests_post, requests_get, unused_email_input,
-                         unused_password_getpass):
+                         unused_password_getpass, unused_sleep):
         requests_post.return_value.status_code = 200
         requests_post.return_value.cookies = {DEFAULT_COOKIE_KEY: "cookie"}
         requests_get.return_value.status_code = "undefined"
 
         with pytest.raises(InterruptedError):
             SeerAuth("api-url")
-
+        assert unused_sleep.call_count == 3
 
 class TestBaseAuth:
     def test_get_connection_parameters_with_party_id(self):

@@ -454,8 +454,8 @@ class TestGetDocumentsForStudiesDataframe:
         # # this is the "no more data" response for get_documents_for_studies_dataframe()
         with open(TEST_DATA_DIR / "study_documents_empty.json", "r") as f:
             side_effects.append(json.load(f))
-        side_effects.append({'studies':
-                             []})  # this is the "no more data" response for get_studies()
+        # this is the "no more data" response for get_studies()
+        side_effects.append({'studies': []})
 
         gql_client.return_value.execute.side_effect = side_effects
 

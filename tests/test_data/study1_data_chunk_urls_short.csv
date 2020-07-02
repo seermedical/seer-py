@@ -1,0 +1,9 @@
+,segments.id,dataChunks.url,dataChunks.time
+0,study-1-channel-group-1-segment-2-id,https://blah.cloudfront.net/study-1-channel-group-1-segment-2-id_00000000000.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah4,1526275685734.375
+1,study-1-channel-group-1-segment-2-id,https://blah.cloudfront.net/study-1-channel-group-1-segment-2-id_00000000001.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah4,1526275695734.375
+2,study-1-channel-group-1-segment-3-id,https://blah.cloudfront.net/study-1-channel-group-1-segment-3-id_00000000000.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah5,1526275705734.375
+3,study-1-channel-group-1-segment-3-id,https://blah.cloudfront.net/study-1-channel-group-1-segment-3-id_00000000001.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah5,1526275715734.375
+4,study-1-channel-group-2-segment-2-id,https://blah.cloudfront.net/study-1-channel-group-2-segment-2-id_00000000000.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah14,1526275685734.375
+5,study-1-channel-group-2-segment-2-id,https://blah.cloudfront.net/study-1-channel-group-2-segment-2-id_00000000001.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah14,1526275695734.375
+6,study-1-channel-group-2-segment-3-id,https://blah.cloudfront.net/study-1-channel-group-2-segment-3-id_00000000000.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah15,1526275705734.375
+7,study-1-channel-group-2-segment-3-id,https://blah.cloudfront.net/study-1-channel-group-2-segment-3-id_00000000001.dat?Policy=blah&Key-Pair-Id=blah2&Signature=blah15,1526275715734.375

@@ -101,7 +101,14 @@ def download_channel_data(data_q, download_function):
         data['channelGroups.id'] = channel_groups_id
         data['segments.id'] = segments_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
+
+        # data chunks seem to always be 10 seconds even if they don't contain that much data
+        segment_start = meta_data['segments.startTime']
+        segment_end = segment_start + meta_data['segments.duration']
+        data = data[(data['time'] >= segment_start) & (data['time'] < segment_end)]
+
         return data
+
     except Exception as ex:
         print(ex)
         print(study_id)
@@ -159,7 +166,7 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
         for i in range(num_chunks):
             chunk_start_time = chunk_period * 1000 * i + start_time
             next_chunk_start_time = chunk_period * 1000 * (i + 1) + start_time
-            if (chunk_start_time <= to_time and next_chunk_start_time >= from_time):
+            if (chunk_start_time < to_time and next_chunk_start_time > from_time):
                 data_chunk_name = str(i).zfill(len(chunk_pattern) - 4) + chunk_pattern[-4:]
                 data_chunk_url = seg_base_url.replace(chunk_pattern, data_chunk_name)
                 data_chunk = [row['segments.id'], data_chunk_url, chunk_start_time]
@@ -222,10 +229,11 @@ def get_channel_data(all_data, segment_urls, download_function=requests.get, thr
                                   right_on='segments.id', suffixes=('', '_y'))
 
         metadata = metadata[[
-            'dataChunks.url', 'dataChunks.time', 'channelGroups.sampleEncoding',
-            'channelGroups.sampleRate', 'channelGroups.samplesPerRecord',
-            'channelGroups.recordsPerChunk', 'channelGroups.compression', 'channelGroups.signalMin',
-            'channelGroups.signalMax', 'channelGroups.exponent'
+            'dataChunks.url', 'dataChunks.time', 'segments.startTime', 'segments.duration',
+            'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
+            'channelGroups.samplesPerRecord', 'channelGroups.recordsPerChunk',
+            'channelGroups.compression', 'channelGroups.signalMin', 'channelGroups.signalMax',
+            'channelGroups.exponent'
         ]]
         metadata = metadata.drop_duplicates()
         metadata = metadata.dropna(axis=0, how='any', subset=['dataChunks.url'])

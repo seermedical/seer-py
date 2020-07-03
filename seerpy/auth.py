@@ -155,7 +155,7 @@ class SeerAuth(BaseAuth):
         json_response = response.json()
         if not json_response or not json_response['session'] == "active":
             print("api verify call did not return an active session")
-            return response.status_code
+            return 440
 
         self._write_cookie()
         return response.status_code

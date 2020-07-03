@@ -77,7 +77,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         else:
             self.seer_auth = auth
 
-        self.seer_auth.login()
         self.create_client()
 
         self.last_query_time = time.time()

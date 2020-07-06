@@ -218,6 +218,75 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return result
 
+    def get_paginated_response_new(self, query_string, variable_values, limit, object_path,
+                                   iteration_path=None, party_id=None):
+        """
+        For queries expecting a large number of objects returned, split query into iterative calls
+        to `execute_query()`.
+        The object_path parameter controls which part of the query response is returned, and the
+        iteration_path parameter indicates where the response can vary for each iteration.
+
+        Parameters
+        ----------
+        query_string : str
+            The formatted GraphQL query
+        limit : int
+            Batch size for repeated API calls
+        object_path : list of str
+            One or more levels of key giving the path to the object to be returned
+            e.g. ['userCohort', 'users'] for a query response of
+            {"userCohort": {"users": [{"id": "user1"}, {"id": "user2"}]}}
+            would give [{"id": "user1"}, {"id": "user2"}]
+        iteration_path : list of str, optional
+            None (default), one, or more levels of key giving the path to the node where the
+            response can vary with each query iteration. If None then the response varies at the
+            path given by object_path
+        party_id : str, optional
+            The organisation/entity to specify for the query
+
+        Returns
+        -------
+        responses: list of dict
+            List of query result dictionaries
+        """
+        variable_values['limit'] = limit
+        offset = 0
+        result = []
+
+        while True:
+            variable_values['offset'] = offset
+            response = self.execute_query(query_string, variable_values=variable_values,
+                                          party_id=party_id)
+
+            # select the part of the response we are interested in
+            for key in object_path:
+                response = response[key]
+
+            # select the part of the response which can vary. if iteration_path is None this will be
+            # the same as the part of the response we are interested in
+            response_increment = response
+            if iteration_path:
+                for key in iteration_path:
+                    response_increment = response_increment[key]
+            if not response_increment:
+                # if the part of the response which varies is empty, we are finished iterating
+                break
+
+            if not result:
+                # if this is the first response, save it
+                result = response
+            else:
+                # otherwise add the response increment to the existing result at the correct level
+                result_increment_container = result
+                if iteration_path:
+                    for key in iteration_path:
+                        result_increment_container = result_increment_container[key]
+                result_increment_container.extend(response_increment)
+
+            offset += limit
+
+        return result
+
     @staticmethod  # maybe this could move to a utility class
     def pandas_flatten(parent, parent_name, child_name):
         """
@@ -369,9 +438,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         if isinstance(labels, pd.DataFrame):
             labels = labels.to_dict('records')
-        query_string = graphql.get_add_labels_mutation_string()
-        return self.execute_query(query_string,
-                                  variable_values={"groupId": group_id, "labels": labels})
+        variable_values = {"groupId": group_id, "labels": labels}
+        return self.execute_query(graphql.ADD_LABELS, variable_values=variable_values)
 
     def add_document(self, study_id, document_name, document_path):
         """
@@ -400,9 +468,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 study_id, response_add['id'])
             response_confirm = self.execute_query(query_string)
             return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
-        else:
-            raise RuntimeError('Error uploading document: status code '
-                               + str(response_put.status_code))
+        raise RuntimeError('Error uploading document: status code '
+                           + str(response_put.status_code))
 
     def get_tag_ids(self):
         """
@@ -418,8 +485,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             - forDiary
             - forStudy
         """
-        query_string = graphql.get_tag_id_query_string()
-        response = self.execute_query(query_string)
+        response = self.execute_query(graphql.GET_TAG_IDS)
         return response['labelTags']
 
     def get_tag_ids_dataframe(self):
@@ -730,9 +796,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         labels : dict
             Has a 'labelGroup' key which indexes to a nested dict with a 'labels' key
         """
-        query_string = graphql.get_labels_paged_query_string(study_id, label_group_id, from_time,
-                                                             to_time)
-        return self.get_paginated_response(query_string, limit, ['study'], ['labelGroup', 'labels'])
+        query_string = graphql.GET_LABELS
+        variable_values = {
+            "study_id": study_id,
+            'label_group_id': label_group_id,
+            'from_time': from_time,
+            'to_time': to_time
+        }
+        return self.get_paginated_response_new(query_string, variable_values, limit, ['study'],
+                                               ['labelGroup', 'labels'])
 
     # pylint:disable=too-many-arguments
     def get_labels_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200,
@@ -784,9 +856,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Has a key 'labelString' which indexes a JSON-like string with only
             3 keys per label: 'id', 's' (for startTime), and 'd' (for duration)
         """
-        query_string = graphql.get_labels_string_query_string(study_id, label_group_id, from_time,
-                                                              to_time)
-        response = self.execute_query(query_string)
+        query_string = graphql.GET_LABELS_STRING
+        variable_values = {
+            "study_id": study_id,
+            'label_group_id': label_group_id,
+            'from_time': from_time,
+            'to_time': to_time
+        }
+        response = self.execute_query(query_string, variable_values=variable_values)
         return response['study']
 
     # pylint:disable=too-many-arguments
@@ -1139,8 +1216,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                         query_flag = True
                     break
 
-                else:
-                    label_results['labelGroups'][idx]['labels'].extend(labels)
+                label_results['labelGroups'][idx]['labels'].extend(labels)
 
             offset += limit
 
@@ -1334,8 +1410,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return {'studies': []}
 
         result = [
-            self.execute_query(graphql.get_study_with_data_query_string(study_id))['study']
-            for study_id in study_ids
+            self.execute_query(graphql.GET_STUDY_WITH_DATA,
+                               variable_values={"id": study_id})['study'] for study_id in study_ids
         ]
 
         return {'studies': result}

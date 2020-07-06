@@ -77,111 +77,113 @@ def get_string_from_list_of_dicts(list_of_dicts):
     return labels_string
 
 
-def get_study_with_data_query_string(study_id):
-    return """
-        query {
-            study (id: "%s") {
+GET_STUDY_WITH_DATA = """
+    query study_with_data($id: String!) {
+        study (id: $id) {
+            id
+            patient {
                 id
-                patient {
-                    id
-                    user {
-                        fullName
-                        }
+                user {
+                    fullName
                 }
+            }
+            name
+            description
+            channelGroups {
+                id
                 name
-                description
-                channelGroups {
+                sampleRate
+                samplesPerRecord
+                recordLength
+                chunkPeriod
+                recordsPerChunk
+                sampleEncoding
+                compression
+                signalMin
+                signalMax
+                units
+                exponent
+                segments {
+                    id
+                    startTime
+                    duration
+                    timezone
+                }
+                channels {
                     id
                     name
-                    sampleRate
-                    samplesPerRecord
-                    recordLength
-                    chunkPeriod
-                    recordsPerChunk
-                    sampleEncoding
-                    compression
-                    signalMin
-                    signalMax
-                    units
-                    exponent
-                    segments (fromTime: 1.0, toTime: 9000000000000) {
-                        id
-                        startTime
-                        duration
-                        timezone
-                    }
-                    channels {
-                        id
+                    channelType {
                         name
-                        channelType {
-                            name
-                            category
+                        category
+                    }
+                }
+            }
+        }
+    }"""
+
+GET_LABELS = """
+    query labels($id: String!,
+                 $label_group_id: String!,
+                 $limit: PaginationAmount!,
+                 $offset: Int!,
+                 $from_time: Float!,
+                 $to_time: Float!) {
+        study (id: $id) {
+            id
+            name
+            labelGroup (labelGroupId: $label_group_id) {
+                id
+                name
+                labelType
+                description
+                numberOfLabels
+                labels (limit: $limit, offset: $offset, fromTime: $from_time, toTime: $to_time) {
+                    id
+                    note
+                    startTime
+                    duration
+                    timezone
+                    confidence
+                    createdBy {
+                        fullName
+                    }
+                    updatedAt
+                    createdAt
+                    tags {
+                        id
+                        tagType {
+                            id
+                            category {
+                                id
+                                name
+                                description
+                            }
+                            value
                         }
                     }
                 }
             }
-        }""" % study_id
+        }
+    }"""
 
-
-def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
-    return f"""
-        query {{{{
-            study (id: "{study_id}") {{{{
+GET_LABELS_STRING = """
+    query labels_string($id: String!,
+                        $label_group_id: String!,
+                        $from_time: Float!,
+                        $to_time: Float!) {
+        study (id: $id) {
+            id
+            name
+            labelGroup (labelGroupId: $label_group_id) {
                 id
                 name
-                labelGroup (labelGroupId: "{label_group_id}") {{{{
-                    id
-                    name
-                    labelType
-                    description
-                    numberOfLabels
-                    labels (limit: {{limit}}, offset: {{offset}}, fromTime: {from_time}, toTime: {to_time}) {{{{
-                        id
-                        note
-                        startTime
-                        duration
-                        timezone
-                        confidence
-                        createdBy {{{{
-                            fullName
-                        }}}}
-                        updatedAt
-                        createdAt
-                        tags {{{{
-                            id
-                            tagType {{{{
-                                id
-                                category {{{{
-                                    id
-                                    name
-                                    description
-                                }}}}
-                                value
-                            }}}}
-                        }}}}
-                    }}}}
-                }}}}
-            }}}}
-        }}}}"""
-
-
-# pylint:disable=too-many-arguments
-def get_labels_string_query_string(study_id, label_group_id, from_time, to_time):
-    return """
-        query {
-            study (id: "%s") {
-                id
-                name
-                labelGroup (labelGroupId: "%s") {
-                    id
-                    name
-                    labelType
-                    description
-                    numberOfLabels
-                    labelString (fromTime: %.0f, toTime: %.0f)
-                }
+                labelType
+                description
+                numberOfLabels
+                labelString (fromTime:$from_time, toTime: $to_time)
             }
-        }""" % (study_id, label_group_id, from_time, to_time)
+        }
+    }"""
 
 
 def get_label_groups_for_study_ids_paged_query_string(study_ids):
@@ -281,32 +283,28 @@ def get_studies_by_study_id_paged_query_string(study_ids):
         }}}}"""
 
 
-def get_add_labels_mutation_string():
-    return """
-        mutation addLabelsToLabelGroup($groupId: String!,
-                                       $labels: [NewStudyLabel]!) {
-            addLabelsToLabelGroup(groupId: $groupId,
-                                  labels: $labels) {
-                id
-            }
-        }"""
-
-
-def get_tag_id_query_string():
-    return """
-        query {
-          labelTags {
+ADD_LABELS = """
+    mutation addLabelsToLabelGroup($groupId: String!,
+                                   $labels: [NewStudyLabel]!) {
+        addLabelsToLabelGroup(groupId: $groupId, labels: $labels) {
             id
-            category {
-              id
-              name
-              description
-            }
-            value
-            forStudy
-            forDiary
-          }
-        }"""
+        }
+    }"""
+
+GET_TAG_IDS = """
+    query {
+        labelTags {
+        id
+        category {
+            id
+            name
+            description
+        }
+        value
+        forStudy
+        forDiary
+        }
+    }"""
 
 
 def get_add_label_group_mutation_string(study_id, name, description, label_type):
@@ -859,7 +857,7 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
 
 
 def get_add_user_timezone_mutation_string(user_id, timezone):
-    return """ 
+    return """
         mutation  {
             editUser(
                 id: "%s",

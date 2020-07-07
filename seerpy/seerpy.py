@@ -48,7 +48,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from .auth import SeerAuth
+from .auth import SeerAuth, SeerApiKeyAuth
 from . import utils
 from . import graphql
 
@@ -57,7 +57,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     graphql_client = None
 
     def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None,
-                 auth=None):
+                 api_key_id=None, api_key_path=None, auth=None):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -68,12 +68,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             The email address for a user's Seer account
         password : str, optional
             User password associated with Seer account
-        dev : bool, optional
-            dev: Flag to query the development rather than production endpoint
+        api_key_id : str, optional
+            The UUID for a Seer api key
+        api_key_file : str, optional
+            The path to a Seer api key file
         """
 
-        if auth is None:
+        if auth is None and (not api_key_id or not api_key_path):
             self.seer_auth = SeerAuth(api_url, email, password)
+        elif api_key_id and api_key_path:
+            self.seer_auth = SeerApiKeyAuth(api_key_id, api_key_path, api_url)
         else:
             self.seer_auth = auth
 
@@ -136,16 +140,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 raise
             error_string = str(ex)
             if any(api_error in error_string for api_error in resolvable_api_errors):
-                if 'NOT_AUTHENTICATED' in error_string:
-                    self.seer_auth.logout()
-                else:
+                if not self.seer_auth.handle_query_error_pre_sleep(error_string):
                     print('"', error_string, '" raised, trying again after a short break')
                     time.sleep(
                         min(30 * (invocations + 1)**2,
                             max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
+
                 invocations += 1
 
-                self.seer_auth.login()
+                self.seer_auth.handle_query_error_post_sleep(error_string)
+
                 return self.execute_query(query_string, party_id, invocations=invocations,
                                           variable_values=variable_values)
 

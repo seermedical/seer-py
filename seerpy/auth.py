@@ -3,17 +3,18 @@ Authenticate a connection by verifying a user's credentials against the auth end
 
 Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 """
+import datetime
 import getpass
 import os
 import json
 import random
 import time
 
+import jwt
 import requests
 
-DEFAULT_COOKIE_KEY = 'seer.sid'
 
-
+# pylint: disable=no-self-use
 class BaseAuth:
     """
     An authenticated connection to the Seer API. Should not be used directly,
@@ -32,10 +33,10 @@ class BaseAuth:
             'timeout': 30
         }
 
-    def login(self):
-        pass
+    def handle_query_error_pre_sleep(self, error_string):  # pylint: disable=unused-argument
+        return True
 
-    def logout(self):
+    def handle_query_error_post_sleep(self, error_string):
         pass
 
     def get_headers(self):
@@ -47,23 +48,26 @@ class SeerAuth(BaseAuth):
     Creates an authenticated connection to the Seer API. This is the default for most use cases.
     """
 
+    default_cookie_key = 'seer.sid'
     help_message_displayed = False
 
-    def __init__(self, api_url=None, email=None, password=None, cookie_key=DEFAULT_COOKIE_KEY,
+    def __init__(self, api_url=None, email=None, password=None, cookie_key=default_cookie_key,
                  credential_namespace='cookie'):
         """
         Authenticate session using email address and password
 
         Parameters
         ----------
-        api_url : str
+        api_url : str, optional
             Base URL of API endpoint
-        email : str
+        email : str, optional
             The email address for a user's Seer account
-        password : str
+        password : str, optional
             The password for a user's Seer account
-        dev : bool
-            Flag to query the dev rather than production endpoint
+        cookie_key : str, optional
+            ?
+        credential_namespace : str, optional
+            ?
         """
 
         super(SeerAuth,
@@ -78,11 +82,18 @@ class SeerAuth(BaseAuth):
         self.password = password
         self._attempt_login()
 
-    def get_connection_parameters(self, party_id=None):
-        return super().get_connection_parameters(party_id=party_id)
-
     def get_headers(self):
         return {'Cookie': f'{self.cookie_key}={self.cookie[self.cookie_key]}'}
+
+    def handle_query_error_pre_sleep(self, error_string):
+        if 'NOT_AUTHENTICATED' in error_string:
+            self.logout()
+            return False
+        return True
+
+    def handle_query_error_post_sleep(self, error_string):
+        if 'NOT_AUTHENTICATED' in error_string:
+            self.login()
 
     def login(self):
         if not self.email or not self.password:
@@ -202,6 +213,43 @@ class SeerAuth(BaseAuth):
         if os.path.isfile(cookie_file):
             with open(cookie_file, 'r') as f:
                 self.cookie = json.loads(f.read().strip())
+
+
+class SeerApiKeyAuth(BaseAuth):
+    """
+    Creates an authenticated connection to the Seer API using an API key. This will become the
+    default for most use cases.
+    """
+
+    def __init__(self, api_key_id, api_key_path, api_url=None):
+        """
+        Authenticate session using API key
+
+        Parameters
+        ----------
+        api_key_id : str
+            The UUID for a Seer api key
+        api_key_path : str
+            The path to a Seer api key file
+        api_url : str, optional
+            Base URL of API endpoint
+        """
+
+        # TODO: not sure what the api url actually is
+        super(SeerApiKeyAuth,
+              self).__init__(api_url if api_url is not None else "https://sdk.seermedical.com/api")
+
+        self.api_key_id = api_key_id
+        # TODO: should we default the path to something like "~/.ssh/seerpy.pem"?
+        self.api_key_path = api_key_path
+        with open(self.api_key_path, 'r') as api_key_file:
+            self.api_key = api_key_file.read()
+
+    def get_headers(self):
+        timestamp = int(datetime.datetime.now(tz=datetime.timezone.utc).timestamp())
+        payload = {'keyId': self.api_key_id, 'iat': timestamp}
+        token = jwt.encode(payload, self.api_key, algorithm='RS256')
+        return {"Authorization": "Bearer " + token}
 
 
 class SeerDevAuth(SeerAuth):

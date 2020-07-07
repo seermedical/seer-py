@@ -70,8 +70,7 @@ class SeerAuth(BaseAuth):
             ?
         """
 
-        super(SeerAuth,
-              self).__init__(api_url if api_url is not None else "https://api.seermedical.com/api")
+        super(SeerAuth, self).__init__(api_url if api_url else 'https://api.seermedical.com/api')
 
         self.cookie = None
         self.cookie_key = cookie_key
@@ -220,6 +219,7 @@ class SeerApiKeyAuth(BaseAuth):
     Creates an authenticated connection to the Seer API using an API key. This will become the
     default for most use cases.
     """
+
     def __init__(self, api_key_id, api_key_path, api_url=None):
         """
         Authenticate session using API key
@@ -234,9 +234,8 @@ class SeerApiKeyAuth(BaseAuth):
             Base URL of API endpoint
         """
 
-        # TODO: not sure what the api url actually is
         super(SeerApiKeyAuth,
-              self).__init__(api_url if api_url is not None else "https://sdk.seermedical.com/api")
+              self).__init__(api_url if api_url else 'https://sdk-au.seermedical.com/api')
 
         self.api_key_id = api_key_id
         # TODO: should we default the path to something like "~/.ssh/seerpy.pem"?

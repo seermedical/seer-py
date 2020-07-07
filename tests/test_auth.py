@@ -55,6 +55,7 @@ class TestAuth:
             SeerAuth("api-url")
         assert unused_sleep.call_count == 3
 
+
 class TestBaseAuth:
     def test_get_connection_parameters_with_party_id(self):
         auth = BaseAuth('abcd')

@@ -220,7 +220,6 @@ class SeerApiKeyAuth(BaseAuth):
     Creates an authenticated connection to the Seer API using an API key. This will become the
     default for most use cases.
     """
-
     def __init__(self, api_key_id, api_key_path, api_url=None):
         """
         Authenticate session using API key

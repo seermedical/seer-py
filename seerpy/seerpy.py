@@ -374,8 +374,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if isinstance(labels, pd.DataFrame):
             labels = labels.to_dict('records')
         query_string = graphql.get_add_labels_mutation_string()
-        return self.execute_query(query_string,
-                                  variable_values={"groupId": group_id, "labels": labels})
+        return self.execute_query(query_string, variable_values={
+            "groupId": group_id,
+            "labels": labels
+        })
 
     def add_document(self, study_id, document_name, document_path):
         """

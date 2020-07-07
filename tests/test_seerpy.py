@@ -7,6 +7,7 @@ from unittest import mock
 import pytest
 import pandas as pd
 
+from seerpy.auth import SeerAuth
 from seerpy.seerpy import SeerConnect
 import seerpy.graphql as graphql
 
@@ -25,7 +26,7 @@ DEFAULT_CONNECTION_PARAMS = {'url': '.'}
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestSeerConnect:
     def test_success(self, seer_auth):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
 
         result = SeerConnect()
 
@@ -43,7 +44,7 @@ class TestSeerConnect:
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestPassingQueryVariables:
     def test_query_variables_are_passed(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         gql_client.return_value.execute.side_effect = [None]
@@ -54,7 +55,7 @@ class TestPassingQueryVariables:
 
     def test_query_variables_are_passed_on_initial_failure(self, seer_auth, gql_client,
                                                            unused_sleep):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         gql_client.return_value.execute.side_effect = [Exception('503 Server Error'), None]
@@ -110,7 +111,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
 class TestGetAllStudyMetaDataByNames:
     def test_no_study_param(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -141,7 +142,7 @@ class TestGetAllStudyMetaDataByNames:
 
     def test_existing_study_param(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -169,7 +170,7 @@ class TestGetAllStudyMetaDataByNames:
 
     def test_getting_multiple_study_ids_by_name(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -203,7 +204,7 @@ class TestGetAllStudyMetaDataByNames:
 
     def test_nonexistent_study_param(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -228,7 +229,7 @@ class TestGetAllStudyMetaDataByNames:
 class TestGetSegmentUrls:
     def test_success(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         with open(TEST_DATA_DIR / "segment_urls_1.json", "r") as f:
@@ -244,7 +245,7 @@ class TestGetSegmentUrls:
 
     def test_multiple_batches(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -264,7 +265,7 @@ class TestGetSegmentUrls:
 
     def test_none_segment_ids(self, seer_auth, unused_gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
 
         expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_empty.csv", index_col=0)
 
@@ -276,7 +277,7 @@ class TestGetSegmentUrls:
 
     def test_empty_segment_ids(self, seer_auth, unused_gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
 
         # gql_client is never called as we don't enter the loop
 
@@ -288,7 +289,7 @@ class TestGetSegmentUrls:
 
     def test_unmatched_segment_ids(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         with open(TEST_DATA_DIR / "segment_urls_no_match.json", "r") as f:
@@ -307,7 +308,7 @@ class TestGetSegmentUrls:
 class TestGetLabels:
     def test_success_single(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -331,7 +332,7 @@ class TestGetLabels:
 
     def test_success_multiple(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -357,7 +358,7 @@ class TestGetLabels:
 
     def test_success_empty(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -382,7 +383,7 @@ class TestGetLabels:
 class TestGetLabelsDataframe:
     def test_success(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -412,7 +413,7 @@ class TestGetLabelsDataframe:
 class TestGetViewedTimesDataframe:
     def test_success(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -443,7 +444,7 @@ class TestGetViewedTimesDataframe:
 class TestGetDocumentsForStudiesDataframe:
     def test_success(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -475,7 +476,7 @@ class TestGetDocumentsForStudiesDataframe:
 @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetMoodSurveyResults:
     def test_get_results(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -492,7 +493,7 @@ class TestGetMoodSurveyResults:
         assert result == expected_result
 
     def test_get_results_dataframe(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -508,7 +509,7 @@ class TestGetMoodSurveyResults:
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_get_multiple_results_pages_dataframe(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -526,7 +527,7 @@ class TestGetMoodSurveyResults:
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_get_empty_results_dataframe(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -544,7 +545,7 @@ class TestStudyCohorts:
     @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
     def test_get_study_ids_in_study_cohort(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -619,7 +620,7 @@ class TestStudyCohorts:
 class TestUserCohorts:
     def test_get_user_ids_in_user_cohort(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -640,7 +641,7 @@ class TestUserCohorts:
     def test_get_user_ids_in_user_cohort_with_cohort_not_found(self, seer_auth, gql_client,
                                                                unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
 
         side_effects = [Exception('NOT_FOUND')]
         gql_client.return_value.execute.side_effect = side_effects
@@ -651,7 +652,7 @@ class TestUserCohorts:
 
     def test_get_user_ids_in_user_cohort_with_no_users(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         side_effects = []
@@ -727,7 +728,7 @@ class TestUserCohorts:
 class TestGetTagIds:
     def test_success(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         expected_result = [{
@@ -761,7 +762,7 @@ class TestGetTagIds:
 
     def test_empty(self, seer_auth, gql_client, unused_sleep):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
+        seer_auth.return_value.cookie = {SeerAuth.default_cookie_key: "cookie"}
         seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         expected_result = []

@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from seerpy.auth import BaseAuth, SeerAuth, DEFAULT_COOKIE_KEY
+from seerpy.auth import BaseAuth, SeerAuth
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
 # pylint complains that the methods could be a function. this disables that warning.
@@ -26,19 +26,19 @@ class TestAuth:
     def test_success(self, unused_read_cookie, requests_post, requests_get, unused_email_input,
                      unused_password_getpass, unused_sleep):
         requests_post.return_value.status_code = 200
-        requests_post.return_value.cookies = {DEFAULT_COOKIE_KEY: "cookie"}
+        requests_post.return_value.cookies = {'seer.sid': "cookie"}
         requests_get.return_value.status_code = 200
         requests_get.return_value.json.return_value = {"session": "active"}
 
         result = SeerAuth("api-url")
 
-        assert result.cookie[DEFAULT_COOKIE_KEY] == "cookie"
+        assert result.cookie['seer.sid'] == "cookie"
         unused_sleep.assert_not_called()
 
     def test_401_error(self, requests_post, requests_get, unused_email_input,
                        unused_password_getpass, unused_sleep):
         requests_post.return_value.status_code = 200
-        requests_post.return_value.cookies = {DEFAULT_COOKIE_KEY: "cookie"}
+        requests_post.return_value.cookies = {'seer.sid': "cookie"}
         requests_get.return_value.status_code = 401
 
         with pytest.raises(InterruptedError):
@@ -48,7 +48,7 @@ class TestAuth:
     def test_other_error(self, requests_post, requests_get, unused_email_input,
                          unused_password_getpass, unused_sleep):
         requests_post.return_value.status_code = 200
-        requests_post.return_value.cookies = {DEFAULT_COOKIE_KEY: "cookie"}
+        requests_post.return_value.cookies = {'seer.sid': "cookie"}
         requests_get.return_value.status_code = "undefined"
 
         with pytest.raises(InterruptedError):

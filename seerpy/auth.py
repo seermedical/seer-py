@@ -33,10 +33,10 @@ class BaseAuth:
             'timeout': 30
         }
 
-    def handle_query_error_pre_sleep(self, error_string):  # pylint: disable=unused-argument
+    def handle_query_error_pre_sleep(self, ex):  # pylint: disable=unused-argument
         return True
 
-    def handle_query_error_post_sleep(self, error_string):
+    def handle_query_error_post_sleep(self, ex):
         pass
 
     def get_headers(self):
@@ -84,14 +84,14 @@ class SeerAuth(BaseAuth):
     def get_headers(self):
         return {'Cookie': f'{self.cookie_key}={self.cookie[self.cookie_key]}'}
 
-    def handle_query_error_pre_sleep(self, error_string):
-        if 'NOT_AUTHENTICATED' in error_string:
+    def handle_query_error_pre_sleep(self, ex):
+        if 'NOT_AUTHENTICATED' in str(ex):
             self.logout()
             return False
         return True
 
-    def handle_query_error_post_sleep(self, error_string):
-        if 'NOT_AUTHENTICATED' in error_string:
+    def handle_query_error_post_sleep(self, ex):
+        if 'NOT_AUTHENTICATED' in str(ex):
             self.login()
 
     def login(self):
@@ -248,6 +248,12 @@ class SeerApiKeyAuth(BaseAuth):
         payload = {'keyId': self.api_key_id, 'iat': timestamp}
         token = jwt.encode(payload, self.api_key, algorithm='RS256')
         return {"Authorization": "Bearer " + token}
+
+    def handle_query_error_pre_sleep(self, ex):
+        if 'NOT_AUTHENTICATED' in str(ex):
+            raise ex
+
+        return True
 
 
 class SeerDevAuth(SeerAuth):

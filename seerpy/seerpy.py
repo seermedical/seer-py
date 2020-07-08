@@ -140,7 +140,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 raise
             error_string = str(ex)
             if any(api_error in error_string for api_error in resolvable_api_errors):
-                if not self.seer_auth.handle_query_error_pre_sleep(error_string):
+                if self.seer_auth.handle_query_error_pre_sleep(ex):
                     print('"', error_string, '" raised, trying again after a short break')
                     time.sleep(
                         min(30 * (invocations + 1)**2,

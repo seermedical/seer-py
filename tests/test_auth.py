@@ -1,10 +1,11 @@
 # Copyright 2017,2018 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 
 from unittest import mock
+from unittest.mock import mock_open
 
 import pytest
 
-from seerpy.auth import BaseAuth, SeerAuth
+from seerpy.auth import BaseAuth, SeerAuth, SeerApiKeyAuth
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
 # pylint complains that the methods could be a function. this disables that warning.
@@ -67,3 +68,20 @@ class TestBaseAuth:
         params = auth.get_connection_parameters()
 
         assert params == {'url': 'abcd/graphql', 'headers': {}, 'use_json': True, 'timeout': 30}
+
+
+class TestSeerApiKeyAuth:
+    @mock.patch('jwt.encode', autospec=True, return_value="an_encoded_key".encode('utf-8'))
+    @mock.patch('builtins.open', new_callable=mock_open, create=True)
+    def test_get_connection_parameters(self, mocked_open, unused_jwt_encode):
+        mocked_open.return_value.__enter__ = mock_open
+        mocked_open.return_value.__iter__ = mock.Mock(
+            return_value=iter(['1234']))
+
+        auth = SeerApiKeyAuth(api_key_id="1", api_key_path="dummy path", api_url="abcd")
+        params = auth.get_connection_parameters()
+
+        assert params == {'url': 'abcd/graphql', 'headers': {
+            'Authorization': 'Bearer an_encoded_key'
+        }, 'use_json': True, 'timeout': 30}
+

@@ -60,11 +60,19 @@ def download_channel_data(data_q, download_function):
         data_type = meta_data['channelGroups.sampleEncoding']
         data = np.frombuffer(data, dtype=np.dtype(data_type))
         data = data.astype(np.float32)
-        data = data.reshape(-1, len(channel_names),
-                            int(meta_data['channelGroups.samplesPerRecord']))
-        data = np.transpose(data, (0, 2, 1))
-        data = data.reshape(-1, data.shape[2])
-        if 'int' in data_type:
+
+        column_names = channel_names
+
+        if meta_data['channelGroups.timestamped']:
+            column_names = ['time'] + channel_names
+            data = data.reshape(-1, len(column_names))
+        else:
+            data = data.reshape(-1, len(channel_names),
+                                int(meta_data['channelGroups.samplesPerRecord']))
+            data = np.transpose(data, (0, 2, 1))
+            data = data.reshape(-1, data.shape[2])
+
+        if 'int' in data_type:  # TODO: why is this only required for ints?
             nan_mask = np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1)
             if nan_mask[-1]:
                 nan_mask_corrected = np.ones(nan_mask.shape, dtype=bool)
@@ -77,11 +85,9 @@ def download_channel_data(data_q, download_function):
 
             # fill missing values with nans
             data[np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1), :] = np.nan
-        # TODO: what happens for floats?
-        chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
-        chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
-        exponent = meta_data['channelGroups.exponent'].astype(np.float64)
-        if 'int' in data_type:
+
+            chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
+            chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
             chan_diff = chan_max - chan_min
             dig_min = np.iinfo(data_type).min
             dig_max = np.iinfo(data_type).max
@@ -90,22 +96,32 @@ def download_channel_data(data_q, download_function):
             with np.errstate(divide='ignore', invalid='ignore'):
                 data = (data - dig_min) / dig_diff * chan_diff + chan_min
 
-        data = data * 10.0**exponent
-        data = pd.DataFrame(data=data, index=None, columns=channel_names)
+        data = pd.DataFrame(data=data, index=None, columns=column_names)
+
+        exponent = meta_data['channelGroups.exponent'].astype(np.float64)
+        data[channel_names] = data[channel_names] * 10.0**exponent
+
         data = data.fillna(method='ffill', axis='columns')
         data = data.fillna(method='bfill', axis='columns')
         data = data.fillna(value=0., axis='columns')
-        data['time'] = (np.arange(data.shape[0]) * (1000.0 / meta_data['channelGroups.sampleRate'])
-                        + meta_data['dataChunks.time'])
+
+        if meta_data['channelGroups.timestamped']:
+            # data timestamp is relative to chunk start
+            chunk_start = meta_data['dataChunks.time']
+            data['time'] = data['time'] + chunk_start
+        else:
+            data['time'] = (np.arange(data.shape[0]) *
+                            (1000.0 / meta_data['channelGroups.sampleRate'])
+                            + meta_data['dataChunks.time'])
+
         data['id'] = study_id
         data['channelGroups.id'] = channel_groups_id
         data['segments.id'] = segments_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
 
         # data chunks seem to always be 10 seconds even if they don't contain that much data
-        segment_start = meta_data['segments.startTime']
-        segment_end = segment_start + meta_data['segments.duration']
-        data = data[(data['time'] >= segment_start) & (data['time'] < segment_end)]
+        segment_end = meta_data['segments.startTime'] + meta_data['segments.duration']
+        data = data[data['time'] < segment_end]
 
         return data
 

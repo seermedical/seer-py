@@ -104,6 +104,7 @@ def get_study_with_data_query_string(study_id):
                     signalMax
                     units
                     exponent
+                    timestamped
                     segments (fromTime: 1.0, toTime: 9000000000000) {
                         id
                         startTime
@@ -859,7 +860,7 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
 
 
 def get_add_user_timezone_mutation_string(user_id, timezone):
-    return """ 
+    return """
         mutation  {
             editUser(
                 id: "%s",

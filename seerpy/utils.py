@@ -249,7 +249,7 @@ def get_channel_data(all_data, segment_urls, download_function=requests.get, thr
             'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
             'channelGroups.samplesPerRecord', 'channelGroups.recordsPerChunk',
             'channelGroups.compression', 'channelGroups.signalMin', 'channelGroups.signalMax',
-            'channelGroups.exponent'
+            'channelGroups.exponent', 'channelGroups.timestamped'
         ]]
         metadata = metadata.drop_duplicates()
         metadata = metadata.dropna(axis=0, how='any', subset=['dataChunks.url'])

@@ -112,8 +112,7 @@ def download_channel_data(data_q, download_function):
 
         if meta_data['channelGroups.timestamped']:
             # data timestamp is relative to chunk start
-            chunk_start = meta_data['dataChunks.time']
-            data['time'] = data['time'] + chunk_start
+            data['time'] = data['time'].astype(np.float64) + meta_data['dataChunks.time']
         else:
             data['time'] = (np.arange(data.shape[0]) *
                             (1000.0 / meta_data['channelGroups.sampleRate'])
@@ -124,7 +123,7 @@ def download_channel_data(data_q, download_function):
         data['segments.id'] = segments_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
 
-        # data chunks seem to always be 10 seconds even if they don't contain that much data
+        # data chunks are always padded to 10 seconds if they don't contain that much data
         segment_end = meta_data['segments.startTime'] + meta_data['segments.duration']
         data = data[data['time'] < segment_end]
 

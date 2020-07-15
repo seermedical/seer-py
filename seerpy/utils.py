@@ -112,7 +112,9 @@ def download_channel_data(data_q, download_function):
 
         if meta_data['channelGroups.timestamped']:
             # data timestamp is relative to chunk start
-            data['time'] = data['time'].astype(np.float64) + meta_data['dataChunks.time']
+            # make sure both are float64 - sometimes mixed float arithmetic gives strange results
+            data['time'] = (data['time'].astype(np.float64)
+                            + meta_data['dataChunks.time'].astype(np.float64))
         else:
             data['time'] = (np.arange(data.shape[0]) *
                             (1000.0 / meta_data['channelGroups.sampleRate'])

@@ -130,7 +130,8 @@ def download_channel_data(data_q, download_function):
         data['segments.id'] = segments_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
 
-        # chunks are padded to a standard size (usually 10s) if they don't contain that much data.
+        # chunks are all the same size for a given channel group (usually 10s)
+        # if they don't contain that much data they are padded out
         # this discards any padding at the end of a segment before the data is returned
         segment_end = meta_data['segments.startTime'] + meta_data['segments.duration']
         data = data[data['time'] < segment_end]

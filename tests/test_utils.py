@@ -44,7 +44,6 @@ class TestDownloadChannelData:
             'channelGroups.timestamped': [True]
         }
         meta_data = pd.DataFrame(meta_data_dict).iloc[0]
-        print('meta_data.dtypes', meta_data.dtypes)
 
         study_id = 'sense-study-id'
         channel_groups_id = 'sense-channel-group-id'
@@ -83,7 +82,6 @@ class TestDownloadChannelData:
             'channelGroups.timestamped': [True]
         }
         meta_data = pd.DataFrame(meta_data_dict).iloc[0]
-        print('meta_data.dtypes', meta_data.dtypes)
 
         study_id = 'sense-study-id'
         channel_groups_id = 'sense-channel-group-id'
@@ -123,7 +121,6 @@ class TestDownloadChannelData:
             'channelGroups.timestamped': [False]
         }
         meta_data = pd.DataFrame(meta_data_dict).iloc[0]
-        print('meta_data.dtypes', meta_data.dtypes)
 
         study_id = 'siesta_study-id'
         channel_groups_id = 'siesta-channel-group-id'

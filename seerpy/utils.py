@@ -77,7 +77,10 @@ def download_channel_data(data_q, download_function):
             data = np.transpose(data, (0, 2, 1))
             data = data.reshape(-1, data.shape[2])
 
-        if 'int' in data_type:  # TODO: why is this only required for ints?
+        if 'int' in data_type:
+            # EDF int format data encodes missing values as the minimum possible int value
+
+            # first remove any minimum ints at the end of the data
             nan_mask = np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1)
             if nan_mask[-1]:
                 nan_mask_corrected = np.ones(nan_mask.shape, dtype=bool)
@@ -88,9 +91,11 @@ def download_channel_data(data_q, download_function):
                         break
                 data = data[nan_mask_corrected]
 
-            # fill missing values with nans
+            # now convert any internal minimum ints into nans
             data[np.all(data == np.iinfo(np.dtype(data_type)).min, axis=1), :] = np.nan
 
+            # this converts the int values which are in a range between minimum int and maximum int,
+            # into float values in a range between signalMin and signalMax
             chan_min = meta_data['channelGroups.signalMin'].astype(np.float64)
             chan_max = meta_data['channelGroups.signalMax'].astype(np.float64)
             chan_diff = chan_max - chan_min
@@ -112,8 +117,9 @@ def download_channel_data(data_q, download_function):
 
         if meta_data['channelGroups.timestamped']:
             # data timestamp is relative to chunk start
-            chunk_start = meta_data['dataChunks.time']
-            data['time'] = data['time'] + chunk_start
+            # make sure both are float64 - sometimes mixed float arithmetic gives strange results
+            data['time'] = (data['time'].astype(np.float64)
+                            + meta_data['dataChunks.time'].astype(np.float64))
         else:
             data['time'] = (np.arange(data.shape[0]) *
                             (1000.0 / meta_data['channelGroups.sampleRate'])
@@ -124,7 +130,9 @@ def download_channel_data(data_q, download_function):
         data['segments.id'] = segments_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
 
-        # data chunks seem to always be 10 seconds even if they don't contain that much data
+        # chunks are all the same size for a given channel group (usually 10s)
+        # if they don't contain that much data they are padded out
+        # this discards any padding at the end of a segment before the data is returned
         segment_end = meta_data['segments.startTime'] + meta_data['segments.duration']
         data = data[data['time'] < segment_end]
 

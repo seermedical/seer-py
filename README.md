@@ -77,7 +77,7 @@ client = SeerConnect(api_key_id='id', api_key_path='~/.seerpy/seerpy.pem')
 
 Alternatively, seerpy will look for an api key file in the _.seerpy/_ folder in your home directory.
 It will look for any file like _seerpy.pem_
-You can also encdoe the id and region in the file name like so _seerpy.id.au.pem_
+You can also encode the id and region in the file name like so _seerpy.id.au.pem_
 
 ## Running with other API endpoints
 

@@ -20,20 +20,43 @@ KeyFileInfo = namedtuple('KeyFileInfo', ['key_path', 'key_id', 'region', 'defaul
 
 def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer_auth=None,
              use_email=None, email=None, password=None):
-    # provide auth
+    """
+    Get the correct Auth implemetation based on passed parameters and the existence of config files.
 
-    # provide id, key path, and optionally region
+    If seer_auth is passed, it will be used and other parameters will be ignored.
+    If use_email is True or email or password are passed, email authentication will be used.
+    If no API key or id are passed and no API key files are found, email authentication will be
+    used.
+    If nothing is passed and API key files exist in ~/.seerpy matching the pattern seerpy*.pem then
+    API key authentiction will be used.
+    API key files can contain the following information, separated by the '.' character:
+    - a default indicator 'default' to indicate to use this file as a default
+    - a region string 'au' or 'uk' indicating the region to use
+    - an id, to be used as the api_key_id value.
+    e.g. seerpy.default.ac42d1f7-98c5-40ad-b35f-2026688411e8.uk.pem
 
-    # provide nothing - if one file or one contains default, must contain id, can contain region
-    # seerpy.region.id.pem
-    # seerpy.default.region.id.pem
+    If api_key_id is passed but not api_key_path, a file matching that id will be used if found.
+    If api_key_path is passed but not api_key_id, the api_key_path name will be parsed for an id.
 
-    # provide id - if file matching id found, or single file, can include region
-    # seerpy.id.pem
-    # seerpy.pem
-
-    # provide region - if file matching region found - must contain id
-    # seerpy.region.id.pem
+    Parameters
+    ----------
+    api_key_id : str, optional
+        The id of the API key
+    api_key_path : str, optional
+        The file path of an API key file
+    region : {None, 'au', 'uk'}
+        The region string of the API version to access.
+    api_url : str, optional
+        Base URL of API endpoint
+    seer_auth: BaseAuth or child, optional
+        An Auth instance to use. Will be used and other parameters ignored if passed
+    use_email : bool, optional
+        Whether to use email authentication. Will override non-email options if True
+    email : str, optional
+        The email address for a user's Seer account
+    password : str, optional
+        The password for a user's Seer account
+    """
 
     if seer_auth:
         return seer_auth

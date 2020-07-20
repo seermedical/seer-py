@@ -3,8 +3,10 @@ Authenticate a connection by verifying a user's credentials against the auth end
 
 Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 """
+from collections import namedtuple
 import datetime
 import getpass
+from glob import glob
 import os
 import json
 import random
@@ -12,6 +14,40 @@ import time
 
 import jwt
 import requests
+
+KeyFileInfo = namedtuple('KeyFileInfo', ['key_path', 'key_id', 'region', 'default'])
+
+
+def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer_auth=None,
+             use_email=None, email=None, password=None):
+    # provide auth
+
+    # provide id, key path, and optionally region
+
+    # provide nothing - if one file or one contains default, must contain id, can contain region
+    # seerpy.region.id.pem
+    # seerpy.default.region.id.pem
+
+    # provide id - if file matching id found, or single file, can include region
+    # seerpy.id.pem
+    # seerpy.pem
+
+    # provide region - if file matching region found - must contain id
+    # seerpy.region.id.pem
+
+    if seer_auth:
+        return seer_auth
+
+    home_dir = os.path.expanduser("~")
+    pem_files = glob(os.path.join(home_dir, '.seerpy', 'seerpy*.pem'))
+
+    # don't treat a use_email of None as significant
+    if ((use_email is True)
+            or (use_email is not False and
+                (email or password or not (api_key_id or api_key_path or pem_files)))):
+        return SeerAuth(api_url, email, password)
+
+    return SeerApiKeyAuth(api_key_id, api_key_path, region, api_url)
 
 
 # pylint: disable=no-self-use
@@ -219,8 +255,7 @@ class SeerApiKeyAuth(BaseAuth):
     Creates an authenticated connection to the Seer API using an API key. This will become the
     default for most use cases.
     """
-
-    def __init__(self, api_key_id, api_key_path, api_url=None):
+    def __init__(self, api_key_id, api_key_path, region='au', api_url=None):
         """
         Authenticate session using API key
 
@@ -234,14 +269,104 @@ class SeerApiKeyAuth(BaseAuth):
             Base URL of API endpoint
         """
 
-        super(SeerApiKeyAuth,
-              self).__init__(api_url if api_url else 'https://sdk-au.seermedical.com/api')
+        api_key_id, api_key_path, region = self._get_parameters(api_key_id, api_key_path, region)
+
+        if not api_url:
+            api_url = f'https://sdk-{region}.seermedical.com/api'
+
+        super(SeerApiKeyAuth, self).__init__(api_url)
 
         self.api_key_id = api_key_id
-        # TODO: should we default the path to something like "~/.ssh/seerpy.pem"?
         self.api_key_path = api_key_path
         with open(self.api_key_path, 'r') as api_key_file:
             self.api_key = api_key_file.read()
+
+    def _get_parameters(self, api_key_id, api_key_path, region):
+        home_dir = os.path.expanduser("~")
+        pem_files = glob(os.path.join(home_dir, '.seerpy', 'seerpy*.pem'))
+
+        if not api_key_path and not pem_files:
+            raise ValueError('No API key file available')
+
+        api_key_file = None
+        if api_key_path:
+            api_key_file = self._get_key_filename_parts(api_key_path)
+        else:
+            api_key_files = [self._get_key_filename_parts(pem_file) for pem_file in pem_files]
+            if len(api_key_files) == 1:
+                api_key_file = api_key_files[0]
+
+        if api_key_id and not api_key_file:
+            # choose the pem file which matches id if found
+            matching_files = self._get_objects_matching_value(api_key_files, 'key_id', api_key_id)
+            if not matching_files:
+                raise ValueError('No API key file matches the API key id provided')
+            if len(matching_files) == 1:
+                api_key_file = matching_files[0]
+            else:
+                # if there's more than one, choose the one that matches the region
+                matching_files = self._get_objects_matching_value(matching_files, 'region', region)
+                if len(matching_files) == 1:
+                    api_key_file = matching_files[0]
+                else:
+                    raise ValueError('Multiple API key files match the API key id provided')
+
+        if not api_key_file:
+            # choose file with default in the name
+            default_files = self._get_objects_matching_value(api_key_files, 'default', 'default')
+            if len(default_files) == 1:
+                api_key_file = default_files[0]
+            else:
+                # choose the file that matches the region (from default files if any, else from all)
+                list_to_pick_from = api_key_files
+                if default_files:
+                    list_to_pick_from = default_files
+                region_files = self._get_objects_matching_value(list_to_pick_from, 'region', region)
+                if len(region_files) == 1:
+                    api_key_file = region_files[0]
+                elif default_files:
+                    raise ValueError('Multiple default API key files found')
+                else:
+                    raise ValueError('No default API key file found')
+
+        if not api_key_id:
+            if not api_key_file.key_id:
+                raise ValueError('No API key id found in key file name')
+            api_key_id = api_key_file.key_id
+
+        if not api_key_path:
+            api_key_path = api_key_file.key_path
+
+        if (not region or region == 'au') and api_key_file.region:
+            region = api_key_file.region
+
+        return (api_key_id, api_key_path, region)
+
+    @classmethod
+    def _get_key_filename_parts(cls, pem_filename):
+        filename_parts = os.path.splitext(os.path.basename(pem_filename))[0].split('.')[1:]
+        filename_region = cls._get_part_from_filename_parts(filename_parts, ['au', 'uk'], 'region')
+        filename_default = cls._get_part_from_filename_parts(filename_parts, ['default'],
+                                                             'default indicator')
+        filename_id = None
+        if len(filename_parts) == 1:
+            filename_id = filename_parts[0]
+
+        return KeyFileInfo(pem_filename, filename_id, filename_region, filename_default)
+
+    @staticmethod
+    def _get_part_from_filename_parts(filename_parts, possible_values, part_title):
+        parts = [part for part in filename_parts if part in possible_values]
+        if not parts:
+            return None
+        if len(parts) > 1:
+            raise ValueError(f'Multiple {part_title}s found in key file name')
+        part = parts[0]
+        filename_parts = filename_parts.remove(part)
+        return part
+
+    def _get_objects_matching_value(self, objects, attr_name, value):
+        return [obj for obj in objects if getattr(obj, attr_name) == value]
 
     def get_headers(self):
         timestamp = int(datetime.datetime.now(tz=datetime.timezone.utc).timestamp())

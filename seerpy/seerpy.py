@@ -48,7 +48,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from .auth import SeerAuth, SeerApiKeyAuth
+from . import auth
 from . import utils
 from . import graphql
 
@@ -57,7 +57,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     graphql_client = None
 
     def __init__(self, api_url=None, email=None, password=None, api_key_id=None, api_key_path=None,
-                 auth=None):
+                 seer_auth=None, use_email=None, region='au'):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -74,12 +74,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             The path to a Seer api key file
         """
 
-        if auth is None and (not api_key_id or not api_key_path):
-            self.seer_auth = SeerAuth(api_url, email, password)
-        elif api_key_id and api_key_path:
-            self.seer_auth = SeerApiKeyAuth(api_key_id, api_key_path, api_url)
-        else:
-            self.seer_auth = auth
+        self.seer_auth = auth.get_auth(api_key_id, api_key_path, region, api_url, seer_auth,
+                                       use_email, email, password)
 
         self.create_client()
 

@@ -43,7 +43,7 @@ def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer
 
     # don't treat a use_email of None as significant
     if ((use_email is True)
-            or (use_email is not False and
+            or (use_email is None and
                 (email or password or not (api_key_id or api_key_path or pem_files)))):
         return SeerAuth(api_url, email, password)
 

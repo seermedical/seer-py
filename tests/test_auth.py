@@ -378,6 +378,5 @@ class TestSeerApiKeyAuth:
         mock_glob.return_value = ['seerpy.id.pem', 'seerpy.id.uk.au.pem']
 
         # run test and check result
-        with pytest.raises(ValueError,
-                           match='Multiple regions found in key file name'):
+        with pytest.raises(ValueError, match='Multiple regions found in key file name'):
             SeerApiKeyAuth(api_key_id=None, api_key_path=None)

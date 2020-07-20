@@ -43,14 +43,16 @@ class TestPassingQueryVariables:
     def test_query_variables_are_passed(self, gql_client, unused_sleep):
         gql_client.return_value.execute.side_effect = [None]
 
-        SeerConnect(seer_auth=auth.BaseAuth(api_url='')).execute_query("query Q { test { id } }", variable_values={'a': 'b'})
+        SeerConnect(seer_auth=auth.BaseAuth(api_url='')).execute_query(
+            "query Q { test { id } }", variable_values={'a': 'b'})
         assert gql_client.return_value.execute.call_count == 1
         assert gql_client.return_value.execute.call_args[1]['variable_values'] == {'a': 'b'}
 
     def test_query_variables_are_passed_on_initial_failure(self, gql_client, unused_sleep):
         gql_client.return_value.execute.side_effect = [Exception('503 Server Error'), None]
 
-        SeerConnect(seer_auth=auth.BaseAuth(api_url='')).execute_query("query Q { test { id } }", variable_values={'a': 'b'})
+        SeerConnect(seer_auth=auth.BaseAuth(api_url='')).execute_query(
+            "query Q { test { id } }", variable_values={'a': 'b'})
 
         assert gql_client.return_value.execute.call_count == 2
         assert gql_client.return_value.execute.call_args[1]['variable_values'] == {'a': 'b'}
@@ -145,7 +147,8 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_all_study_metadata_by_names("Study 1")
+        result = SeerConnect(seer_auth=auth.BaseAuth(
+            api_url='')).get_all_study_metadata_by_names("Study 1")
 
         # check result
         assert result == {'studies': expected_results}
@@ -176,7 +179,8 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_study_ids_from_names(["Study 1", "Study 2"])
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_study_ids_from_names(
+            ["Study 1", "Study 2"])
 
         # check result
         assert result == expected_results
@@ -191,7 +195,8 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_all_study_metadata_by_names("Study 12")
+        result = SeerConnect(seer_auth=auth.BaseAuth(
+            api_url='')).get_all_study_metadata_by_names("Study 12")
 
         # check result
         assert result == {'studies': []}
@@ -210,7 +215,8 @@ class TestGetSegmentUrls:
         expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_1.csv", index_col=0)
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_segment_urls(["segment-1-id", "segment-2-id"])
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_segment_urls(
+            ["segment-1-id", "segment-2-id"])
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
@@ -257,7 +263,8 @@ class TestGetSegmentUrls:
             gql_client.return_value.execute.return_value = json.load(f)
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_segment_urls(["blah", "blah1"])
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_segment_urls(
+            ["blah", "blah1"])
 
         # check result
         assert result.empty
@@ -282,7 +289,8 @@ class TestGetLabels:
         expected_result = query_data['study']
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels("study-1-id", "label-group-1-id")
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels(
+            "study-1-id", "label-group-1-id")
 
         # check result
         assert result == expected_result
@@ -305,7 +313,8 @@ class TestGetLabels:
             expected_result = json.load(f)
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels("study-1-id", "label-group-1-id")
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels(
+            "study-1-id", "label-group-1-id")
 
         # check result
         assert result == expected_result
@@ -322,7 +331,8 @@ class TestGetLabels:
         expected_result = []
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels("study-1-id", "label-group-1-id")
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels(
+            "study-1-id", "label-group-1-id")
 
         # check result
         assert result == expected_result
@@ -348,7 +358,8 @@ class TestGetLabelsDataframe:
         expected_result = pd.read_csv(TEST_DATA_DIR / "labels_1.csv", index_col=0)
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels_dataframe("study-1-id", "label-group-1-id")
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_labels_dataframe(
+            "study-1-id", "label-group-1-id")
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
@@ -375,7 +386,8 @@ class TestGetViewedTimesDataframe:
                                                    'updatedAt'], float_precision='round_trip')
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_viewed_times_dataframe("study-1-id")
+        result = SeerConnect(seer_auth=auth.BaseAuth(
+            api_url='')).get_viewed_times_dataframe("study-1-id")
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
@@ -404,7 +416,8 @@ class TestGetDocumentsForStudiesDataframe:
         expected_result['uploaded'] = expected_result['uploaded'].astype(int)
 
         # run test
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_documents_for_studies_dataframe("study-1-id")
+        result = SeerConnect(seer_auth=auth.BaseAuth(
+            api_url='')).get_documents_for_studies_dataframe("study-1-id")
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result, check_like=True)
@@ -424,7 +437,8 @@ class TestGetMoodSurveyResults:
         with open(TEST_DATA_DIR / "mood_survey_results.json", "r") as f:
             expected_result = json.load(f)
 
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results(["aMoodSurveyId"])
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results(
+            ["aMoodSurveyId"])
         assert result == expected_result
 
     def test_get_results_dataframe(self, gql_client, unused_sleep):
@@ -437,7 +451,8 @@ class TestGetMoodSurveyResults:
 
         expected_result = pd.read_csv(TEST_DATA_DIR / "mood_survey_results.csv")
 
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results_dataframe(
+            ["aMoodSurveyId"])
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_get_multiple_results_pages_dataframe(self, gql_client, unused_sleep):
@@ -452,7 +467,8 @@ class TestGetMoodSurveyResults:
 
         expected_result = pd.read_csv(TEST_DATA_DIR / "mood_survey_results_multipage.csv")
 
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results_dataframe(
+            ["aMoodSurveyId"])
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_get_empty_results_dataframe(self, gql_client, unused_sleep):
@@ -461,7 +477,8 @@ class TestGetMoodSurveyResults:
             side_effects.append(json.load(f))
         gql_client.return_value.execute.side_effect = side_effects
 
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_mood_survey_results_dataframe(
+            ["aMoodSurveyId"])
         assert result.empty
 
 
@@ -482,7 +499,8 @@ class TestStudyCohorts:
         expected_result = ['study1', 'study2']
 
         # run test and check result
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_study_ids_in_study_cohort('cohort1')
+        result = SeerConnect(seer_auth=auth.BaseAuth(
+            api_url='')).get_study_ids_in_study_cohort('cohort1')
         assert result == expected_result
 
     def test_generating_create_mutation(self):
@@ -553,7 +571,8 @@ class TestUserCohorts:
         expected_result = ['user1', 'user2']
 
         # run test and check result
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_user_ids_in_user_cohort('cohort1')
+        result = SeerConnect(seer_auth=auth.BaseAuth(
+            api_url='')).get_user_ids_in_user_cohort('cohort1')
         assert result == expected_result
 
     def test_get_user_ids_in_user_cohort_with_cohort_not_found(self, gql_client, unused_sleep):
@@ -562,7 +581,8 @@ class TestUserCohorts:
         gql_client.return_value.execute.side_effect = side_effects
 
         with pytest.raises(Exception) as ex:
-            SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_user_ids_in_user_cohort('random-cohort-that-doesnt-exist')
+            SeerConnect(seer_auth=auth.BaseAuth(
+                api_url='')).get_user_ids_in_user_cohort('random-cohort-that-doesnt-exist')
             assert str(ex.value) == 'NOT_FOUND'
 
     def test_get_user_ids_in_user_cohort_with_no_users(self, gql_client, unused_sleep):
@@ -577,7 +597,8 @@ class TestUserCohorts:
         expected_result = []
 
         # run test and check result
-        result = SeerConnect(seer_auth=auth.BaseAuth(api_url='')).get_user_ids_in_user_cohort('a-missing-cohort')
+        result = SeerConnect(seer_auth=auth.BaseAuth(
+            api_url='')).get_user_ids_in_user_cohort('a-missing-cohort')
         assert result == expected_result
 
     def test_generating_create_user_cohort_mutation(self, unused_gql_client, unused_sleep):

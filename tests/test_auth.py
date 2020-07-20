@@ -183,7 +183,7 @@ class TestSeerApiKeyAuth:
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
     @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_key_but_no_id(self, mock_glob):
+    def test_key_path_but_no_id(self, mock_glob):
         # setup
         mock_glob.return_value = []
 

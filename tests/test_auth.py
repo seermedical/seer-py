@@ -24,7 +24,7 @@ class TestGetAuth:
         expected_return = BaseAuth('api_url')
 
         # run test
-        result = auth.get_auth(auth=expected_return)
+        result = auth.get_auth(seer_auth=expected_return)
 
         # check result
         assert result == expected_return
@@ -76,7 +76,7 @@ class TestGetAuth:
 
         # check result
         assert isinstance(result, SeerApiKeyAuth)
-        seer_key_auth_init.assert_called_once_with(mock.ANY, None, None, 'au', None)
+        seer_key_auth_init.assert_called_once_with(mock.ANY, None, None, None, None)
 
     def test_email_false(self, mock_glob):
         # setup

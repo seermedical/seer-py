@@ -48,7 +48,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from .auth import SeerAuth
+from . import auth
 from . import utils
 from . import graphql
 
@@ -56,8 +56,8 @@ from . import graphql
 class SeerConnect:  # pylint: disable=too-many-public-methods
     graphql_client = None
 
-    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None,
-                 auth=None):
+    def __init__(self, api_url=None, email=None, password=None, api_key_id=None, api_key_path=None,
+                 seer_auth=None, use_email=None, region='au'):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -68,14 +68,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             The email address for a user's Seer account
         password : str, optional
             User password associated with Seer account
-        dev : bool, optional
-            dev: Flag to query the development rather than production endpoint
+        api_key_id : str, optional
+            The UUID for a Seer api key
+        api_key_file : str, optional
+            The path to a Seer api key file
         """
 
-        if auth is None:
-            self.seer_auth = SeerAuth(api_url, email, password)
-        else:
-            self.seer_auth = auth
+        self.seer_auth = auth.get_auth(api_key_id, api_key_path, region, api_url, seer_auth,
+                                       use_email, email, password)
 
         self.create_client()
 
@@ -136,16 +136,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 raise
             error_string = str(ex)
             if any(api_error in error_string for api_error in resolvable_api_errors):
-                if 'NOT_AUTHENTICATED' in error_string:
-                    self.seer_auth.logout()
-                else:
+                if self.seer_auth.handle_query_error_pre_sleep(ex):
                     print('"', error_string, '" raised, trying again after a short break')
                     time.sleep(
                         min(30 * (invocations + 1)**2,
                             max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
+
                 invocations += 1
 
-                self.seer_auth.login()
+                self.seer_auth.handle_query_error_post_sleep(error_string)
+
                 return self.execute_query(query_string, party_id, invocations=invocations,
                                           variable_values=variable_values)
 
@@ -370,8 +370,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if isinstance(labels, pd.DataFrame):
             labels = labels.to_dict('records')
         query_string = graphql.get_add_labels_mutation_string()
-        return self.execute_query(query_string,
-                                  variable_values={"groupId": group_id, "labels": labels})
+        return self.execute_query(query_string, variable_values={
+            "groupId": group_id,
+            "labels": labels
+        })
 
     def add_document(self, study_id, document_name, document_path):
         """

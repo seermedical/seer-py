@@ -79,6 +79,8 @@ Alternatively, seerpy will look for an api key file in the _.seerpy/_ folder in 
 It will look for any file like _seerpy.pem_
 You can also encode the id and region in the file name like so _seerpy.id.au.pem_
 
+It's best to store the key in a file, but in situations where this is difficult or impossible, you can instead create an instance of `seerpy.auth.SeerApiKeyAuth` and pass the string api_key directly.
+
 ## Running with other API endpoints
 
 To run seer-py in other environments (for instance against a development API server), then you can use one of the preconfigured authentication methods:

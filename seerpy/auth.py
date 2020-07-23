@@ -278,7 +278,7 @@ class SeerApiKeyAuth(BaseAuth):
     Creates an authenticated connection to the Seer API using an API key. This will become the
     default for most use cases.
     """
-    def __init__(self, api_key_id, api_key_path, region='au', api_url=None):
+    def __init__(self, api_key_id, api_key_path=None, region='au', api_key=None, api_url=None):
         """
         Authenticate session using API key
 
@@ -286,13 +286,21 @@ class SeerApiKeyAuth(BaseAuth):
         ----------
         api_key_id : str
             The UUID for a Seer api key
-        api_key_path : str
+        api_key_path : str, optional
             The path to a Seer api key file
+        api_key : str, optional
+            The actual api key string - for the case where you can't use a file e.g. in AWS Lambda
         api_url : str, optional
             Base URL of API endpoint
         """
 
-        api_key_id, api_key_path, region = self._get_parameters(api_key_id, api_key_path, region)
+        if api_key:
+            self.api_key = api_key
+            if not (api_key_id and (region or api_url)):
+                raise ValueError('api_key_id and region or api_url must be provided with api_key')
+        else:
+            api_key_id, api_key_path, region = self._get_parameters(api_key_id, api_key_path,
+                                                                    region)
 
         if not api_url:
             api_url = f'https://sdk-{region}.seermedical.com/api'
@@ -300,9 +308,9 @@ class SeerApiKeyAuth(BaseAuth):
         super(SeerApiKeyAuth, self).__init__(api_url)
 
         self.api_key_id = api_key_id
-        self.api_key_path = api_key_path
-        with open(self.api_key_path, 'r') as api_key_file:
-            self.api_key = api_key_file.read()
+        if not api_key:
+            with open(api_key_path, 'r') as api_key_file:
+                self.api_key = api_key_file.read()
 
     def _get_parameters(self, api_key_id, api_key_path, region):
         home_dir = os.path.expanduser("~")

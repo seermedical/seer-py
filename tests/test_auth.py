@@ -142,25 +142,26 @@ class TestBaseAuth:
         assert params == {'url': 'abcd/graphql', 'headers': {}, 'use_json': True, 'timeout': 30}
 
 
+@mock.patch('builtins.open', new_callable=mock_open, read_data='1234')
 @mock.patch('seerpy.auth.glob', autospec=True)
 class TestSeerApiKeyAuth:
     @mock.patch('jwt.encode', autospec=True, return_value="an_encoded_key".encode('utf-8'))
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_get_connection_parameters(self, unused_jwt_encode, unused_glob):
+    def test_get_connection_parameters(self, unused_jwt_encode, unused_glob, open_mock):
 
-        apikey_auth = SeerApiKeyAuth(api_key_id="1", api_key_path="dummy path", api_url="abcd")
+        apikey_auth = SeerApiKeyAuth(api_key_id='id', api_key_path='path/seerpy.pem')
         params = apikey_auth.get_connection_parameters()
 
         assert params == {
-            'url': 'abcd/graphql',
+            'url': 'https://sdk-au.seermedical.com/api/graphql',
             'headers': {
                 'Authorization': 'Bearer an_encoded_key'
             },
             'use_json': True,
             'timeout': 30
         }
+        open_mock.assert_called_with('path/seerpy.pem', 'r')
 
-    def test_no_files(self, mock_glob):
+    def test_no_files(self, mock_glob, open_mock):
         # setup
         mock_glob.return_value = []
 
@@ -168,22 +169,22 @@ class TestSeerApiKeyAuth:
         with pytest.raises(ValueError, match='No API key file available'):
             SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_id_and_key(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_id_and_key(self, mock_glob, open_mock):
         # setup
         mock_glob.return_value = []
 
         # run test
-        result = SeerApiKeyAuth(api_key_id='id', api_key_path='path')
+        result = SeerApiKeyAuth(api_key_id='id', api_key_path='path/seerpy.pem')
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'path'
+        open_mock.assert_called_with('path/seerpy.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_key_path_but_no_id(self, mock_glob):
+    def test_key_path_but_no_id(self, mock_glob, open_mock):
         # setup
         mock_glob.return_value = []
 
@@ -191,192 +192,220 @@ class TestSeerApiKeyAuth:
         with pytest.raises(ValueError, match='No API key id found in key file name'):
             SeerApiKeyAuth(api_key_id=None, api_key_path='path')
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_key_file_but_no_id(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_key_file_but_no_id(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem']
+        mock_glob.return_value = ['path/seerpy.pem']
 
         # run test and check result
         with pytest.raises(ValueError, match='No API key id found in key file name'):
             SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_key_file_with_id(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_key_file_with_id(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.id.pem']
+        mock_glob.return_value = ['path/seerpy.id.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.id.pem'
+        open_mock.assert_called_with('path/seerpy.id.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_default_key_file_but_no_id(self, mock_glob):
+    def test_default_key_file_but_no_id(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem', 'seerpy.default.pem']
+        mock_glob.return_value = ['path/seerpy.pem', 'path/seerpy.default.pem']
 
         # run test and check result
         with pytest.raises(ValueError, match='No API key id found in key file name'):
             SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_default_key_file_with_id(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_default_key_file_with_id(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem', 'seerpy.default.id.pem']
+        mock_glob.return_value = ['path/seerpy.pem', 'path/seerpy.default.id.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.default.id.pem'
+        open_mock.assert_called_with('path/seerpy.default.id.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_multiple_default_key_files(self, mock_glob):
+    def test_multiple_default_key_files(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.default.pem', 'seerpy.default.id.pem']
+        mock_glob.return_value = ['path/seerpy.default.pem', 'path/seerpy.default.id.pem']
 
         # run test and check result
         with pytest.raises(ValueError, match='Multiple default API key files found'):
             SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_multiple_default_key_files_with_matching_region(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_multiple_default_key_files_with_matching_region(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.default.pem', 'seerpy.default.id.au.pem']
+        mock_glob.return_value = ['path/seerpy.default.pem', 'path/seerpy.default.id.au.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.default.id.au.pem'
+        open_mock.assert_called_with('path/seerpy.default.id.au.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_multiple_key_files_with_matching_region(self, mock_glob):
+    def test_multiple_key_files_with_matching_region(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem', 'seerpy.id.au.pem']
+        mock_glob.return_value = ['path/seerpy.pem', 'path/seerpy.id.au.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.id.au.pem'
+        open_mock.assert_called_with('path/seerpy.id.au.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_key_file_with_id_and_region(self, mock_glob):
+    def test_key_file_with_id_and_region(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.id.uk.pem']
+        mock_glob.return_value = ['path/seerpy.id.uk.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.id.uk.pem'
+        open_mock.assert_called_with('path/seerpy.id.uk.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-uk.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_multiple_key_files_with_no_match(self, mock_glob):
+    def test_multiple_key_files_with_no_match(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem', 'seerpy.id.pem']
+        mock_glob.return_value = ['path/seerpy.pem', 'path/seerpy.id.pem']
 
         # run test and check result
         with pytest.raises(ValueError, match='No default API key file found'):
             SeerApiKeyAuth(api_key_id=None, api_key_path=None)
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_key_path_with_id_and_region(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_key_path_with_id_and_region(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.au.pem']
+        mock_glob.return_value = ['path/seerpy.au.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id=None, api_key_path='path/seerpy.id.uk.pem')
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'path/seerpy.id.uk.pem'
+        open_mock.assert_called_with('path/seerpy.id.uk.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-uk.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_id_with_single_file(self, mock_glob):
+    def test_id_with_single_file(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem']
+        mock_glob.return_value = ['path/seerpy.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id='id', api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.pem'
+        open_mock.assert_called_with('path/seerpy.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_id_with_no_matching_file(self, mock_glob):
+    def test_id_with_no_matching_file(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem', 'seerpy.id2.uk.pem']
+        mock_glob.return_value = ['path/seerpy.pem', 'path/seerpy.id2.uk.pem']
 
         # run test and check result
         with pytest.raises(ValueError, match='No API key file matches the API key id provided'):
             SeerApiKeyAuth(api_key_id='id', api_key_path=None)
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_id_with_matching_file(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_id_with_matching_file(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.pem', 'seerpy.id.uk.pem']
+        mock_glob.return_value = ['path/seerpy.pem', 'path/seerpy.id.uk.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id='id', api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.id.uk.pem'
+        open_mock.assert_called_with('path/seerpy.id.uk.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-uk.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_id_with_multiple_matching_files_with_region(self, mock_glob):
+    def test_id_with_multiple_matching_files_with_region(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.id.au.pem', 'seerpy.id.uk.pem']
+        mock_glob.return_value = ['path/seerpy.id.au.pem', 'path/seerpy.id.uk.pem']
 
         # run test
         result = SeerApiKeyAuth(api_key_id='id', api_key_path=None)
 
         # check result
         assert result.api_key_id == 'id'
-        assert result.api_key_path == 'seerpy.id.au.pem'
+        open_mock.assert_called_with('path/seerpy.id.au.pem', 'r')
         assert result.api_key == '1234'
         assert result.api_url == 'https://sdk-au.seermedical.com/api'
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_id_with_multiple_matching_files(self, mock_glob):
+    def test_id_with_multiple_matching_files(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.id.pem', 'seerpy.id.uk.pem']
+        mock_glob.return_value = ['path/seerpy.id.pem', 'path/seerpy.id.uk.pem']
 
         # run test and check result
         with pytest.raises(ValueError,
                            match='Multiple API key files match the API key id provided'):
             SeerApiKeyAuth(api_key_id='id', api_key_path=None)
 
-    @mock.patch('builtins.open', mock_open(read_data='1234'), create=True)
-    def test_multiple_regions(self, mock_glob):
+        open_mock.assert_not_called()
+
+    def test_multiple_regions(self, mock_glob, open_mock):
         # setup
-        mock_glob.return_value = ['seerpy.id.pem', 'seerpy.id.uk.au.pem']
+        mock_glob.return_value = ['path/seerpy.id.pem', 'path/seerpy.id.uk.au.pem']
 
         # run test and check result
         with pytest.raises(ValueError, match='Multiple regions found in key file name'):
             SeerApiKeyAuth(api_key_id=None, api_key_path=None)
+
+        open_mock.assert_not_called()
+
+    def test_key(self, mock_glob, open_mock):
+        # run test
+        result = SeerApiKeyAuth(api_key_id='id', api_key_path=None, api_key='key')
+
+        # check result
+        assert result.api_key_id == 'id'
+        assert result.api_key == 'key'
+        assert result.api_url == 'https://sdk-au.seermedical.com/api'
+        open_mock.assert_not_called()
+        mock_glob.assert_not_called()
+
+    def test_key_no_id(self, unused_glob, open_mock):
+        # run test and check result
+        with pytest.raises(ValueError,
+                           match='api_key_id and region or api_url must be provided with api_key'):
+            SeerApiKeyAuth(api_key_id=None, api_key_path=None, api_key='key')
+
+        open_mock.assert_not_called()
+
+    def test_key_no_region_or_url(self, unused_glob, open_mock):
+        # run test and check result
+        with pytest.raises(ValueError,
+                           match='api_key_id and region or api_url must be provided with api_key'):
+            SeerApiKeyAuth(api_key_id='id', api_key_path=None, region=None, api_key='key',
+                           api_url=None)
+
+        open_mock.assert_not_called()

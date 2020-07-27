@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='seerpy',
-    version='0.2.2',
+    version='0.3.0',
     description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',
@@ -24,7 +24,8 @@ setup(
         'matplotlib',
         'numpy',
         'pandas',
-        'scipy'
+        'scipy',
+        'pyjwt[crypto]'
     ],
     tests_require=[
         'pytest'

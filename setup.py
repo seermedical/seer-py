@@ -24,7 +24,8 @@ setup(
         'matplotlib',
         'numpy',
         'pandas',
-        'scipy'
+        'scipy',
+        'pyjwt[crypto]'
     ],
     tests_require=[
         'pytest'

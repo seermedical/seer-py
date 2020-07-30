@@ -105,6 +105,9 @@ def get_study_with_data_query_string(study_id):
                     units
                     exponent
                     timestamped
+                    channelGroupType {
+                        id
+                    }
                     segments (fromTime: 1.0, toTime: 9000000000000) {
                         id
                         startTime

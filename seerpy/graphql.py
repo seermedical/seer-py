@@ -131,6 +131,7 @@ def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
             study (id: "{study_id}") {{{{
                 id
                 name
+                startTime
                 duration
                 labelGroup (labelGroupId: "{label_group_id}") {{{{
                     id

@@ -7,9 +7,9 @@ from unittest import mock
 import pytest
 import pandas as pd
 
+from seerpy import auth
 from seerpy.seerpy import SeerConnect
 import seerpy.graphql as graphql
-from seerpy.auth import DEFAULT_COOKIE_KEY
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
 # pylint complains that the methods could be a function. this disables that warning.
@@ -18,22 +18,28 @@ from seerpy.auth import DEFAULT_COOKIE_KEY
 # not really a problem for these test classes
 # pylint:disable=too-few-public-methods
 
+# so that usage of fixtures doesn't get flagged
+# pylint: disable=redefined-outer-name
+
 TEST_DATA_DIR = pathlib.Path(__file__).parent / "test_data"
 
 DEFAULT_CONNECTION_PARAMS = {'url': '.'}
 
 
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
-class TestSeerConnect:
-    def test_success(self, seer_auth):
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
+@pytest.fixture
+def seer_connect():
+    return SeerConnect(seer_auth=auth.BaseAuth(api_url=''))
 
-        result = SeerConnect()
+
+class TestSeerConnect:
+    def test_success(self):
+        result = SeerConnect(seer_auth=auth.BaseAuth(api_url=''))
 
         assert result.graphql_client
 
-    def test_login_error(self, seer_auth):
-        seer_auth.side_effect = InterruptedError('Authentication Failed')
+    @mock.patch.object(auth, 'get_auth', autospec=True)
+    def test_login_error(self, get_auth):
+        get_auth.side_effect = InterruptedError('Authentication Failed')
 
         with pytest.raises(InterruptedError):
             SeerConnect()
@@ -41,38 +47,28 @@ class TestSeerConnect:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestPassingQueryVariables:
-    def test_query_variables_are_passed(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
+    def test_query_variables_are_passed(self, gql_client, unused_sleep, seer_connect):
         gql_client.return_value.execute.side_effect = [None]
 
-        SeerConnect().execute_query("query Q { test { id } }", variable_values={'a': 'b'})
+        seer_connect.execute_query("query Q { test { id } }", variable_values={'a': 'b'})
+
         assert gql_client.return_value.execute.call_count == 1
         assert gql_client.return_value.execute.call_args[1]['variable_values'] == {'a': 'b'}
 
-    def test_query_variables_are_passed_on_initial_failure(self, seer_auth, gql_client,
-                                                           unused_sleep):
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
+    def test_query_variables_are_passed_on_initial_failure(self, gql_client, unused_sleep,
+                                                           seer_connect):
         gql_client.return_value.execute.side_effect = [Exception('503 Server Error'), None]
 
-        SeerConnect().execute_query("query Q { test { id } }", variable_values={'a': 'b'})
+        seer_connect.execute_query("query Q { test { id } }", variable_values={'a': 'b'})
 
         assert gql_client.return_value.execute.call_count == 2
         assert gql_client.return_value.execute.call_args[1]['variable_values'] == {'a': 'b'}
 
 
 @mock.patch.object(SeerConnect, "get_all_study_metadata_by_ids", autospec=True)
-@mock.patch.object(SeerConnect, "__init__", autospec=True, return_value=None)
 class TestGetAllStudyMetaDataDataframeByIds:
-
-    # as we don't rely on anything in __init() I have mocked it for simplicity
-
-    def test_single_study(self, unused_seer_connect_init, get_all_metadata):
+    def test_single_study(self, get_all_metadata, seer_connect):
         # setup
         with open(TEST_DATA_DIR / "study1_metadata.json", "r") as f:
             test_input = json.load(f)
@@ -81,12 +77,12 @@ class TestGetAllStudyMetaDataDataframeByIds:
         expected_result = pd.read_csv(TEST_DATA_DIR / "study1_metadata.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_all_study_metadata_dataframe_by_ids()
+        result = seer_connect.get_all_study_metadata_dataframe_by_ids()
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_four_studies(self, unused_seer_connect_init, get_all_metadata):
+    def test_four_studies(self, get_all_metadata, seer_connect):
         # setup
         studies = []
         for i in range(1, 5):
@@ -99,7 +95,7 @@ class TestGetAllStudyMetaDataDataframeByIds:
         expected_result = pd.read_csv(TEST_DATA_DIR / "studies1-4_metadata.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_all_study_metadata_dataframe_by_ids()
+        result = seer_connect.get_all_study_metadata_dataframe_by_ids()
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
@@ -107,13 +103,9 @@ class TestGetAllStudyMetaDataDataframeByIds:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetAllStudyMetaDataByNames:
-    def test_no_study_param(self, seer_auth, gql_client, unused_sleep):
+    def test_no_study_param(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         # this is the call in get_studies()
@@ -132,19 +124,15 @@ class TestGetAllStudyMetaDataByNames:
                 expected_results.append(study['study'])
 
         gql_client.return_value.execute.side_effect = side_effects
-        seer_auth.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
 
         # run test
-        result = SeerConnect().get_all_study_metadata_by_names()
+        result = seer_connect.get_all_study_metadata_by_names()
 
         # check result
         assert result == {'studies': expected_results}
 
-    def test_existing_study_param(self, seer_auth, gql_client, unused_sleep):
+    def test_existing_study_param(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         # this is the call in get_studies()
@@ -163,16 +151,13 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect().get_all_study_metadata_by_names("Study 1")
+        result = seer_connect.get_all_study_metadata_by_names("Study 1")
 
         # check result
         assert result == {'studies': expected_results}
 
-    def test_getting_multiple_study_ids_by_name(self, seer_auth, gql_client, unused_sleep):
+    def test_getting_multiple_study_ids_by_name(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         # this is the call in get_studies()
@@ -197,16 +182,13 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect().get_study_ids_from_names(["Study 1", "Study 2"])
+        result = seer_connect.get_study_ids_from_names(["Study 1", "Study 2"])
 
         # check result
         assert result == expected_results
 
-    def test_nonexistent_study_param(self, seer_auth, gql_client, unused_sleep):
+    def test_nonexistent_study_param(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         # this is the call in get_studies() when no objects are found
@@ -215,7 +197,7 @@ class TestGetAllStudyMetaDataByNames:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test
-        result = SeerConnect().get_all_study_metadata_by_names("Study 12")
+        result = seer_connect.get_all_study_metadata_by_names("Study 12")
 
         # check result
         assert result == {'studies': []}
@@ -225,29 +207,22 @@ class TestGetAllStudyMetaDataByNames:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetSegmentUrls:
-    def test_success(self, seer_auth, gql_client, unused_sleep):
+    def test_success(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         with open(TEST_DATA_DIR / "segment_urls_1.json", "r") as f:
             gql_client.return_value.execute.return_value = json.load(f)
 
         expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_1.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_segment_urls(["segment-1-id", "segment-2-id"])
+        result = seer_connect.get_segment_urls(["segment-1-id", "segment-2-id"])
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_multiple_batches(self, seer_auth, gql_client, unused_sleep):
+    def test_multiple_batches(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
         for file_name in ["segment_urls_1.json", "segment_urls_2.json"]:
             with open(TEST_DATA_DIR / file_name, "r") as f:
@@ -257,46 +232,38 @@ class TestGetSegmentUrls:
         expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_2.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_segment_urls(
+        result = seer_connect.get_segment_urls(
             ["segment-1-id", "segment-2-id", "segment-3-id", "segment-4-id"], 2)
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_none_segment_ids(self, seer_auth, unused_gql_client, unused_sleep):
+    def test_none_segment_ids(self, unused_gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-
         expected_result = pd.read_csv(TEST_DATA_DIR / "segment_urls_empty.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_segment_urls(None)
+        result = seer_connect.get_segment_urls(None)
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_empty_segment_ids(self, seer_auth, unused_gql_client, unused_sleep):
-        # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-
+    def test_empty_segment_ids(self, unused_gql_client, unused_sleep, seer_connect):
         # gql_client is never called as we don't enter the loop
 
         # run test
-        result = SeerConnect().get_segment_urls([])
+        result = seer_connect.get_segment_urls([])
 
         # check result
         assert result.empty
 
-    def test_unmatched_segment_ids(self, seer_auth, gql_client, unused_sleep):
+    def test_unmatched_segment_ids(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         with open(TEST_DATA_DIR / "segment_urls_no_match.json", "r") as f:
             gql_client.return_value.execute.return_value = json.load(f)
 
         # run test
-        result = SeerConnect().get_segment_urls(["blah", "blah1"])
+        result = seer_connect.get_segment_urls(["blah", "blah1"])
 
         # check result
         assert result.empty
@@ -304,13 +271,9 @@ class TestGetSegmentUrls:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabels:
-    def test_success_single(self, seer_auth, gql_client, unused_sleep):
+    def test_success_single(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "labels_1.json", "r") as f:
@@ -325,16 +288,13 @@ class TestGetLabels:
         expected_result = query_data['study']
 
         # run test
-        result = SeerConnect().get_labels("study-1-id", "label-group-1-id")
+        result = seer_connect.get_labels("study-1-id", "label-group-1-id")
 
         # check result
         assert result == expected_result
 
-    def test_success_multiple(self, seer_auth, gql_client, unused_sleep):
+    def test_success_multiple(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "labels_1.json", "r") as f:
@@ -351,16 +311,13 @@ class TestGetLabels:
             expected_result = json.load(f)
 
         # run test
-        result = SeerConnect().get_labels("study-1-id", "label-group-1-id")
+        result = seer_connect.get_labels("study-1-id", "label-group-1-id")
 
         # check result
         assert result == expected_result
 
-    def test_success_empty(self, seer_auth, gql_client, unused_sleep):
+    def test_success_empty(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
@@ -371,7 +328,7 @@ class TestGetLabels:
         expected_result = []
 
         # run test
-        result = SeerConnect().get_labels("study-1-id", "label-group-1-id")
+        result = seer_connect.get_labels("study-1-id", "label-group-1-id")
 
         # check result
         assert result == expected_result
@@ -379,13 +336,9 @@ class TestGetLabels:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetLabelsDataframe:
-    def test_success(self, seer_auth, gql_client, unused_sleep):
+    def test_success(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "labels_1.json", "r") as f:
@@ -401,7 +354,7 @@ class TestGetLabelsDataframe:
         expected_result = pd.read_csv(TEST_DATA_DIR / "labels_1.csv", index_col=0)
 
         # run test
-        result = SeerConnect().get_labels_dataframe("study-1-id", "label-group-1-id")
+        result = seer_connect.get_labels_dataframe("study-1-id", "label-group-1-id")
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
@@ -409,13 +362,9 @@ class TestGetLabelsDataframe:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetViewedTimesDataframe:
-    def test_success(self, seer_auth, gql_client, unused_sleep):
+    def test_success(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "view_groups.json", "r") as f:
@@ -432,7 +381,7 @@ class TestGetViewedTimesDataframe:
                                                    'updatedAt'], float_precision='round_trip')
 
         # run test
-        result = SeerConnect().get_viewed_times_dataframe("study-1-id")
+        result = seer_connect.get_viewed_times_dataframe("study-1-id")
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result)
@@ -440,13 +389,9 @@ class TestGetViewedTimesDataframe:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetDocumentsForStudiesDataframe:
-    def test_success(self, seer_auth, gql_client, unused_sleep):
+    def test_success(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "study_documents.json", "r") as f:
@@ -465,7 +410,7 @@ class TestGetDocumentsForStudiesDataframe:
         expected_result['uploaded'] = expected_result['uploaded'].astype(int)
 
         # run test
-        result = SeerConnect().get_documents_for_studies_dataframe("study-1-id")
+        result = seer_connect.get_documents_for_studies_dataframe("study-1-id")
 
         # check result
         pd.testing.assert_frame_equal(result, expected_result, check_like=True)
@@ -473,12 +418,8 @@ class TestGetDocumentsForStudiesDataframe:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetMoodSurveyResults:
-    def test_get_results(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
+    def test_get_results(self, gql_client, unused_sleep, seer_connect):
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
             side_effects.append(json.load(f))
@@ -489,13 +430,10 @@ class TestGetMoodSurveyResults:
         with open(TEST_DATA_DIR / "mood_survey_results.json", "r") as f:
             expected_result = json.load(f)
 
-        result = SeerConnect().get_mood_survey_results(["aMoodSurveyId"])
+        result = seer_connect.get_mood_survey_results(["aMoodSurveyId"])
         assert result == expected_result
 
-    def test_get_results_dataframe(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
+    def test_get_results_dataframe(self, gql_client, unused_sleep, seer_connect):
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
             side_effects.append(json.load(f))
@@ -505,13 +443,10 @@ class TestGetMoodSurveyResults:
 
         expected_result = pd.read_csv(TEST_DATA_DIR / "mood_survey_results.csv")
 
-        result = SeerConnect().get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        result = seer_connect.get_mood_survey_results_dataframe(["aMoodSurveyId"])
         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_get_multiple_results_pages_dataframe(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
+    def test_get_multiple_results_pages_dataframe(self, gql_client, unused_sleep, seer_connect):
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_1.json", "r") as f:
             side_effects.append(json.load(f))
@@ -523,31 +458,24 @@ class TestGetMoodSurveyResults:
 
         expected_result = pd.read_csv(TEST_DATA_DIR / "mood_survey_results_multipage.csv")
 
-        result = SeerConnect().get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        result = seer_connect.get_mood_survey_results_dataframe(["aMoodSurveyId"])
         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_get_empty_results_dataframe(self, seer_auth, gql_client, unused_sleep):
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
+    def test_get_empty_results_dataframe(self, gql_client, unused_sleep, seer_connect):
         side_effects = []
         with open(TEST_DATA_DIR / "mood_survey_response_empty.json", "r") as f:
             side_effects.append(json.load(f))
         gql_client.return_value.execute.side_effect = side_effects
 
-        result = SeerConnect().get_mood_survey_results_dataframe(["aMoodSurveyId"])
+        result = seer_connect.get_mood_survey_results_dataframe(["aMoodSurveyId"])
         assert result.empty
 
 
 class TestStudyCohorts:
     @mock.patch('time.sleep', return_value=None)
     @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-    @mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
-    def test_get_study_ids_in_study_cohort(self, seer_auth, gql_client, unused_sleep):
+    def test_get_study_ids_in_study_cohort(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "study_cohorts_1_get.json", "r") as f:
@@ -560,7 +488,7 @@ class TestStudyCohorts:
         expected_result = ['study1', 'study2']
 
         # run test and check result
-        result = SeerConnect().get_study_ids_in_study_cohort('cohort1')
+        result = seer_connect.get_study_ids_in_study_cohort('cohort1')
         assert result == expected_result
 
     def test_generating_create_mutation(self):
@@ -616,13 +544,9 @@ class TestStudyCohorts:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestUserCohorts:
-    def test_get_user_ids_in_user_cohort(self, seer_auth, gql_client, unused_sleep):
+    def test_get_user_ids_in_user_cohort(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "user_cohorts_1_get.json", "r") as f:
@@ -635,26 +559,22 @@ class TestUserCohorts:
         expected_result = ['user1', 'user2']
 
         # run test and check result
-        result = SeerConnect().get_user_ids_in_user_cohort('cohort1')
+        result = seer_connect.get_user_ids_in_user_cohort('cohort1')
         assert result == expected_result
 
-    def test_get_user_ids_in_user_cohort_with_cohort_not_found(self, seer_auth, gql_client,
-                                                               unused_sleep):
+    def test_get_user_ids_in_user_cohort_with_cohort_not_found(self, gql_client, unused_sleep,
+                                                               seer_connect):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
-
         side_effects = [Exception('NOT_FOUND')]
         gql_client.return_value.execute.side_effect = side_effects
 
         with pytest.raises(Exception) as ex:
-            SeerConnect().get_user_ids_in_user_cohort('random-cohort-that-doesnt-exist')
+            seer_connect.get_user_ids_in_user_cohort('random-cohort-that-doesnt-exist')
             assert str(ex.value) == 'NOT_FOUND'
 
-    def test_get_user_ids_in_user_cohort_with_no_users(self, seer_auth, gql_client, unused_sleep):
+    def test_get_user_ids_in_user_cohort_with_no_users(self, gql_client, unused_sleep,
+                                                       seer_connect):
         # setup
-        seer_auth.return_value.cookie = {'seer.sid': "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         side_effects = []
 
         with open(TEST_DATA_DIR / "user_cohorts_2_get.json", "r") as f:
@@ -665,11 +585,10 @@ class TestUserCohorts:
         expected_result = []
 
         # run test and check result
-        result = SeerConnect().get_user_ids_in_user_cohort('a-missing-cohort')
+        result = seer_connect.get_user_ids_in_user_cohort('a-missing-cohort')
         assert result == expected_result
 
-    def test_generating_create_user_cohort_mutation(self, unused_seer_auth, unused_gql_client,
-                                                    unused_sleep):
+    def test_generating_create_user_cohort_mutation(self, unused_gql_client, unused_sleep):
         query_string = graphql.get_create_user_cohort_mutation_string('test_cohort',
                                                                       user_ids=['user1', 'user2'])
 
@@ -685,8 +604,7 @@ class TestUserCohorts:
         }
     """
 
-    def test_generating_add_users_to_cohort_mutation(self, unused_seer_auth, unused_gql_client,
-                                                     unused_sleep):
+    def test_generating_add_users_to_cohort_mutation(self, unused_gql_client, unused_sleep):
         query_string = graphql.get_add_users_to_user_cohort_mutation_string(
             'cohort_id', ['user1', 'user2'])
 
@@ -703,8 +621,7 @@ class TestUserCohorts:
         }
     """
 
-    def test_generating_remove_users_from_cohort_mutation(self, unused_seer_auth, unused_gql_client,
-                                                          unused_sleep):
+    def test_generating_remove_users_from_cohort_mutation(self, unused_gql_client, unused_sleep):
         query_string = graphql.get_remove_users_from_user_cohort_mutation_string(
             'cohort_id', ['user1', 'user2'])
 
@@ -724,13 +641,9 @@ class TestUserCohorts:
 
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
-@mock.patch('seerpy.seerpy.SeerAuth', autospec=True)
 class TestGetTagIds:
-    def test_success(self, seer_auth, gql_client, unused_sleep):
+    def test_success(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         expected_result = [{
             'category': {
                 'description': None,
@@ -755,21 +668,18 @@ class TestGetTagIds:
         gql_client.return_value.execute.return_value = {'labelTags': expected_result}
 
         # run test
-        result = SeerConnect().get_tag_ids()
+        result = seer_connect.get_tag_ids()
 
         # check result
         assert result == expected_result
 
-    def test_empty(self, seer_auth, gql_client, unused_sleep):
+    def test_empty(self, gql_client, unused_sleep, seer_connect):
         # setup
-        seer_auth.return_value.cookie = {DEFAULT_COOKIE_KEY: "cookie"}
-        seer_auth.return_value.get_connection_parameters.return_value = DEFAULT_CONNECTION_PARAMS
-
         expected_result = []
         gql_client.return_value.execute.return_value = {'labelTags': expected_result}
 
         # run test
-        result = SeerConnect().get_tag_ids()
+        result = seer_connect.get_tag_ids()
 
         # check result
         assert result == expected_result

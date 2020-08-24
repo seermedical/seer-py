@@ -84,7 +84,8 @@ def run(client, path_out):
         # If user reaches 5 attempts, break and request user to return later
         if attempts == 5:
             print("ReadTimeoutError! Number of tries exceeded. Please re-run \
-                this script at a later time.")
+            print("ReadTimeoutError! Number of tries exceeded. Please re-run this script at a later"
+                  " time.")
             break
 
     return

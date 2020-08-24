@@ -22,7 +22,8 @@ def get_download_status_file(client):
                 'fff9aaa9-b104-46e8-9227-b1b76d6f333e', '372482db-bcd8-4c79-85aa-16de76d8df69',
                 '92434006-5506-4d4a-97e4-f7232dfd68bd', '4f88cf00-8bf3-43fd-970d-9e434acf6edb',
                 'fba0f4f1-29c5-4387-b076-c6f788bbcaca', '72397e46-c424-4580-af50-1c460894664d',
-                'bab85744-4040-4496-b35e-dfb1ed638b73', 'ab1d9a55-190a-431f-ad31-653e137f584c'
+                'bab85744-4040-4496-b35e-dfb1ed638b73', 'ab1d9a55-190a-431f-ad31-653e137f584c',
+                '446364b3-ccb3-4927-8a32-f70ab0f5aa13', '3112c100-d71e-438f-96e5-4defc3b9cfa7'
             ]
         }
         write_json(studies_file, status)

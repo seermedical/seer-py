@@ -90,6 +90,8 @@ def get_study_with_data_query_string(study_id):
                 }
                 name
                 description
+                startTime
+                duration
                 channelGroups {
                     id
                     name
@@ -105,6 +107,9 @@ def get_study_with_data_query_string(study_id):
                     units
                     exponent
                     timestamped
+                    channelGroupType {
+                        id
+                    }
                     segments (fromTime: 1.0, toTime: 9000000000000) {
                         id
                         startTime
@@ -130,6 +135,8 @@ def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
             study (id: "{study_id}") {{{{
                 id
                 name
+                startTime
+                duration
                 labelGroup (labelGroupId: "{label_group_id}") {{{{
                     id
                     name

@@ -30,38 +30,27 @@ class DataDownloader:
             mkdir(self.folder_out)
 
     def get_channel_groups(self):
-        channel_groups = self.client.get_all_study_metadata_dataframe_by_ids(
-            [self.study_id])
+        channel_groups = self.client.get_all_study_metadata_dataframe_by_ids([self.study_id])
         channel_groups = channel_groups.drop(columns=[
-                'description', 'patient', 'channelGroups.chunkPeriod',
-                'channelGroups.compression', 'channelGroups.timestamped',
-                'segments.timezone', 'channels.channelType.category',
-                'channels.channelType.name'
-            ])
+            'description', 'patient', 'channelGroups.chunkPeriod', 'channelGroups.compression',
+            'channelGroups.timestamped', 'segments.timezone', 'channels.channelType.category',
+            'channels.channelType.name'
+        ])
         return channel_groups
 
     def get_label_groups(self):
         return self.client.get_label_groups_for_studies([self.study_id])
 
     def get_channels(self):
-        channels = {}
-        for channel_group in self.channel_groups['channelGroups.name'].unique(
-        ):
-            channels[channel_group] = self.channel_groups[
-                self.channel_groups['channelGroups.name'] ==
-                channel_group]['channels.name'].unique().tolist()
-        return ([channel_group, channel] for channel_group in channels.keys()
-                for channel in channels[channel_group])
+        channels = self.channel_groups[['channelGroups.name', 'channels.name']].drop_duplicates()
+        return ([channel_group, channel] for channel_group, channel in zip(
+            channels['channelGroups.name'].tolist(), channels['channels.name'].tolist()))
 
-    def get_segment_data(self, folder_out, channel_group, channel,
-                         channel_metadata, segment_ids):
+    def get_segment_data(self, folder_out, channel_group, channel, channel_metadata, segment_ids):
         for index, segment_id in enumerate(tqdm(segment_ids)):
-            segment_metadata = channel_metadata[channel_metadata['segments.id']
-                                                == segment_id]
+            segment_metadata = channel_metadata[channel_metadata['segments.id'] == segment_id]
             segment_file = join(
-                folder_out,
-                f'{self.study_name}_{channel_group}_{channel}_segment_{index}.json'
-            )
+                folder_out, f'{self.study_name}_{channel_group}_{channel}_segment_{index}.json')
             if isfile(segment_file):
                 continue
             try:
@@ -77,32 +66,22 @@ class DataDownloader:
             data = {}
             data['id'] = segment_row['id']
             data['channel_group'] = {}
-            data['channel_group']['channel_group_id'] = segment_row[
-                'channelGroups.id']
+            data['channel_group']['channel_group_id'] = segment_row['channelGroups.id']
             data['channel_group']['channel_group_name'] = channel_group
-            data['channel_group']['sample_rate'] = int(
-                segment_row['channelGroups.sampleRate'])
+            data['channel_group']['sample_rate'] = int(segment_row['channelGroups.sampleRate'])
             data['channel_group']['units'] = segment_row['channelGroups.units']
-            data['channel_group']['exponent'] = int(
-                segment_row['channelGroups.exponent'])
-            data['channel_group']['signal_min'] = int(
-                segment_row['channelGroups.signalMin'])
-            data['channel_group']['signal_max'] = int(
-                segment_row['channelGroups.signalMax'])
+            data['channel_group']['exponent'] = int(segment_row['channelGroups.exponent'])
+            data['channel_group']['signal_min'] = int(segment_row['channelGroups.signalMin'])
+            data['channel_group']['signal_max'] = int(segment_row['channelGroups.signalMax'])
             data['channel_group']['channel'] = {}
-            data['channel_group']['channel']['channel_id'] = segment_row[
-                'channels.id']
+            data['channel_group']['channel']['channel_id'] = segment_row['channels.id']
             data['channel_group']['channel']['channel_name'] = channel
             data['channel_group']['channel']['segment'] = {}
-            data['channel_group']['channel']['segment'][
-                'segment_index'] = index
-            data['channel_group']['channel']['segment'][
-                'segment_id'] = segment_row['segments.id']
+            data['channel_group']['channel']['segment']['segment_index'] = index
+            data['channel_group']['channel']['segment']['segment_id'] = segment_row['segments.id']
             data['channel_group']['channel']['segment']
-            data['channel_group']['channel']['segment']['time'] = segment_data[
-                'time'].tolist()
-            data['channel_group']['channel']['segment']['data'] = segment_data[
-                channel].tolist()
+            data['channel_group']['channel']['segment']['time'] = segment_data['time'].tolist()
+            data['channel_group']['channel']['segment']['data'] = segment_data[channel].tolist()
 
             yield data, segment_file
 
@@ -116,21 +95,21 @@ class DataDownloader:
                 mkdir(folder_out)
 
             # Get channel metadata
-            channel_metadata_file = join(self.folder_out,
-                                        f'{self.study_name}_{channel_group}_{channel}_metadata.csv')
+            channel_metadata_file = join(
+                self.folder_out, f'{self.study_name}_{channel_group}_{channel}_metadata.csv')
             channel_metadata = self.channel_groups[
                 (self.channel_groups['channelGroups.name'] == channel_group)
                 & (self.channel_groups['channels.name'] == channel)]
             # Save channel metadata
             channel_metadata.to_csv(channel_metadata_file)
-            
+
             # Get segment IDs
             segment_ids = channel_metadata['segments.id'].unique()
             print(f'Progress for channel: {channel}')
             # Get segment data
-            for segment_data, segment_file in self.get_segment_data(
-                    folder_out, channel_group, channel, channel_metadata,
-                    segment_ids):
+            for segment_data, segment_file in self.get_segment_data(folder_out, channel_group,
+                                                                    channel, channel_metadata,
+                                                                    segment_ids):
                 # Save segment data to JSON
                 write_json(segment_file, segment_data)
         print('Done.')
@@ -140,19 +119,15 @@ class DataDownloader:
         labels_file = join(self.folder_out, f'{self.study_name}_labels.csv')
         if isfile(labels_file):
             return
-        label_group_ids = [
-            x['id'] for x in self.label_groups[0]['labelGroups']
-        ]
+        label_group_ids = [x['id'] for x in self.label_groups[0]['labelGroups']]
         labels = pd.concat([
             self.client.get_labels_dataframe(self.study_id, label_group_id)
             for label_group_id in label_group_ids
         ])
         labels = labels.drop(columns=[
-            'labelGroup.description', 'labelGroup.name',
-            'labelGroup.labelType', 'labelGroup.numberOfLabels',
-            'labels.createdAt', 'labels.createdBy.fullName',
-            'labels.confidence', 'labels.timezone', 'labels.updatedAt',
-            'tags.id'
+            'labelGroup.description', 'labelGroup.name', 'labelGroup.labelType',
+            'labelGroup.numberOfLabels', 'labels.createdAt', 'labels.createdBy.fullName',
+            'labels.confidence', 'labels.timezone', 'labels.updatedAt', 'tags.id'
         ])
         # Save labels to CSV
         labels.to_csv(join(labels_file))

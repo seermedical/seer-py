@@ -44,7 +44,6 @@ class DataDownloader:
     def get_channels(self):
         channels = self.channel_groups[['channelGroups.name', 'channels.name']].drop_duplicates()
         return channels.to_numpy().tolist()
-            channels['channelGroups.name'].tolist(), channels['channels.name'].tolist()))
 
     def get_segment_data(self, folder_out, channel_group, channel, channel_metadata, segment_ids):
         for index, segment_id in enumerate(tqdm(segment_ids)):

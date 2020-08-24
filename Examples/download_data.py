@@ -3,6 +3,7 @@ import sys
 import time
 import argparse
 
+from os import mkdir
 from os.path import dirname, isdir, isfile, join
 from seerpy import SeerConnect
 from urllib3.exceptions import ReadTimeoutError
@@ -18,14 +19,10 @@ def get_download_status_file(client):
         status = {
             study_id: 0
             for study_id in [
-                'fff9aaa9-b104-46e8-9227-b1b76d6f333e',
-                '372482db-bcd8-4c79-85aa-16de76d8df69',
-                '92434006-5506-4d4a-97e4-f7232dfd68bd',
-                '4f88cf00-8bf3-43fd-970d-9e434acf6edb',
-                'fba0f4f1-29c5-4387-b076-c6f788bbcaca',
-                '72397e46-c424-4580-af50-1c460894664d',
-                'bab85744-4040-4496-b35e-dfb1ed638b73',
-                'ab1d9a55-190a-431f-ad31-653e137f584c'
+                'fff9aaa9-b104-46e8-9227-b1b76d6f333e', '372482db-bcd8-4c79-85aa-16de76d8df69',
+                '92434006-5506-4d4a-97e4-f7232dfd68bd', '4f88cf00-8bf3-43fd-970d-9e434acf6edb',
+                'fba0f4f1-29c5-4387-b076-c6f788bbcaca', '72397e46-c424-4580-af50-1c460894664d',
+                'bab85744-4040-4496-b35e-dfb1ed638b73', 'ab1d9a55-190a-431f-ad31-653e137f584c'
             ]
         }
         write_json(studies_file, status)
@@ -44,14 +41,11 @@ def run(client, path_out):
     else:
         output_dir = join(dirname(__file__), 'data')
     if not isdir(output_dir):
-        os.mkdir(output_dir)
+        mkdir(output_dir)
 
     download_status_file = get_download_status_file(client)
     download_status = read_json(download_status_file)
-    study_ids = [
-        study_id for study_id in download_status
-        if download_status[study_id] == 0
-    ]
+    study_ids = [study_id for study_id in download_status if download_status[study_id] == 0]
 
     attempts = 0
     while True:
@@ -75,17 +69,15 @@ def run(client, path_out):
         except ReadTimeoutError:
             attempts += 1
             for i in range(5, 0, -1):
-                sys.stdout.write(
-                    f'ReadTimeoutError. Re-trying after a short break... {str(i)}'
-                )
+                sys.stdout.write(f'ReadTimeoutError. Re-trying after a short break... {str(i)}')
                 sys.stdout.flush()
                 time.sleep(1)
 
         # If user reaches 5 attempts, break and request user to return later
         if attempts == 5:
-            print("ReadTimeoutError! Number of tries exceeded. Please re-run \
-            print("ReadTimeoutError! Number of tries exceeded. Please re-run this script at a later"
-                  " time.")
+            print(
+                "ReadTimeoutError! Number of tries exceeded. Please re-run this script at a later time."
+            )
             break
 
     return

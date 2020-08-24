@@ -90,6 +90,7 @@ def get_study_with_data_query_string(study_id):
                 }
                 name
                 description
+                startTime
                 duration
                 channelGroups {
                     id

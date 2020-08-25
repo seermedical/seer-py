@@ -8,7 +8,15 @@ To install, simply clone or download this repository, then type `pip install .` 
 
 ### Epilepsy Ecosystem Data
 
-For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest release](https://github.com/seermedical/seer-py/releases/latest) instead of cloning the repository or downloading the master branch. Then open the script `ContestDataDownloader.py` in `Examples` and it will guide you through the download process (you will need to change a few things in this script including the path to download the data to).
+For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest master version](https://github.com/seermedical/seer-py/tree/master).
+
+#### My Seizure Gauge Data
+
+For the My Seizure Gauge dataset, open the script `msg_data_downloader.py` in `Examples` and it will guide you through the download process (you will be prompted in the command line for the path to download the data to).
+
+#### NeuroVista Data
+
+For the NeuroVista dataset, open the script `neurovista_contest_data_downloader.py.py` in `Examples` and it will guide you through the download process (you will need to change a few things in this script including the path to download the data to).
 
 ## Requirements
 

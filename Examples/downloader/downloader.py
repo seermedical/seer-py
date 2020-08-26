@@ -30,8 +30,7 @@ class DataDownloader:
             mkdir(self.folder_out)
 
     def get_channel_groups(self):
-        channel_groups = self.client.get_all_study_metadata_dataframe_by_ids([self.study_id])
-        return channel_groups
+        return self.client.get_all_study_metadata_dataframe_by_ids([self.study_id])
 
     def get_label_groups(self):
         return self.client.get_label_groups_for_studies([self.study_id])

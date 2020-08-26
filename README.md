@@ -12,7 +12,7 @@ For users attempting to download data for the [Epilepsy Ecosystem](https://www.e
 
 #### My Seizure Gauge Data
 
-For the My Seizure Gauge dataset, use the script `msg_data_downloader.py` in `Examples` to begin the download process. To specify a save-path for the downloaded data, use the command `python msg_data_downloader.py -p /path/to/directory` where `/path/to/directory` is the desired save path. If download is aborted, this script can be re-run and the download should resume from where it was stopped.
+For the My Seizure Gauge dataset, use the script `msg_data_downloader.py` in `Examples` to begin the download process. To specify a save-path for the downloaded data, use the command `python msg_data_downloader.py -o /path/to/directory` where `/path/to/directory` is the desired save path. If download is aborted, this script can be re-run and the download should resume from where it was stopped.
 
 #### NeuroVista Data
 

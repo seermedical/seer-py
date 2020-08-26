@@ -32,8 +32,8 @@ class DataDownloader:
     def get_channel_groups(self):
         channel_groups = self.client.get_all_study_metadata_dataframe_by_ids([self.study_id])
         channel_groups = channel_groups.drop(columns=[
-            'description', 'patient', 'channelGroups.chunkPeriod', 'channelGroups.compression',
-            'channelGroups.timestamped', 'segments.timezone', 'channels.channelType.category',
+            'description', 'patient', 'channelGroups.chunkPeriod', 'channelGroups.compression', 
+            'segments.timezone', 'channels.channelType.category',
             'channels.channelType.name'
         ])
         return channel_groups

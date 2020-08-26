@@ -35,7 +35,7 @@ class DataDownloader:
             'description', 'patient', 'channelGroups.chunkPeriod', 'channelGroups.compression',
             'channelGroups.timestamped', 'segments.timezone', 'channels.channelType.category',
             'channels.channelType.name'
-        ])
+        ], errors='ignore')
         return channel_groups
 
     def get_label_groups(self):

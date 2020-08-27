@@ -438,7 +438,7 @@ def get_diary_created_at_query_string(patient_id):
 
 def get_diary_labels_query_string():
     return """
-        query getPatientDiaryLabels(
+        query getDiaryLabels(
             $id: String!,
             $value: String!,
             $limit: PaginationAmount, 
@@ -486,7 +486,7 @@ def get_diary_labels_query_string():
 
 def get_diary_medication_alerts_query_string():
 
-    return """query getDiaryMedicationAlerts(
+    return """query getDiaryAlertMedication(
                 $id: String!,
                 $from: Float!,
                 $to: Float!

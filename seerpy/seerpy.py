@@ -1249,13 +1249,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             with a 'windows' key that indexes list of dict with keys 'startTime',
             'timezone', and 'endTime'.
         """
-        if is_active is not None:
-            filter_string = f'(filters: [{{name: "isActive", value: "{"true" if is_active else "false"}"}}])'
-        else:
-            filter_string = ''
-        query_string = graphql.get_diary_medication_alert_windows_query_string(
-            patient_id, filter_string)
-        return self.execute_query(query_string)['patient']['diary']['alerts']
+        filters = [{"name": "labelType", "value": f"{is_active.lower()}"}] if is_active is not None else []
+        query_string = graphql.get_diary_medication_alert_windows_query_string()
+        query_variables = {
+            "id": patient_id,
+            "filters": filters
+        }
+        return self.execute_query(query_string, query_variables)['patient']['diary']['alerts']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """

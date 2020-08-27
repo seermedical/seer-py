@@ -523,24 +523,27 @@ def get_diary_medication_alerts_query_string():
             }"""
 
 
-def get_diary_medication_alert_windows_query_string(patient_id, filter_string):
+def get_diary_medication_alert_windows_query_string():
     return """
-        query {
-                patient (id: "%s") {
-                    diary {
+        query getDiaryAlertWindow(
+            $id: String!,
+            $filters: [SearchFilter!]
+        ) {
+            patient (id: $id) {
+                diary {
+                    id
+                    alerts {
                         id
-                        alerts {
-                            id
-                            name
-                          	windows %s {
-                                startTime
-                                timezone
-                                endTime
-                            }
+                        name
+                        windows (filters: $filters) {
+                            startTime
+                            timezone
+                            endTime
                         }
                     }
                 }
-            }""" % (patient_id, filter_string)
+            }
+        }"""
 
 
 def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):

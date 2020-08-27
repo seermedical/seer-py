@@ -452,13 +452,13 @@ def get_diary_labels_query_string():
                         diary {
                             id
                             createdAt
-                            labelGroups (filters: [{name: "labelType", value: $value}]) {
+                            labelGroups (filters: [{name: "labelType" value: $value}]) {
                                 id
                                 labelType
                                 labelSourceType
                                 name
                                 numberOfLabels
-                                labels (limit: $limit, offset: $offset, ranges: [{ from: $from_time, to: $to_time }, { from: $from_duration, to: $to_duration }]) {
+                                labels (limit: $limit, offset: $offset, ranges: [{ from: $from_time to: $to_time }, { from: $from_duration to: $to_duration }]) {
                                     id
                                     startTime
                                     timezone
@@ -484,16 +484,20 @@ def get_diary_labels_query_string():
         """
 
 
-def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
+def get_diary_medication_alerts_query_string():
 
-    return """query {
-                patient (id: "%s") {
+    return """query getDiaryMedicationAlerts(
+                $id: String!,
+                $from: Float!,
+                $to: Float!
+                ) {
+                patient (id: $id) {
                     diary {
                         id
                         alerts {
                             id
                             name
-                            labels (ranges: [{ from: %.0f to: %.0f }]) {
+                            labels (ranges: [{ from: $from to: $to }]) {
                                 id
                                 startTime
                                 scheduledTime
@@ -516,7 +520,7 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
                         }
                     }
                 }
-            }""" % (patient_id, from_time, to_time)
+            }"""
 
 
 def get_diary_medication_alert_windows_query_string(patient_id, filter_string):

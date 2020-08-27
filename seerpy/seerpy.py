@@ -1207,9 +1207,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
              with a 'labels' key that indexes list of dict with keys 'doses',
              'alert', 'startTime', 'scheduledTime' etc.
         """
-        query_string = graphql.get_diary_medication_alerts_query_string(
-            patient_id, from_time, to_time)
-        response = self.execute_query(query_string)
+        query_string = graphql.get_diary_medication_alerts_query_string()
+        response = self.execute_query(query_string, variable_values={
+            "id": patient_id,
+            "from": from_time,
+            "to": to_time
+        })
         return response['patient']['diary']
 
     def get_diary_medication_alerts_dataframe(self, patient_id, from_time=0, to_time=9e12):

@@ -1109,15 +1109,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = {}
         # set true if we need to fetch labels
         query_flag = True
-
+        variable_values = {
+            "id": patient_id,
+            "value": label_type,
+            "from_time": from_time,
+            "to_time": to_time,
+            "from_duration": from_duration,
+            "to_duration": to_duration
+        }
         while True:
             if not query_flag:
                 break
 
-            query_string = graphql.get_diary_labels_query_string(patient_id, label_type, limit,
-                                                                 offset, from_time, to_time,
-                                                                 from_duration, to_duration)
-            response = self.execute_query(query_string)['patient']['diary']
+            query_string = graphql.get_diary_labels_query_string()
+            variable_values["limit"] = limit
+            variable_values["offset"] = offset
+        
+            response = self.execute_query(query_string, variable_values=variable_values)['patient']['diary']
             label_groups = response['labelGroups']
 
             query_flag = False

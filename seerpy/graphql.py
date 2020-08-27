@@ -436,45 +436,52 @@ def get_diary_created_at_query_string(patient_id):
         }""" % patient_id
 
 
-def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time,
-                                  from_duration, to_duration):
+def get_diary_labels_query_string():
     return """
-        query {
-            patient (id: "%s") {
-                id
-                diary {
-                    id
-                    createdAt
-                    labelGroups (filters: [{name: "labelType", value:"%s"}]) {
+        query getPatientDiaryLabels(
+            $id: String!,
+            $value: String!,
+            $limit: PaginationAmount, 
+            $offset: Int,
+            $from_time: Float!,
+            $to_time: Float!,
+            $from_duration: Float!,
+            $to_duration: Float!) {
+                    patient (id: $id) {
                         id
-                        labelType
-                        labelSourceType
-                        name
-                        numberOfLabels
-                        labels (limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
+                        diary {
                             id
-                            startTime
-                            timezone
-                            duration
-                            note
-                            tags {
+                            createdAt
+                            labelGroups (filters: [{name: "labelType", value: $value}]) {
                                 id
-                                tagType {
+                                labelType
+                                labelSourceType
+                                name
+                                numberOfLabels
+                                labels (limit: $limit, offset: $offset, ranges: [{ from: $from_time, to: $to_time }, { from: $from_duration, to: $to_duration }]) {
                                     id
-                                    category  {
+                                    startTime
+                                    timezone
+                                    duration
+                                    note
+                                    tags {
                                         id
-                                        name
-                                        description
+                                        tagType {
+                                            id
+                                            category  {
+                                                id
+                                                name
+                                                description
+                                            }
+                                            value
+                                        }
                                     }
-                                    value
                                 }
                             }
                         }
                     }
                 }
-            }
-        }""" % (patient_id, label_type, limit, offset, from_time, to_time, from_duration,
-                to_duration)
+        """
 
 
 def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):

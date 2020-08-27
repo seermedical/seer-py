@@ -388,7 +388,7 @@ def get_user_from_patient_query_string(patient_id):
 
 def get_patients_query_string():
     return """
-        query {
+        query getPatientList {
             patients {
                 id
                 user {

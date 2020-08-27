@@ -983,7 +983,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         query_string = graphql.get_patients_query_string()
         response = self.execute_query(query_string, party_id)
-        return response['patients']
+        return response['getPatientList']['patients']
 
     def get_patients_dataframe(self, party_id=None):
         """

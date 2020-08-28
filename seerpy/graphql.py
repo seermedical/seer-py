@@ -546,22 +546,25 @@ def get_diary_medication_alert_windows_query_string():
         }"""
 
 
-def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):
+def get_diary_medication_compliance_query_string():
 
     return """
-        query {
-            patient (id: "%s") {
-                id
-                diary {
+        query getMedicationCompliance(
+            $id: String!,
+            $from: Float!
+            $to: Float!) {
+                patient (id: $id) {
                     id
-                    medicationCompliance (range: { from: %.0f, to: %.0f }) {
-                        label
-                        status
-                        date
+                    diary {
+                        id
+                        medicationCompliance (range: { from: $from, to: $to }) {
+                            label
+                            status
+                            date
+                        }
                     }
                 }
-            }
-        }""" % (patient_id, from_time, to_time)
+            }"""
 
 
 def get_documents_for_study_ids_paged_query_string(study_ids):

@@ -86,7 +86,7 @@ class BaseAuth:
         url_suffix = '?partyId=' + party_id if party_id else ''
 
         return {
-            'url': self.api_url + '/graphql' + url_suffix,
+            'url': self.api_url + url_suffix,
             'headers': self.get_headers(),
             'use_json': True,
             'timeout': 30

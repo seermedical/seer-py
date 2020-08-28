@@ -1109,7 +1109,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = {}
         # set true if we need to fetch labels
         query_flag = True
-        variable_values = {
+        query_variables = {
             "id": patient_id,
             "value": label_type,
             "from_time": from_time,
@@ -1122,10 +1122,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 break
 
             query_string = graphql.get_diary_labels_query_string()
-            variable_values["limit"] = limit
-            variable_values["offset"] = offset
-        
-            response = self.execute_query(query_string, variable_values=variable_values)['patient']['diary']
+            query_variables["limit"] = limit
+            query_variables["offset"] = offset
+
+            response = self.execute_query(query_string, variable_values=query_variables)['getDiaryLabels']
             label_groups = response['labelGroups']
 
             query_flag = False
@@ -1249,13 +1249,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             with a 'windows' key that indexes list of dict with keys 'startTime',
             'timezone', and 'endTime'.
         """
-        filters = [{"name": "labelType", "value": f"{is_active.lower()}"}] if is_active is not None else []
+        filters = [{"name": "isActive", "value": f"{str(is_active).lower()}"}] if is_active is not None else []
         query_string = graphql.get_diary_medication_alert_windows_query_string()
+        print(query_string)
         query_variables = {
             "id": patient_id,
             "filters": filters
         }
-        return self.execute_query(query_string, query_variables)['patient']['diary']['alerts']
+        return self.execute_query(query_string, variable_values=query_variables)['patient']['diary']['alerts']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """

@@ -1278,9 +1278,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Has a single key, 'patient', which indexes a nested dictionary with a
             'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
         """
-        query_string = graphql.get_diary_medication_compliance_query_string(
-            patient_id, from_time, to_time)
-        return self.execute_query(query_string)
+        query_string = graphql.get_diary_medication_compliance_query_string()
+        query_variables = {
+            "id": patient_id,
+            "from": from_time,
+            "to": to_time
+        }
+        return self.execute_query(query_string, variable_values=query_variables)
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
         """

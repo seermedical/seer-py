@@ -983,8 +983,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         query_string = graphql.get_patients_query_string()
         response = self.execute_query(query_string, party_id)
-        print(response)
-        return response['getPatientList']['patients']
+        return response['patients']
 
     def get_patients_dataframe(self, party_id=None):
         """
@@ -1126,7 +1125,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             query_variables["limit"] = limit
             query_variables["offset"] = offset
 
-            response = self.execute_query(query_string, variable_values=query_variables)['getDiaryLabels']
+            response = self.execute_query(query_string, variable_values=query_variables)
             label_groups = response['labelGroups']
 
             query_flag = False
@@ -1256,7 +1255,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             "id": patient_id,
             "filters": filters
         }
-        return self.execute_query(query_string, variable_values=query_variables)['getDiaryAlertWindow']['patient']['diary']['alerts']
+        return self.execute_query(query_string, variable_values=query_variables)['patient']['diary']['alerts']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """

@@ -1252,12 +1252,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         filters = [{"name": "isActive", "value": f"{str(is_active).lower()}"}] if is_active is not None else []
         query_string = graphql.get_diary_medication_alert_windows_query_string()
-        print(query_string)
         query_variables = {
             "id": patient_id,
             "filters": filters
         }
-        return self.execute_query(query_string, variable_values=query_variables)['patient']['diary']['alerts']
+        return self.execute_query(query_string, variable_values=query_variables)['getDiaryAlertWindow']['patient']['diary']['alerts']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """

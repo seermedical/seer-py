@@ -1941,5 +1941,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         preferredTimezone: str
             The modified preferred timezone
         """
-        query_string = graphql.get_add_user_timezone_mutation_string(user_id, timezone)
-        return self.execute_query(query_string)
+        query_string = graphql.get_add_user_timezone_mutation_string()
+        query_variables = {
+            "id": user_id,
+            "preferredTimezone": timezone
+        }
+        return self.execute_query(query_string, variable_values=query_variables)

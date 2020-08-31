@@ -884,13 +884,14 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
     """ % (user_cohort_id, get_json_list(user_ids))
 
 
-def get_add_user_timezone_mutation_string(user_id, timezone):
+def get_add_user_timezone_mutation_string():
     return """
-        mutation  {
+        mutation editUserPreferredTimezone($id: String!,
+                                            $preferredTimezone: String) {
             editUser(
-                id: "%s",
-                preferredTimezone: "%s") {
+                id: $id,
+                preferredTimezone: $preferredTimezone) {
         id
         preferredTimezone
         }
-  }""" % (user_id, timezone)
+    }"""

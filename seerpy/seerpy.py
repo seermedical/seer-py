@@ -1109,15 +1109,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = {}
         # set true if we need to fetch labels
         query_flag = True
-
+        query_variables = {
+            "id": patient_id,
+            "value": label_type,
+            "from_time": from_time,
+            "to_time": to_time,
+            "from_duration": from_duration,
+            "to_duration": to_duration
+        }
         while True:
             if not query_flag:
                 break
 
-            query_string = graphql.get_diary_labels_query_string(patient_id, label_type, limit,
-                                                                 offset, from_time, to_time,
-                                                                 from_duration, to_duration)
-            response = self.execute_query(query_string)['patient']['diary']
+            query_string = graphql.get_diary_labels_query_string()
+            query_variables["limit"] = limit
+            query_variables["offset"] = offset
+
+            response = self.execute_query(query_string, variable_values=query_variables)
             label_groups = response['labelGroups']
 
             query_flag = False
@@ -1199,9 +1207,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
              with a 'labels' key that indexes list of dict with keys 'doses',
              'alert', 'startTime', 'scheduledTime' etc.
         """
-        query_string = graphql.get_diary_medication_alerts_query_string(
-            patient_id, from_time, to_time)
-        response = self.execute_query(query_string)
+        query_string = graphql.get_diary_medication_alerts_query_string()
+        response = self.execute_query(query_string, variable_values={
+            "id": patient_id,
+            "from": from_time,
+            "to": to_time
+        })
         return response['patient']['diary']
 
     def get_diary_medication_alerts_dataframe(self, patient_id, from_time=0, to_time=9e12):
@@ -1238,13 +1249,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             with a 'windows' key that indexes list of dict with keys 'startTime',
             'timezone', and 'endTime'.
         """
-        if is_active is not None:
-            filter_string = f'(filters: [{{name: "isActive", value: "{"true" if is_active else "false"}"}}])'
-        else:
-            filter_string = ''
-        query_string = graphql.get_diary_medication_alert_windows_query_string(
-            patient_id, filter_string)
-        return self.execute_query(query_string)['patient']['diary']['alerts']
+        filters = [{"name": "isActive", "value": f"{str(is_active).lower()}"}] if is_active is not None else []
+        query_string = graphql.get_diary_medication_alert_windows_query_string()
+        query_variables = {
+            "id": patient_id,
+            "filters": filters
+        }
+        return self.execute_query(query_string, variable_values=query_variables)['patient']['diary']['alerts']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """
@@ -1266,9 +1277,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Has a single key, 'patient', which indexes a nested dictionary with a
             'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
         """
-        query_string = graphql.get_diary_medication_compliance_query_string(
-            patient_id, from_time, to_time)
-        return self.execute_query(query_string)
+        query_string = graphql.get_diary_medication_compliance_query_string()
+        query_variables = {
+            "id": patient_id,
+            "from": from_time,
+            "to": to_time
+        }
+        return self.execute_query(query_string, variable_values=query_variables)
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
         """
@@ -1909,22 +1924,3 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
 
-    def add_user_timezone(self, user_id, timezone):
-        """
-        Sets a user's preferred timezone
-        Parameters
-        ----------
-        user_id : str
-            The user ID
-        user_ids : str
-            The timezone as string, e.g. Australia/Melbourne, US/Eastern
-
-        Returns
-        -------
-        user_id : str
-            The user ID
-        preferredTimezone: str
-            The modified preferred timezone
-        """
-        query_string = graphql.get_add_user_timezone_mutation_string(user_id, timezone)
-        return self.execute_query(query_string)

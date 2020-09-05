@@ -388,7 +388,7 @@ def get_user_from_patient_query_string(patient_id):
 
 def get_patients_query_string():
     return """
-        query {
+        query getPatientList {
             patients {
                 id
                 user {
@@ -397,6 +397,7 @@ def get_patients_query_string():
                     shortName
                     email
                     lastActive
+                    lastInsightGenerated
                     preferredTimezone
                 }
             }
@@ -435,57 +436,68 @@ def get_diary_created_at_query_string(patient_id):
         }""" % patient_id
 
 
-def get_diary_labels_query_string(patient_id, label_type, limit, offset, from_time, to_time,
-                                  from_duration, to_duration):
+def get_diary_labels_query_string():
     return """
-        query {
-            patient (id: "%s") {
-                id
-                diary {
-                    id
-                    createdAt
-                    labelGroups (filters: [{name: "labelType", value:"%s"}]) {
+        query getDiaryLabels(
+            $id: String!,
+            $value: String!,
+            $limit: PaginationAmount, 
+            $offset: Int,
+            $from_time: Float!,
+            $to_time: Float!,
+            $from_duration: Float!,
+            $to_duration: Float!) {
+                    patient (id: $id) {
                         id
-                        labelType
-                        labelSourceType
-                        name
-                        numberOfLabels
-                        labels (limit: %.0f, offset: %.0f, ranges: [{ from: %.0f to: %.0f }, { from: %.0f to: %.0f }]) {
+                        diary {
                             id
-                            startTime
-                            timezone
-                            duration
-                            note
-                            tags {
+                            createdAt
+                            labelGroups (filters: [{name: "labelType" value: $value}]) {
                                 id
-                                tagType {
+                                labelType
+                                labelSourceType
+                                name
+                                numberOfLabels
+                                labels (limit: $limit, offset: $offset, ranges: [{ from: $from_time to: $to_time }, { from: $from_duration to: $to_duration }]) {
                                     id
-                                    category  {
+                                    startTime
+                                    timezone
+                                    duration
+                                    note
+                                    tags {
                                         id
-                                        name
-                                        description
+                                        tagType {
+                                            id
+                                            category  {
+                                                id
+                                                name
+                                                description
+                                            }
+                                            value
+                                        }
                                     }
-                                    value
                                 }
                             }
                         }
                     }
                 }
-            }
-        }""" % (patient_id, label_type, limit, offset, from_time, to_time, from_duration,
-                to_duration)
+        """
 
 
-def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
+def get_diary_medication_alerts_query_string():
 
-    return """query {
-                patient (id: "%s") {
+    return """query getDiaryAlertMedication(
+                $id: String!,
+                $from: Float!,
+                $to: Float!
+                ) {
+                patient (id: $id) {
                     diary {
                         id
                         alerts {
                             id
                             name
-                            labels (ranges: [{ from: %.0f to: %.0f }]) {
+                            labels (ranges: [{ from: $from to: $to }]) {
                                 id
                                 startTime
                                 scheduledTime
@@ -508,45 +520,51 @@ def get_diary_medication_alerts_query_string(patient_id, from_time, to_time):
                         }
                     }
                 }
-            }""" % (patient_id, from_time, to_time)
+            }"""
 
 
-def get_diary_medication_alert_windows_query_string(patient_id, filter_string):
+def get_diary_medication_alert_windows_query_string():
     return """
-        query {
-                patient (id: "%s") {
-                    diary {
+        query getDiaryAlertWindow(
+            $id: String!,
+            $filters: [SearchFilter!]
+        ) {
+            patient (id: $id) {
+                diary {
+                    id
+                    alerts {
                         id
-                        alerts {
-                            id
-                            name
-                          	windows %s {
-                                startTime
-                                timezone
-                                endTime
-                            }
+                        name
+                        windows (filters: $filters) {
+                            startTime
+                            timezone
+                            endTime
                         }
                     }
                 }
-            }""" % (patient_id, filter_string)
+            }
+        }"""
 
 
-def get_diary_medication_compliance_query_string(patient_id, from_time, to_time):
+def get_diary_medication_compliance_query_string():
 
     return """
-        query {
-            patient (id: "%s") {
-                id
-                diary {
+        query getMedicationCompliance(
+            $id: String!,
+            $from: Float!
+            $to: Float!) {
+                patient (id: $id) {
                     id
-                    medicationCompliance (range: { from: %.0f, to: %.0f }) {
-                        label
-                        status
-                        date
+                    diary {
+                        id
+                        medicationCompliance (range: { from: $from, to: $to }) {
+                            label
+                            status
+                            date
+                        }
                     }
                 }
-            }
-        }""" % (patient_id, from_time, to_time)
+            }"""
 
 
 def get_documents_for_study_ids_paged_query_string(study_ids):
@@ -864,15 +882,3 @@ def get_remove_users_from_user_cohort_mutation_string(user_cohort_id, user_ids):
             }
         }
     """ % (user_cohort_id, get_json_list(user_ids))
-
-
-def get_add_user_timezone_mutation_string(user_id, timezone):
-    return """
-        mutation  {
-            editUser(
-                id: "%s",
-                preferredTimezone: "%s") {
-        id
-        preferredTimezone
-        }
-  }""" % (user_id, timezone)

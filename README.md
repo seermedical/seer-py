@@ -1,6 +1,6 @@
 # seer-py
 
-Python SDK for the Seer data platform, which handles authenticating a user, downloading channel data, and uploading labels/annotations.
+Python SDK for the Seer data platform, which handles authenticating a user, downloading channel or other data, and uploading labels/annotations.
 
 ## Install
 

@@ -18,12 +18,15 @@ repos:
         exclude: Examples/Example.ipynb
 -   repo: local
     hooks:
-    -   id: tests
+    -   id: run-tests
         name: run tests
         entry: pytest tests -v -ra
         language: system
+        additional_dependencies: [pytest]
         types: [python]
         stages: [push]
+        always_run: true
+        pass_filenames: false
 # -   repo: https://github.com/pycqa/pylint
 #     rev: 'pylint-2.6.0'
 #     hooks:

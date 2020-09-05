@@ -115,3 +115,11 @@ There is a known issue with using python's multiprocessing module on Windows wit
 1. To format the code using yapf, run `yapf -ir seerpy tests`
 2. To run pylint on the code, run `pylint seerpy tests`
 3. To run tests and generate an html coverage report, run `pytest --cov-report=html --cov=seerpy`
+
+To set up pre-commit (highly recommended):
+
+    pip install pre-commit  # see https://pre-commit.com/ for alternatives
+    pre-commit install
+    pre-commit install -t pre-push
+
+Now code will automatically be linted and formatter in various ways before every commit, and tests run before every push.

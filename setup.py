@@ -18,16 +18,6 @@ setup(
     ],
     keywords='api seer eeg ecg client',
     packages=find_packages(include=["seerpy*"]),
-    install_requires=[
-        'gql',
-        'requests',
-        'matplotlib',
-        'numpy',
-        'pandas',
-        'scipy',
-        'pyjwt[crypto]'
-    ],
-    tests_require=[
-        'pytest'
-    ],
+    install_requires=['gql', 'requests', 'matplotlib', 'numpy', 'pandas', 'scipy', 'pyjwt[crypto]'],
+    tests_require=['pytest'],
 )

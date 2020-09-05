@@ -23,17 +23,18 @@ for n in range(len(patients)):
 
     patient_id = patients.loc[n]['id']
     patient_email = patients.loc[n]['user.email']
-    
-#    get data for i.e. patient email
+
+    #    get data for i.e. patient email
     if patient_email == 'EMAIL':
-        
-#        Get available label groups
+
+        #        Get available label groups
         diary_data_groups = seer_client.get_diary_data_groups_dataframe(patient_id)
-        
+
         for group in range(len(diary_data_groups)):
             group_name = diary_data_groups.loc[group]['name']
-    
-    #            get the label group for fitbit sleep labels
-            if  group_name == fitbit_sleep_name:
+
+            #            get the label group for fitbit sleep labels
+            if group_name == fitbit_sleep_name:
                 group_id = diary_data_groups.loc[group]['id']
-                sleep_labels = seer_client.get_diary_data_labels_dataframe(patient_id, group_id, from_time, to_time)
+                sleep_labels = seer_client.get_diary_data_labels_dataframe(
+                    patient_id, group_id, from_time, to_time)

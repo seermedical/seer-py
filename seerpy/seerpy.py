@@ -1125,7 +1125,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             query_variables["limit"] = limit
             query_variables["offset"] = offset
 
-            response = self.execute_query(query_string, variable_values=query_variables)
+            response = self.execute_query(query_string, variable_values=query_variables)['patient']['diary']
             label_groups = response['labelGroups']
 
             query_flag = False

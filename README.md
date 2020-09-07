@@ -122,4 +122,5 @@ To set up pre-commit (highly recommended):
     pre-commit install
     pre-commit install -t pre-push
 
-Now code will automatically be linted and formatter in various ways before every commit, and tests run before every push.
+Now code will automatically be linted and formatted in various ways before every commit, and tests run before every push.
+

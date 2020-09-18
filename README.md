@@ -8,7 +8,15 @@ To install, simply clone or download this repository, then type `pip install .` 
 
 ### Epilepsy Ecosystem Data
 
-For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest release](https://github.com/seermedical/seer-py/releases/latest) instead of cloning the repository or downloading the master branch. Then open the script `ContestDataDownloader.py` in `Examples` and it will guide you through the download process (you will need to change a few things in this script including the path to download the data to).
+For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest master version](https://github.com/seermedical/seer-py/tree/master).
+
+#### My Seizure Gauge Data
+
+For the My Seizure Gauge dataset, use the script `msg_data_downloader.py` in `Examples` to begin the download process. To specify a save-path for the downloaded data, use the command `python msg_data_downloader.py -o /path/to/directory` where `/path/to/directory` is the desired save path. If download is aborted, this script can be re-run and the download should resume from where it was stopped.
+
+#### NeuroVista Data
+
+For the NeuroVista dataset, open the script `neurovista_contest_data_downloader.py.py` in `Examples` and it will guide you through the download process (you will need to change a few things in this script including the path to download the data to).
 
 ## Requirements
 
@@ -32,13 +40,15 @@ To start a Jupyter notebook, run `jupyter notebook` in a command/bash window. Fu
 
 ## Authenticating
 
-To access data from the Seer platform you must first register for an account
-at https://app.seermedical.com/. You can then use seer-py to authenticate with
-the API.
+To access data from the Seer platform you must first register for an account at https://app.seermedical.com/. You can then use seer-py to authenticate with the API.
 
-seer-py will prompt for the username and password that you use to log in to the
-Seer App. The simplest way to authenticate is to create an instance of
-`SeerConnect`:
+Depending on which Seer server you are accessing, there are 2 different ways to authenticate.
+1. Using email and password (for https://api.seermedical.com/api)
+2. Using an access key (for https://sdk-au.seermedical.com/api and https://sdk-uk.seermedical.com/api)
+
+### Using email and password
+
+seer-py will prompt for the username and password that you use to log in to the Seer App. The simplest way to authenticate is to create an instance of `SeerConnect`:
 
 ```
 from seerpy import SeerConnect
@@ -46,26 +56,42 @@ from seerpy import SeerConnect
 client = SeerConnect()
 ```
 
-Alternatively, you can provide your `email` and `password` as arguments
-`SeerConnect`
+Alternatively, you can provide your `email` and `password` as arguments to `SeerConnect`
 
 ```
 client = SeerConnect(email='user@website.com', password='....')
 ```
 
-You can also store your credentials by creating a _.seerpy/_ folder in your home
-directory. Within the folder, create a file named _credentials_. Save your email
-address on the first line and your password on the second line with no other
-text. You can then call SeerConnect as above:
+You can also store your credentials by creating a _.seerpy/_ folder in your home directory. Within the folder, create a file named _credentials_. Save your email address on the first line and your password on the second line with no other text. You can then call SeerConnect as above:
 
 ```
 client = SeerConnect()
 ```
 
+Note: if you have an api key file in _.seerpy/_ but wish to use email authentication, pass the `use_email=True` flag to `SeerConnect`
+
+```
+client = SeerConnect(use_email=True)
+```
+
+### Using an api key
+
+To access the SDK servers, you will need to ask for an API key to be generated for you.
+
+An API key consists of a key file and an id. You can supply these when constructing `SeerConnect`
+```
+client = SeerConnect(api_key_id='id', api_key_path='~/.seerpy/seerpy.pem')
+```
+
+Alternatively, seerpy will look for an api key file in the _.seerpy/_ folder in your home directory.
+It will look for any file like _seerpy.pem_
+You can also encode the id and region in the file name like so _seerpy.id.au.pem_
+
+It's best to store the key in a file, but in situations where this is difficult or impossible, you can instead create an instance of `seerpy.auth.SeerApiKeyAuth` and pass the string api_key directly.
+
 ## Running with other API endpoints
 
-To run seer-py in other environments (for instance against a development
-API server), then you can use one of the preconfigured authentication methods:
+To run seer-py in other environments (for instance against a development API server), then you can use one of the preconfigured authentication methods:
 
 ```
 from seerpy import auth, SeerConnect
@@ -74,10 +100,8 @@ client = SeerConnect(auth=auth.SeerDevAuth('http://localhost:8000'))
 
 When running an API server locally, you may also need to:
 
-1. Run the `seer-api` server following the relevant documentation in the API
-   repository
-2. Run a `seer-graphiql` server (which includes the required proxies), ensuring
-   that `HTTPS` is set to `OFF` in the startup script
+1. Run the `seer-api` server following the relevant documentation in the API repository
+2. Run a `seer-graphiql` server (which includes the required proxies), ensuring that `HTTPS` is set to `OFF` in the startup script
 
 ## Troubleshooting
 
@@ -90,3 +114,4 @@ There is a known issue with using python's multiprocessing module on Windows wit
 
 1. To format the code using yapf, run `yapf -ir seerpy tests`
 2. To run pylint on the code, run `pylint seerpy tests`
+3. To run tests and generate an html coverage report, run `pytest --cov-report=html --cov=seerpy`

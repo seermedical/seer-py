@@ -48,7 +48,7 @@ import pandas as pd
 from pandas.io.json import json_normalize
 import requests
 
-from .auth import SeerAuth
+from . import auth
 from . import utils
 from . import graphql
 
@@ -56,8 +56,8 @@ from . import graphql
 class SeerConnect:  # pylint: disable=too-many-public-methods
     graphql_client = None
 
-    def __init__(self, api_url='https://api.seermedical.com/api', email=None, password=None,
-                 auth=None):
+    def __init__(self, api_url=None, email=None, password=None, api_key_id=None, api_key_path=None,
+                 seer_auth=None, use_email=None, region='au'):
         """Creates a GraphQL client able to interact with
             the Seer database, handling login and authorisation
         Parameters
@@ -68,14 +68,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             The email address for a user's Seer account
         password : str, optional
             User password associated with Seer account
-        dev : bool, optional
-            dev: Flag to query the development rather than production endpoint
+        api_key_id : str, optional
+            The UUID for a Seer api key
+        api_key_file : str, optional
+            The path to a Seer api key file
         """
 
-        if auth is None:
-            self.seer_auth = SeerAuth(api_url, email, password)
-        else:
-            self.seer_auth = auth
+        self.seer_auth = auth.get_auth(api_key_id, api_key_path, region, api_url, seer_auth,
+                                       use_email, email, password)
 
         self.create_client()
 
@@ -136,16 +136,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 raise
             error_string = str(ex)
             if any(api_error in error_string for api_error in resolvable_api_errors):
-                if 'NOT_AUTHENTICATED' in error_string:
-                    self.seer_auth.logout()
-                else:
+                if self.seer_auth.handle_query_error_pre_sleep(ex):
                     print('"', error_string, '" raised, trying again after a short break')
                     time.sleep(
                         min(30 * (invocations + 1)**2,
                             max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
+
                 invocations += 1
 
-                self.seer_auth.login()
+                self.seer_auth.handle_query_error_post_sleep(error_string)
+
                 return self.execute_query(query_string, party_id, invocations=invocations,
                                           variable_values=variable_values)
 
@@ -819,8 +819,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Details of all matching labels
         """
         label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset)
-        if label_results is None:
-            return label_results
+        if not label_results:
+            return pd.DataFrame()
         label_group = json_normalize(label_results).sort_index(axis=1)
         labels = self.pandas_flatten(label_group, 'labelGroup.', 'labels')
         tags = self.pandas_flatten(labels, 'labels.', 'tags')
@@ -1184,15 +1184,23 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_results = {}
         # set true if we need to fetch labels
         query_flag = True
-
+        query_variables = {
+            "id": patient_id,
+            "value": label_type,
+            "from_time": from_time,
+            "to_time": to_time,
+            "from_duration": from_duration,
+            "to_duration": to_duration
+        }
         while True:
             if not query_flag:
                 break
 
-            query_string = graphql.get_diary_labels_query_string(patient_id, label_type, limit,
-                                                                 offset, from_time, to_time,
-                                                                 from_duration, to_duration)
-            response = self.execute_query(query_string)['patient']['diary']
+            query_string = graphql.get_diary_labels_query_string()
+            query_variables["limit"] = limit
+            query_variables["offset"] = offset
+
+            response = self.execute_query(query_string, variable_values=query_variables)['patient']['diary']
             label_groups = response['labelGroups']
 
             query_flag = False
@@ -1273,9 +1281,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
              with a 'labels' key that indexes list of dict with keys 'doses',
              'alert', 'startTime', 'scheduledTime' etc.
         """
-        query_string = graphql.get_diary_medication_alerts_query_string(
-            patient_id, from_time, to_time)
-        response = self.execute_query(query_string)
+        query_string = graphql.get_diary_medication_alerts_query_string()
+        response = self.execute_query(query_string, variable_values={
+            "id": patient_id,
+            "from": from_time,
+            "to": to_time
+        })
         return response['patient']['diary']
 
     def get_diary_medication_alerts_dataframe(self, patient_id, from_time=0, to_time=9e12):
@@ -1312,13 +1323,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             with a 'windows' key that indexes list of dict with keys 'startTime',
             'timezone', and 'endTime'.
         """
-        if is_active is not None:
-            filter_string = f'(filters: [{{name: "isActive", value: "{"true" if is_active else "false"}"}}])'
-        else:
-            filter_string = ''
-        query_string = graphql.get_diary_medication_alert_windows_query_string(
-            patient_id, filter_string)
-        return self.execute_query(query_string)['patient']['diary']['alerts']
+        filters = [{"name": "isActive", "value": f"{str(is_active).lower()}"}] if is_active is not None else []
+        query_string = graphql.get_diary_medication_alert_windows_query_string()
+        query_variables = {
+            "id": patient_id,
+            "filters": filters
+        }
+        return self.execute_query(query_string, variable_values=query_variables)['patient']['diary']['alerts']
 
     def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
         """
@@ -1340,9 +1351,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Has a single key, 'patient', which indexes a nested dictionary with a
             'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
         """
-        query_string = graphql.get_diary_medication_compliance_query_string(
-            patient_id, from_time, to_time)
-        return self.execute_query(query_string)
+        query_string = graphql.get_diary_medication_compliance_query_string()
+        query_variables = {
+            "id": patient_id,
+            "from": from_time,
+            "to": to_time
+        }
+        return self.execute_query(query_string, variable_values=query_variables)
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
         """
@@ -1983,22 +1998,3 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
 
-    def add_user_timezone(self, user_id, timezone):
-        """
-        Sets a user's preferred timezone
-        Parameters
-        ----------
-        user_id : str
-            The user ID
-        user_ids : str
-            The timezone as string, e.g. Australia/Melbourne, US/Eastern
-
-        Returns
-        -------
-        user_id : str
-            The user ID
-        preferredTimezone: str
-            The modified preferred timezone
-        """
-        query_string = graphql.get_add_user_timezone_mutation_string(user_id, timezone)
-        return self.execute_query(query_string)

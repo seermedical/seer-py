@@ -315,6 +315,31 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_remove_label_group_mutation_string(group_id)
         return self.execute_query(query_string)
 
+    def edit_label_group(self, group_id, name, description):
+        """
+        Edit a label group.
+
+        Parameters
+        ----------
+        group_id : str
+            Label group ID to edit
+        name : str
+            Name of the label group
+        description : str
+            Free text description of the label group
+
+        Returns
+        -------
+        label_group_id : str
+            ID of the edited label group
+        """
+        variable_values = {
+            "id": group_id,
+            "name": name,
+            "description": description
+        }
+        return self.execute_query(graphql.EDIT_STUDY_LABEL_GROUP, variable_values=variable_values)
+
     def add_labels_batched(self, label_group_id, labels, batch_size=500):
         """
         Add labels to label group in batches.

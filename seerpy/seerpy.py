@@ -878,11 +878,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Columns with details on name, id, type, and number of labels, as
             well as study ID and name
         """
+        # TODO: can we use json_normalize or pandas_flatten for this?
         label_groups = []
         for study in self.get_label_groups_for_studies(study_ids, limit):
             for label_group in study['labelGroups']:
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')
+                label_group['labelGroup.description'] = label_group.pop('description')
                 label_group['labelGroup.labelType'] = label_group.pop('labelType')
                 label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
                 label_group['id'] = study['id']

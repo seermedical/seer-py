@@ -302,15 +302,15 @@ ADD_LABELS = """
 GET_TAG_IDS = """
     query {
         labelTags {
-        id
-        category {
             id
-            name
-            description
-        }
-        value
-        forStudy
-        forDiary
+            category {
+                id
+                name
+                description
+            }
+            value
+            forStudy
+            forDiary
         }
     }"""
 

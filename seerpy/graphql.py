@@ -340,7 +340,7 @@ def get_remove_label_group_mutation_string(group_id):
 
 
 EDIT_STUDY_LABEL_GROUP = """
-    mutation editStudyLabelGroup($id: String!,
+    mutation editStudyLabelGroup($group_id: String!,
                                  $name: String,
                                  $description: String) {
         editStudyLabelGroup(id: $id,

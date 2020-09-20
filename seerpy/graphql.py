@@ -343,7 +343,7 @@ EDIT_STUDY_LABEL_GROUP = """
     mutation editStudyLabelGroup($group_id: String!,
                                  $name: String,
                                  $description: String) {
-        editStudyLabelGroup(id: $id,
+        editStudyLabelGroup(id: $group_id,
                             name: $name,
                             description: $description) {
             id

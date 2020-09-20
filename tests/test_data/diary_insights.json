@@ -1,0 +1,32 @@
+{
+    "patient": {
+        "id": "patient-1-id",
+        "insights": [
+            {
+                "createdAt": "2018-08-29 05:49:29",
+                "emailLinkOpened": "2018-08-29 05:49:29",
+                "emailNotificationSent": "2018-08-29 05:49:29",
+                "id": "insight-1-id",
+                "report": {
+                    "id": "report-1-id"
+                },
+                "reportDate": "2018-08-29 05:49:29",
+                "reportPeriod": "?",
+                "updatedAt": "2018-08-29 05:49:29"
+            },
+            {
+                "createdAt": "2018-08-29 05:49:29",
+                "emailLinkOpened": "2018-08-29 05:49:29",
+                "emailNotificationSent": "2018-08-29 05:49:29",
+                "id": "insight-2-id",
+                "report": {
+                    "id": "report-2-id"
+                },
+                "reportDate": "2018-08-29 05:49:29",
+                "reportPeriod": "?",
+                "updatedAt": "2018-08-29 05:49:29"
+            }
+        ],
+        "name": "patient 1 name"
+    }
+}

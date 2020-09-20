@@ -3,7 +3,7 @@ from gql import gql
 import seerpy.graphql as graphql
 
 
-def test_graphql_query_string():
+def test_graphql_query_strings():
     """Ensure query strings parse correctly."""
     gql(graphql.get_add_labels_mutation_string())
     gql(graphql.get_tag_id_query_string())

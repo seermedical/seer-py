@@ -1949,4 +1949,3 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_remove_users_from_user_cohort_mutation_string(
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
-

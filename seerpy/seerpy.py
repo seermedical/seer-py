@@ -317,7 +317,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def edit_study_label_group(self, group_id, name, description):
         """
-        Edit a label group.
+        Edit a study label group.
 
         Parameters
         ----------

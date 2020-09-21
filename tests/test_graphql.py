@@ -14,6 +14,7 @@ def test_graphql_query_string():
     gql(graphql.GET_STUDIES_BY_STUDY_ID_PAGED)
     gql(graphql.ADD_LABELS)
     gql(graphql.GET_TAG_IDS)
+    gql(graphql.EDIT_STUDY_LABEL_GROUP)
     gql(graphql.GET_ORGANISATIONS)
     gql(graphql.GET_PATIENTS)
     gql(graphql.GET_DIARY_INSIGHTS_PAGED)

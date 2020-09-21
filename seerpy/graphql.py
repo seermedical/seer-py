@@ -203,6 +203,7 @@ GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
             labelGroups {
                 id
                 name
+                description
                 labelType
                 numberOfLabels
             }
@@ -331,6 +332,18 @@ def get_remove_label_group_mutation_string(group_id):
         mutation {
             removeLabelGroupFromStudy(groupId: "%s")
         }""" % (group_id)
+
+
+EDIT_STUDY_LABEL_GROUP = """
+    mutation editStudyLabelGroup($group_id: String!,
+                                 $name: String,
+                                 $description: String) {
+        editStudyLabelGroup(id: $group_id,
+                            name: $name,
+                            description: $description) {
+            id
+        }
+    }"""
 
 
 def get_viewed_times_query_string(study_id, limit, offset):

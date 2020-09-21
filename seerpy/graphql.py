@@ -203,6 +203,7 @@ def get_label_groups_for_study_ids_paged_query_string(study_ids):
                 labelGroups {{{{
                     id
                     name
+                    description
                     labelType
                     numberOfLabels
                 }}}}
@@ -338,6 +339,18 @@ def get_remove_label_group_mutation_string(group_id):
         }""" % (group_id)
 
 
+EDIT_STUDY_LABEL_GROUP = """
+    mutation editStudyLabelGroup($group_id: String!,
+                                 $name: String,
+                                 $description: String) {
+        editStudyLabelGroup(id: $group_id,
+                            name: $name,
+                            description: $description) {
+            id
+        }
+    }"""
+
+
 def get_viewed_times_query_string(study_id, limit, offset):
     return """
         query {
@@ -441,7 +454,7 @@ def get_diary_labels_query_string():
         query getDiaryLabels(
             $id: String!,
             $value: String!,
-            $limit: PaginationAmount, 
+            $limit: PaginationAmount,
             $offset: Int,
             $from_time: Float!,
             $to_time: Float!,

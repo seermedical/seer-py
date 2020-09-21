@@ -315,6 +315,31 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_remove_label_group_mutation_string(group_id)
         return self.execute_query(query_string)
 
+    def edit_study_label_group(self, group_id, name, description):
+        """
+        Edit a study label group.
+
+        Parameters
+        ----------
+        group_id : str
+            Label group ID to edit
+        name : str
+            Name of the label group
+        description : str
+            Free text description of the label group
+
+        Returns
+        -------
+        label_group_id : str
+            ID of the edited label group
+        """
+        variable_values = {
+            "group_id": group_id,
+            "name": name,
+            "description": description
+        }
+        return self.execute_query(graphql.EDIT_STUDY_LABEL_GROUP, variable_values=variable_values)
+
     def add_labels_batched(self, label_group_id, labels, batch_size=500):
         """
         Add labels to label group in batches.
@@ -853,11 +878,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Columns with details on name, id, type, and number of labels, as
             well as study ID and name
         """
+        # TODO: can we use json_normalize or pandas_flatten for this?
         label_groups = []
         for study in self.get_label_groups_for_studies(study_ids, limit):
             for label_group in study['labelGroups']:
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')
+                label_group['labelGroup.description'] = label_group.pop('description')
                 label_group['labelGroup.labelType'] = label_group.pop('labelType')
                 label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
                 label_group['id'] = study['id']
@@ -1923,4 +1950,3 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_string = graphql.get_remove_users_from_user_cohort_mutation_string(
             user_cohort_id, user_ids)
         return self.execute_query(query_string)
-

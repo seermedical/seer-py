@@ -5,7 +5,11 @@ import seerpy.graphql as graphql
 
 def test_graphql_query_string():
     """Ensure query strings parse correctly."""
-    # TODO: it would be good if all queries were iterable so we could do this in a loop
+
+    # TODO: it would be good if all queries were iterable so we could do this in a loop, either by
+    # looping through all module variables if possible (or all CAPS), or having them in a class
+    # the main advantage being we wouldn't miss any then.
+
     gql(graphql.GET_STUDY_WITH_DATA)
     gql(graphql.GET_LABELS_PAGED)
     gql(graphql.GET_LABELS_STRING)

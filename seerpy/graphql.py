@@ -194,7 +194,7 @@ GET_LABELS_STRING = """
     }"""
 
 GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
-    query studies($study_ids: String,
+    query studies($study_ids: [String],
                   $limit: PaginationAmount,
                   $offset: Int) {
         studies (studyIds: studyIds, limit: $limit, offset: $offset) {
@@ -273,10 +273,10 @@ GET_STUDIES_BY_SEARCH_TERM_PAGED = """
     }"""
 
 GET_STUDIES_BY_STUDY_ID_PAGED = """
-    query studies($study_ids: String,
+    query studies($study_ids: [String],
                   $limit: PaginationAmount,
                   $offset: Int) {
-        studies (studyIds: [$study_ids], limit: $limit, offset: $offset) {
+        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
             id
             name
             patient {
@@ -561,10 +561,10 @@ GET_DIARY_MEDICATION_COMPLIANCE = """
     }"""
 
 GET_DOCUMENTS_FOR_STUDY_IDS_PAGED = """
-    query studies($study_ids: String,
+    query studies($study_ids: [String],
                   $limit: PaginationAmount,
                   $offset: Int) {
-        studies (studyIds: [$study_ids], limit: $limit, offset: $offset) {
+        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
             id
             name
             documents {

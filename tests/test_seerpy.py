@@ -69,7 +69,8 @@ class TestPassingQueryVariables:
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 class TestPaginatedQuery:
-    def check_paginated_query(self, seer_connect, function_to_test, function_args=None,
+    @classmethod
+    def check_paginated_query(cls, seer_connect, function_to_test, function_args=None,
                               function_kwargs=None, expected_result=None, query_response=None):
         """Generic function to test a function which calls Seer_connect.get_paginated_response()."""
         # run test
@@ -118,7 +119,8 @@ class TestPaginatedQuery:
         if expected_result:
             assert result == expected_result
 
-    def check_paginated_query_with_data(self, gql_client, seer_connect, function_to_test,
+    @classmethod
+    def check_paginated_query_with_data(cls, gql_client, seer_connect, function_to_test,
                                         function_args=None, function_kwargs=None,
                                         response_file=None, response=None, empty_response_file=None,
                                         empty_response=None, expected_result=None):
@@ -144,25 +146,26 @@ class TestPaginatedQuery:
         gql_client.return_value.execute.side_effect = side_effects
 
         # run test and check result
-        self.check_paginated_query(seer_connect, function_to_test, function_args, function_kwargs,
-                                   expected_result, query_response)
+        cls.check_paginated_query(seer_connect, function_to_test, function_args, function_kwargs,
+                                  expected_result, query_response)
 
-    def check_paginated_query_with_data_variations(self, gql_client, seer_connect, function_to_test,
+    @classmethod
+    def check_paginated_query_with_data_variations(cls, gql_client, seer_connect, function_to_test,
                                                    function_args=None, function_kwargs=None,
                                                    response_file=None, response=None,
                                                    empty_response_file=None, empty_response=None,
                                                    expected_result=None):
         # test with only empty response
         if not expected_result:
-            self.check_paginated_query_with_data(gql_client, seer_connect, function_to_test,
-                                                 function_args, function_kwargs,
-                                                 response_file=empty_response_file,
-                                                 response=empty_response)
+            cls.check_paginated_query_with_data(gql_client, seer_connect, function_to_test,
+                                                function_args, function_kwargs,
+                                                response_file=empty_response_file,
+                                                response=empty_response)
 
-        self.check_paginated_query_with_data(gql_client, seer_connect, function_to_test,
-                                             function_args, function_kwargs, response_file,
-                                             response, empty_response_file, empty_response,
-                                             expected_result)
+        cls.check_paginated_query_with_data(gql_client, seer_connect, function_to_test,
+                                            function_args, function_kwargs, response_file,
+                                            response, empty_response_file, empty_response,
+                                            expected_result)
 
     def test_get_studies(self, gql_client, unused_sleep, seer_connect):
         # run test and check result
@@ -177,13 +180,6 @@ class TestPaginatedQuery:
             gql_client, seer_connect, function_to_test=seer_connect.get_studies_by_id,
             function_args=[['study-1-id', 'study-2-id']], response_file='studies.json',
             empty_response={'studies': []})
-
-    def test_get_labels(self, gql_client, unused_sleep, seer_connect):
-        # run test and check result
-        self.check_paginated_query_with_data_variations(
-            gql_client, seer_connect, function_to_test=seer_connect.get_labels,
-            function_args=['study-id-1', 'label-group-id-1'], response_file='labels_1.json',
-            empty_response_file='labels_1_empty.json')
 
     def test_get_label_groups_for_studies(self, gql_client, unused_sleep, seer_connect):
         # run test and check result
@@ -471,26 +467,12 @@ class TestGetSegmentUrls:
 @mock.patch('time.sleep', return_value=None)
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 class TestGetLabels:
-    def test_success_single(self, gql_client, unused_sleep, seer_connect):
-        # setup
-        side_effects = []
-
-        with open(TEST_DATA_DIR / "labels_1.json", "r") as f:
-            query_data = json.load(f)
-        side_effects.append(query_data)
-        # this is the "no more data" response for get_labels()
-        with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
-            side_effects.append(json.load(f))
-
-        gql_client.return_value.execute.side_effect = side_effects
-
-        expected_result = query_data['study']
-
-        # run test
-        result = seer_connect.get_labels("study-1-id", "label-group-1-id")
-
-        # check result
-        assert result == expected_result
+    def test_success_single_and_empty(self, gql_client, unused_sleep, seer_connect):
+        # run test and check result
+        TestPaginatedQuery.check_paginated_query_with_data_variations(
+            gql_client, seer_connect, function_to_test=seer_connect.get_labels,
+            function_args=['study-id-1', 'label-group-id-1'], response_file='labels_1.json',
+            empty_response_file='labels_1_empty.json')
 
     def test_success_multiple(self, gql_client, unused_sleep, seer_connect):
         # setup
@@ -508,23 +490,6 @@ class TestGetLabels:
 
         with open(TEST_DATA_DIR / "labels_result.json", "r") as f:
             expected_result = json.load(f)
-
-        # run test
-        result = seer_connect.get_labels("study-1-id", "label-group-1-id")
-
-        # check result
-        assert result == expected_result
-
-    def test_success_empty(self, gql_client, unused_sleep, seer_connect):
-        # setup
-        side_effects = []
-
-        with open(TEST_DATA_DIR / "labels_1_empty.json", "r") as f:
-            side_effects.append(json.load(f))
-
-        gql_client.return_value.execute.side_effect = side_effects
-
-        expected_result = []
 
         # run test
         result = seer_connect.get_labels("study-1-id", "label-group-1-id")

@@ -3,7 +3,7 @@
 Python SDK for the Seer data platform, which handles authenticating a user, downloading channel data, and uploading labels/annotations.
 
 ## Access to data
-Note that by default there is no public access to any data on the Seer Cloud. You need to be added to an organisation within the Seer Cloud in order to gain access to that organisation's data. The only publicly accessible data is through the https://www.epilepsyecosystem.org/ organisation.
+Note that by default there is no public access to any data on the Seer Cloud. You need to be added to an organisation or user group within the Seer Cloud in order to gain access to data. The only publicly accessible data is through the https://www.epilepsyecosystem.org/ user group.
 
 ## Install
 

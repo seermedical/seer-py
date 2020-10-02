@@ -2,6 +2,9 @@
 
 Python SDK for the Seer data platform, which handles authenticating a user, downloading channel data, and uploading labels/annotations.
 
+## Access to data
+Note that by default there is no public access to any data on the Seer Cloud. You need to be added to an organisation or user group within the Seer Cloud in order to gain access to data. The only publicly accessible data is through the https://www.epilepsyecosystem.org/ user group.
+
 ## Install
 
 To install, simply clone or download this repository, then type `pip install .` which will install all the dependencies.
@@ -87,7 +90,12 @@ Alternatively, seerpy will look for an api key file in the _.seerpy/_ folder in 
 It will look for any file like _seerpy.pem_
 You can also encode the id and region in the file name like so _seerpy.id.au.pem_
 
-It's best to store the key in a file, but in situations where this is difficult or impossible, you can instead create an instance of `seerpy.auth.SeerApiKeyAuth` and pass the string api_key directly.
+It's best to store the key in a file, but in situations where this is difficult or impossible, you can instead create an instance of `seerpy.auth.SeerApiKeyAuth` and pass the string api_key directly, i.e:
+```
+seer_auth = auth.SeerApiKeyAuth(api_key_id='id', api_key='private key string')
+client = SeerConnect(seer_auth=seer_auth)
+```
+In this implementation, `'private key string'`, should be exactly the key string returned from the create API key mutation (without replacing literal `\n` characters). However, in some environments the `\n` characters may need to be replaced with line feeds. It is recommended to use the exact key string first, and if a key error is recieved (`could not deserialize key data`) then try replacing `\n` with line feeds.   
 
 ## Running with other API endpoints
 
@@ -107,7 +115,7 @@ When running an API server locally, you may also need to:
 
 ### Downloading hangs on Windows
 
-There is a known issue with using python's multiprocessing module on Windows with spyder. The function `getLinks` uses `multiprocessing.Pool` to run multiple downloads simultaneously, which can cause the process to run indefinitely. The workaround for this is to ensure that the current working directory is set to the directory containing your script. Running the script from a command window will also solve this problem. Alternatively, setting `threads=1` in the `getLinks` function will stop in from using `multiprocessing` altogether.
+There is a known issue with using python's multiprocessing module on Windows with spyder. The function `get_channel_data` uses `multiprocessing.Pool` to run multiple downloads simultaneously, which can cause the process to run indefinitely. The workaround for this is to ensure that the current working directory is set to the directory containing your script. Running the script from a command window will also solve this problem. Alternatively, setting `threads=1` in the `get_channel_data` function will stop in from using `multiprocessing` altogether.
 
 
 ## Development

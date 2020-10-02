@@ -87,7 +87,12 @@ Alternatively, seerpy will look for an api key file in the _.seerpy/_ folder in 
 It will look for any file like _seerpy.pem_
 You can also encode the id and region in the file name like so _seerpy.id.au.pem_
 
-It's best to store the key in a file, but in situations where this is difficult or impossible, you can instead create an instance of `seerpy.auth.SeerApiKeyAuth` and pass the string api_key directly.
+It's best to store the key in a file, but in situations where this is difficult or impossible, you can instead create an instance of `seerpy.auth.SeerApiKeyAuth` and pass the string api_key directly, i.e:
+```
+seer_auth = auth.SeerApiKeyAuth(api_key_id='id', api_key='private key string')
+client = SeerConnect(seer_auth=seer_auth)
+```
+In this implementation, `'private key string'`, should be exactly the key string returned from the create API key mutation (without replacing literal `\n` characters). However, in some environments the `\n` characters may need to be replaced with line feeds. It is recommended to use the exact key string first, and if a key error is recieved (`could not deserialize key data`) then try replacing `\n` with line feeds.   
 
 ## Running with other API endpoints
 

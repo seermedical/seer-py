@@ -188,7 +188,7 @@ GET_LABELS_STRING = """
                 labelType
                 description
                 numberOfLabels
-                labelString (fromTime:$from_time, toTime: $to_time)
+                labelString (fromTime: $from_time, toTime: $to_time)
             }
         }
     }"""
@@ -414,7 +414,7 @@ GET_DIARY_INSIGHTS_PAGED = """
     query patient($patient_id: String!,
                   $limit: PaginationAmount,
                   $offset: Int) {
-        patient (id: patient_id) {
+        patient (id: $patient_id) {
             id
             insights (limit: $limit, offset: $offset) {
                 id

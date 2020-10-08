@@ -419,10 +419,10 @@ GET_DIARY_INSIGHTS_PAGED = """
             insights (limit: $limit, offset: $offset) {
                 id
                 report {
-                    id
+                    patientId
+                    reportPeriod
                 }
                 reportDate
-                reportPeriod
                 emailNotificationSent
                 emailLinkOpened
                 createdAt

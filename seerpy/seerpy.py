@@ -1152,7 +1152,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         # set true if we need to fetch labels
         query_flag = True
         variable_values = {
-            'id': patient_id,
+            'patient_id': patient_id,
             'value': label_type,
             'from_time': from_time,
             'to_time': to_time,

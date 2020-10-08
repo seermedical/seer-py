@@ -197,7 +197,7 @@ GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
     query studies($study_ids: [String],
                   $limit: PaginationAmount,
                   $offset: Int) {
-        studies (studyIds: study_ids, limit: $limit, offset: $offset) {
+        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
             id
             name
             labelGroups {

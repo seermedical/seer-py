@@ -341,11 +341,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_group_id : str
             ID of the edited label group
         """
-        variable_values = {
-            "group_id": group_id,
-            "name": name,
-            "description": description
-        }
+        variable_values = {"group_id": group_id, "name": name, "description": description}
         return self.execute_query(graphql.EDIT_STUDY_LABEL_GROUP, variable_values=variable_values)
 
     def add_labels_batched(self, label_group_id, labels, batch_size=500):
@@ -432,8 +428,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 study_id, response_add['id'])
             response_confirm = self.execute_query(query_string)
             return response_confirm['confirmStudyDocuments'][0]['downloadFileUrl']
-        raise RuntimeError('Error uploading document: status code '
-                           + str(response_put.status_code))
+        raise RuntimeError('Error uploading document: status code ' + str(response_put.status_code))
 
     def get_tag_ids(self):
         """
@@ -1248,11 +1243,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
              with a 'labels' key that indexes list of dict with keys 'doses',
              'alert', 'startTime', 'scheduledTime' etc.
         """
-        variable_values = {
-            'patient_id': patient_id,
-            'from_time': from_time,
-            'to_time': to_time
-        }
+        variable_values = {'patient_id': patient_id, 'from_time': from_time, 'to_time': to_time}
         response = self.execute_query(graphql.GET_DIARY_MEDICATION_ALERTS,
                                       variable_values=variable_values)
         return response['patient']['diary']
@@ -1291,12 +1282,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             with a 'windows' key that indexes list of dict with keys 'startTime',
             'timezone', and 'endTime'.
         """
-        filters = [{'name': 'isActive',
-                    'value': f'{str(is_active).lower()}'}] if is_active is not None else []
-        variable_values = {
-            'patient_id': patient_id,
-            'filters': filters
-        }
+        filters = [{
+            'name': 'isActive',
+            'value': f'{str(is_active).lower()}'
+        }] if is_active is not None else []
+        variable_values = {'patient_id': patient_id, 'filters': filters}
         response = self.execute_query(graphql.GET_DIARY_MEDICATION_ALERT_WINDOWS,
                                       variable_values=variable_values)
         return response['patient']['diary']['alerts']
@@ -1321,11 +1311,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Has a single key, 'patient', which indexes a nested dictionary with a
             'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
         """
-        variable_values = {
-            'patient_id': patient_id,
-            'from_time': from_time,
-            'to_time': to_time
-        }
+        variable_values = {'patient_id': patient_id, 'from_time': from_time, 'to_time': to_time}
         return self.execute_query(graphql.GET_DIARY_MEDICATION_COMPLIANCE,
                                   variable_values=variable_values)
 

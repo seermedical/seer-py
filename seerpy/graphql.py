@@ -288,7 +288,6 @@ GET_STUDIES_BY_STUDY_ID_PAGED = """
         }
     }"""
 
-
 ADD_LABELS = """
     mutation addLabelsToLabelGroup($group_id: String!,
                                    $labels: [NewStudyLabel]!) {
@@ -408,7 +407,6 @@ GET_PATIENTS = """
             }
         }
     }"""
-
 
 GET_DIARY_INSIGHTS_PAGED = """
     query patient($patient_id: String!,

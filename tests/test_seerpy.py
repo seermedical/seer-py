@@ -163,9 +163,8 @@ class TestPaginatedQuery:
                                                 response=empty_response)
 
         cls.check_paginated_query_with_data(gql_client, seer_connect, function_to_test,
-                                            function_args, function_kwargs, response_file,
-                                            response, empty_response_file, empty_response,
-                                            expected_result)
+                                            function_args, function_kwargs, response_file, response,
+                                            empty_response_file, empty_response, expected_result)
 
     def test_get_studies(self, gql_client, unused_sleep, seer_connect):
         # run test and check result

@@ -816,6 +816,11 @@ def get_mood_survey_results_paged_query_string(survey_template_ids):
             surveys(surveyTemplateIds: {get_json_list(survey_template_ids)}, limit: {{limit}}, offset: {{offset}}) {{{{
                 completer {{{{
                     id
+                    roles {{{{
+                        patient {{{{
+                            id
+                        }}}}
+                    }}}}
                 }}}}
                 id
                 fields {{{{

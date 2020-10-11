@@ -446,10 +446,10 @@ GET_DIARY_LABELS = """
                          $value: String!,
                          $limit: PaginationAmount,
                          $offset: Int,
-                         $from_time: Float!,
-                         $to_time: Float!,
-                         $from_duration: Float!,
-                         $to_duration: Float!) {
+                         $from_time: Float,
+                         $to_time: Float,
+                         $from_duration: Float,
+                         $to_duration: Float) {
         patient (id: $patient_id) {
             id
             diary {
@@ -489,8 +489,8 @@ GET_DIARY_LABELS = """
 
 GET_DIARY_MEDICATION_ALERTS = """
     query getDiaryAlertMedication($patient_id: String!,
-                                  $from_time: Float!,
-                                  $to_time: Float!) {
+                                  $from_time: Float,
+                                  $to_time: Float) {
         patient (id: $patient_id) {
             diary {
                 id
@@ -543,8 +543,8 @@ GET_DIARY_MEDICATION_ALERT_WINDOWS = """
 
 GET_DIARY_MEDICATION_COMPLIANCE = """
     query getMedicationCompliance($patient_id: String!,
-                                  $from_time: Float!,
-                                  $to_time: Float!) {
+                                  $from_time: Float,
+                                  $to_time: Float) {
         patient (id: $patient_id) {
             id
             diary {

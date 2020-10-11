@@ -130,7 +130,7 @@ GET_STUDY_WITH_DATA = """
 GET_LABELS_PAGED = """
     query labels($study_id: String!,
                  $label_group_id: String!,
-                 $limit: PaginationAmount!,
+                 $limit: PaginationAmount,
                  $offset: Int!,
                  $from_time: Float!,
                  $to_time: Float!) {

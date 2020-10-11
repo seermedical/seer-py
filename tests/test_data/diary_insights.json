@@ -8,10 +8,10 @@
                 "emailNotificationSent": "2018-08-29 05:49:29",
                 "id": "insight-1-id",
                 "report": {
-                    "id": "report-1-id"
+                    "patientId": "report-1-id",
+                    "reportPeriod": "?"
                 },
                 "reportDate": "2018-08-29 05:49:29",
-                "reportPeriod": "?",
                 "updatedAt": "2018-08-29 05:49:29"
             },
             {
@@ -20,10 +20,10 @@
                 "emailNotificationSent": "2018-08-29 05:49:29",
                 "id": "insight-2-id",
                 "report": {
-                    "id": "report-2-id"
+                    "patientId": "report-2-id",
+                    "reportPeriod": "?"
                 },
                 "reportDate": "2018-08-29 05:49:29",
-                "reportPeriod": "?",
                 "updatedAt": "2018-08-29 05:49:29"
             }
         ],

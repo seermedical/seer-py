@@ -203,8 +203,6 @@ class TestPaginatedQuery:
 
     def test_get_diary_insights(self, gql_client, unused_sleep, seer_connect):
         # TODO: I'm uncertain if the values in this file are appropriate
-        # TODO: There is a mis-match between the fields in the query and the schema in graphiql
-        # specifically reportPeriod vs reportStart and reportEnd
 
         # run test and check result
         self.check_paginated_query_with_data_variations(

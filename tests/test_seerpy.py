@@ -87,21 +87,28 @@ class TestPaginatedQuery:
         assert paginate.call_args
 
         query_string = paginate.call_args[0][0]
-        # print('query_string', query_string)
         assert 'limit' in query_string
         assert 'offset' in query_string
 
         variable_values = paginate.call_args[0][1]
-        # print('variable_values', variable_values)
-        assert all(key in query_string for key in variable_values.keys())
+        missing_keys = [key for key in variable_values.keys() if key not in query_string]
+        assert not missing_keys, f'key(s) {missing_keys} not found in query string {query_string}'
 
         object_path = paginate.call_args[0][3]
-        assert all(path_item in query_string for path_item in object_path)
+        missing_path_items = [
+            path_item for path_item in object_path if path_item not in query_string
+        ]
+        assert not missing_path_items, (
+            f'object path item(s) {missing_path_items} not found in query string {query_string}')
 
         iteration_path = None
         if len(paginate.call_args[0]) > 4:
             iteration_path = paginate.call_args[0][4]
-            assert all(path_item in query_string for path_item in iteration_path)
+            missing_path_items = [
+                path_item for path_item in iteration_path if path_item not in query_string
+            ]
+            assert not missing_path_items, (f'iteration path item(s) {missing_path_items} not found'
+                                            f' in query string {query_string}')
 
         if query_response:
             expected_result = query_response

@@ -131,9 +131,9 @@ GET_LABELS_PAGED = """
     query labels($study_id: String!,
                  $label_group_id: String!,
                  $limit: PaginationAmount,
-                 $offset: Int!,
-                 $from_time: Float!,
-                 $to_time: Float!) {
+                 $offset: Int,
+                 $from_time: Float,
+                 $to_time: Float) {
         study (id: $study_id) {
             id
             name

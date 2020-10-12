@@ -295,6 +295,97 @@ def get_channel_data(all_data, segment_urls, download_function=requests.get, thr
     return data
 
 
+# pylint:disable=too-many-locals,too-many-arguments
+def get_channel_data_new(study_metadata, data_chunk_urls, download_function=requests.get,
+                         threads=None, from_time=0, to_time=9e12):
+    """
+    Download data chunks and stitch together into a single DataFrame.
+
+    Parameters
+    ----------
+    study_metadata : pd.DataFrame
+        Study metadata as returned by seerpy.get_all_study_metadata_dataframe_by_*()
+    data_chunk_urls : pd.DataFrame, optional
+        DataFrame with columns ['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
+        'chunk_url'].
+    download_function : callable
+        The function used to download the channel data. Defaults to requests.get
+    threads : int, optional
+        Number of threads to use. If > 1 then will use multiprocessing. If None
+        (default), it will use 1 on Windows and 5 on Linux/MacOS
+    from_time : int, optional
+        Timestamp in msec - only retrieve data from this point onward
+    to_time : int, optional
+        Timestamp in msec - only retrieve data up until this point
+
+    Returns
+    -------
+    data_df : pd.DataFrame
+        DataFrame containing study ID, channel group IDs, semgment IDs, time, and raw data
+    """
+    if threads is None:
+        if os.name == 'nt':
+            threads = 1
+        else:
+            threads = 5
+
+    segment_ids = study_metadata['segments.id'].drop_duplicates().tolist()
+
+    data_chunk_urls.rename(columns={'chunk_url': 'dataChunks.url',
+                                    'chunk_start': 'dataChunks.time'})
+
+    data_q = []
+    data_list = []
+
+    for segment_id in segment_ids:
+        metadata = study_metadata[study_metadata['segments.id'].values == segment_id]
+        actual_channel_names = get_channel_names_or_ids(metadata)
+        metadata = metadata.drop_duplicates('segments.id')
+
+        study_id = metadata['id'].iloc[0]
+        channel_groups_id = metadata['channelGroups.id'].iloc[0]
+
+        metadata = metadata.merge(data_chunk_urls, how='left', left_on='segments.id',
+                                  right_on='segments.id', suffixes=('', '_y'))
+
+        metadata = metadata[[
+            'dataChunks.url', 'dataChunks.time', 'segments.startTime', 'segments.duration',
+            'channelGroups.sampleEncoding', 'channelGroups.sampleRate',
+            'channelGroups.samplesPerRecord', 'channelGroups.recordsPerChunk',
+            'channelGroups.compression', 'channelGroups.signalMin', 'channelGroups.signalMax',
+            'channelGroups.exponent', 'channelGroups.timestamped'
+        ]]
+        metadata = metadata.drop_duplicates()
+        metadata = metadata.dropna(axis=0, how='any', subset=['dataChunks.url'])
+        for i in range(len(metadata.index)):
+            data_q.append(
+                [metadata.iloc[i], study_id, channel_groups_id, segment_id, actual_channel_names])
+
+    download_function = functools.partial(download_channel_data,
+                                          download_function=download_function)
+    if data_q:
+        if threads > 1:
+            pool = Pool(processes=min(threads, len(data_q) + 1))
+            data_list = list(pool.map(download_function, data_q))
+            pool.close()
+            pool.join()
+        else:
+            data_list = [download_function(data_q_item) for data_q_item in data_q]
+
+    if data_list:
+        # sort=False to silence deprecation warning. This comes into play when we are processing
+        # segments across multiple channel groups which have different channels.
+        data = pd.concat(data_list, sort=False)
+        data = data.loc[(data['time'] >= from_time) & (data['time'] < to_time)]
+        data = data.sort_values(['id', 'channelGroups.id', 'time'], axis=0, ascending=True,
+                                na_position='last')
+        data = data.reset_index(drop=True)
+    else:
+        data = None
+
+    return data
+
+
 def get_channel_names_or_ids(metadata):
     """
     Get a list of unique channel names, using ID instead if a name is null or duplicated.

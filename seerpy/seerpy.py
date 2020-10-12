@@ -1487,6 +1487,52 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return utils.get_channel_data(all_data, segment_urls, download_function, threads, from_time,
                                       to_time)
 
+    # pylint:disable=too-many-locals,too-many-arguments
+    def get_channel_data_new(self, study_metadata, data_chunk_urls=None,
+                             download_function=requests.get, threads=None, from_time=0,
+                             to_time=9e12):
+        """
+        Download raw data for all channel groups and segments listed in a given metadata DataFrame
+        and return as a new DataFrame.
+
+        Parameters
+        ----------
+        study_metadata : pd.DataFrame
+            Study metadata, as returned by `get_all_study_metadata_dataframe_by_*()`
+        data_chunk_urls : pd.DataFrame, optional
+            DataFrame with columns ['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end',
+            'chunk_url']. If None or empty, these will be retrieved for each segment in
+            `study_metadata`.
+        download_function : callable, optional
+            The function used to download the channel data. Defaults to requests.get
+        threads : int, optional
+            Number of threads to use. If > 1 will use multiprocessing. If None (default), will use
+            1 on Windows and 5 on Linux/MacOS.
+        from_time : int, optional
+            Timestamp in msec - only retrieve data from this point onward
+        to_time : int, optional
+            Timestamp in msec - only retrieve data up until this point
+
+        Returns
+        -------
+        data_df : pd.DataFrame
+            DataFrame with 'time', 'id', 'channelGroups.id' and 'segments.id' columns, as well as a
+            column for each data channel, e.g. each EEG electrode.
+
+        Example
+        -------
+        Get all ECG data for a study of patient "Jane Doe":
+        >>> study_id = get_study_ids(search_term='Jane Doe')[0]['id']
+        >>> metadata_df = get_all_study_metadata_dataframe_by_ids(study_id)
+        >>> ecg_metadata_df = metadata_df[metadata_df['channelGroups.name'] == 'ECG']
+        >>> ecg_data_df = get_channel_data(ecg_metadata_df)
+        """
+        if not data_chunk_urls:
+            data_chunk_urls = self.get_data_chunk_urls(study_metadata)
+
+        return utils.get_channel_data_new(study_metadata, data_chunk_urls, download_function,
+                                          threads, from_time, to_time)
+
     def get_all_bookings(self, organisation_id, start_time, end_time):
         """
         Get all bookings for any studies that are active at any point between

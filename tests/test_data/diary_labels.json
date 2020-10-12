@@ -1,0 +1,40 @@
+{
+    "patient": {
+        "id": "patient-1-id",
+        "diaryStudy": {
+            "labelGroup": {
+                "id": "label-group-1-id",
+                "labels": [
+                    {
+                        "duration": 3643,
+                        "id": "label-1-id",
+                        "startTime": 1499747329065,
+                        "tags":
+                            [
+                                {
+                                    "tagType": {
+                                        "value": "Normal jerk"
+                                    }
+                                }
+                            ],
+                        "timezone": 10
+                    },
+                    {
+                        "duration": 5127,
+                        "id": "label-2-id",
+                        "startTime": 1499747431224,
+                        "tags":
+                            [
+                                {
+                                    "tagType": {
+                                        "value": "Normal jerk"
+                                    }
+                                }
+                            ],
+                        "timezone": 10
+                    }
+                ]
+            }
+        }
+    }
+}

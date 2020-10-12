@@ -77,138 +77,138 @@ def get_string_from_list_of_dicts(list_of_dicts):
     return labels_string
 
 
-def get_study_with_data_query_string(study_id):
-    return """
-        query {
-            study (id: "%s") {
+GET_STUDY_WITH_DATA = """
+    query study_with_data($study_id: String!) {
+        study (id: $study_id) {
+            id
+            patient {
                 id
-                patient {
-                    id
-                    user {
-                        fullName
-                        }
+                user {
+                    fullName
                 }
+            }
+            name
+            description
+            startTime
+            duration
+            channelGroups {
+                id
+                name
+                sampleRate
+                samplesPerRecord
+                recordLength
+                chunkPeriod
+                recordsPerChunk
+                sampleEncoding
+                compression
+                signalMin
+                signalMax
+                units
+                exponent
+                timestamped
+                channelGroupType {
+                    id
+                }
+                segments {
+                    id
+                    startTime
+                    duration
+                    timezone
+                }
+                channels {
+                    id
+                    name
+                    channelType {
+                        name
+                        category
+                    }
+                }
+            }
+        }
+    }"""
+
+GET_LABELS_PAGED = """
+    query labels($study_id: String!,
+                 $label_group_id: String!,
+                 $limit: PaginationAmount,
+                 $offset: Int,
+                 $from_time: Float,
+                 $to_time: Float) {
+        study (id: $study_id) {
+            id
+            name
+            startTime
+            duration
+            labelGroup (labelGroupId: $label_group_id) {
+                id
+                name
+                labelType
+                description
+                numberOfLabels
+                labels (limit: $limit, offset: $offset, fromTime: $from_time, toTime: $to_time) {
+                    id
+                    note
+                    startTime
+                    duration
+                    timezone
+                    confidence
+                    createdBy {
+                        fullName
+                    }
+                    updatedAt
+                    createdAt
+                    tags {
+                        id
+                        tagType {
+                            id
+                            category {
+                                id
+                                name
+                                description
+                            }
+                            value
+                        }
+                    }
+                }
+            }
+        }
+    }"""
+
+GET_LABELS_STRING = """
+    query labels_string($study_id: String!,
+                        $label_group_id: String,
+                        $from_time: Float,
+                        $to_time: Float) {
+        study (id: $study_id) {
+            id
+            name
+            labelGroup (labelGroupId: $label_group_id) {
+                id
+                name
+                labelType
+                description
+                numberOfLabels
+                labelString (fromTime: $from_time, toTime: $to_time)
+            }
+        }
+    }"""
+
+GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
+    query studies($study_ids: [String],
+                  $limit: PaginationAmount,
+                  $offset: Int) {
+        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
+            id
+            name
+            labelGroups {
+                id
                 name
                 description
-                startTime
-                duration
-                channelGroups {
-                    id
-                    name
-                    sampleRate
-                    samplesPerRecord
-                    recordLength
-                    chunkPeriod
-                    recordsPerChunk
-                    sampleEncoding
-                    compression
-                    signalMin
-                    signalMax
-                    units
-                    exponent
-                    timestamped
-                    channelGroupType {
-                        id
-                    }
-                    segments (fromTime: 1.0, toTime: 9000000000000) {
-                        id
-                        startTime
-                        duration
-                        timezone
-                    }
-                    channels {
-                        id
-                        name
-                        channelType {
-                            name
-                            category
-                        }
-                    }
-                }
+                labelType
+                numberOfLabels
             }
-        }""" % study_id
-
-
-def get_labels_paged_query_string(study_id, label_group_id, from_time, to_time):
-    return f"""
-        query {{{{
-            study (id: "{study_id}") {{{{
-                id
-                name
-                startTime
-                duration
-                labelGroup (labelGroupId: "{label_group_id}") {{{{
-                    id
-                    name
-                    labelType
-                    description
-                    numberOfLabels
-                    labels (limit: {{limit}}, offset: {{offset}}, fromTime: {from_time}, toTime: {to_time}) {{{{
-                        id
-                        note
-                        startTime
-                        duration
-                        timezone
-                        confidence
-                        createdBy {{{{
-                            fullName
-                        }}}}
-                        updatedAt
-                        createdAt
-                        tags {{{{
-                            id
-                            tagType {{{{
-                                id
-                                category {{{{
-                                    id
-                                    name
-                                    description
-                                }}}}
-                                value
-                            }}}}
-                        }}}}
-                    }}}}
-                }}}}
-            }}}}
-        }}}}"""
-
-
-# pylint:disable=too-many-arguments
-def get_labels_string_query_string(study_id, label_group_id, from_time, to_time):
-    return """
-        query {
-            study (id: "%s") {
-                id
-                name
-                labelGroup (labelGroupId: "%s") {
-                    id
-                    name
-                    labelType
-                    description
-                    numberOfLabels
-                    labelString (fromTime: %.0f, toTime: %.0f)
-                }
-            }
-        }""" % (study_id, label_group_id, from_time, to_time)
-
-
-def get_label_groups_for_study_ids_paged_query_string(study_ids):
-    study_ids_string = get_json_list(study_ids)
-
-    return f"""
-        query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, studyIds: {study_ids_string}) {{{{
-                id
-                name
-                labelGroups {{{{
-                    id
-                    name
-                    description
-                    labelType
-                    numberOfLabels
-                }}}}
-            }}}}
-        }}}}"""
+        }
+    }"""
 
 
 def get_channel_groups_query_string(study_id):
@@ -256,66 +256,60 @@ def get_data_chunk_urls_query_string(data_chunks, s3_urls=True):
         }""" % (chunk_keys, s3_urls)
 
 
-def get_studies_by_search_term_paged_query_string(search_term):
-    return f"""
-        query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, searchTerm: "{search_term}") {{{{
+GET_STUDIES_BY_SEARCH_TERM_PAGED = """
+    query studies($search_term: String,
+                  $limit: PaginationAmount,
+                  $offset: Int) {
+        studies (searchTerm: $search_term, limit: $limit, offset: $offset) {
+            id
+            name
+            patient {
                 id
-                name
-                patient {{{{
-                    id
-                    user {{{{
-                        fullName
-                        }}}}
-                }}}}
-            }}}}
-        }}}}"""
-
-
-def get_studies_by_study_id_paged_query_string(study_ids):
-    study_ids_string = get_json_list(study_ids)
-
-    return f"""
-        query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, studyIds: {study_ids_string}) {{{{
-                id
-                name
-                patient {{{{
-                    id
-                    user {{{{
-                        fullName
-                        }}}}
-                }}}}
-            }}}}
-        }}}}"""
-
-
-def get_add_labels_mutation_string():
-    return """
-        mutation addLabelsToLabelGroup($groupId: String!,
-                                       $labels: [NewStudyLabel]!) {
-            addLabelsToLabelGroup(groupId: $groupId,
-                                  labels: $labels) {
-                id
+                user {
+                    fullName
+                }
             }
-        }"""
+        }
+    }"""
 
+GET_STUDIES_BY_STUDY_ID_PAGED = """
+    query studies($study_ids: [String],
+                  $limit: PaginationAmount,
+                  $offset: Int) {
+        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
+            id
+            name
+            patient {
+                id
+                user {
+                    fullName
+                }
+            }
+        }
+    }"""
 
-def get_tag_id_query_string():
-    return """
-        query {
-          labelTags {
+ADD_LABELS = """
+    mutation addLabelsToLabelGroup($group_id: String!,
+                                   $labels: [NewStudyLabel]!) {
+        addLabelsToLabelGroup(groupId: $group_id, labels: $labels) {
+            id
+        }
+    }"""
+
+GET_TAG_IDS = """
+    query {
+        labelTags {
             id
             category {
-              id
-              name
-              description
+                id
+                name
+                description
             }
             value
             forStudy
             forDiary
-          }
-        }"""
+        }
+    }"""
 
 
 def get_add_label_group_mutation_string(study_id, name, description, label_type):
@@ -369,19 +363,18 @@ def get_viewed_times_query_string(study_id, limit, offset):
         }""" % (study_id, limit, offset)
 
 
-def get_organisations_query_string():
-    return """
-        query {
-            organisations {
-                id
-                partyId
-                ownerId
-                name
-                description
-                isPublic
-                isDeleted
-            }
-        }"""
+GET_ORGANISATIONS = """
+    query {
+        organisations {
+            id
+            partyId
+            ownerId
+            name
+            description
+            isPublic
+            isDeleted
+        }
+    }"""
 
 
 def get_user_from_patient_query_string(patient_id):
@@ -399,43 +392,42 @@ def get_user_from_patient_query_string(patient_id):
         }""" % patient_id
 
 
-def get_patients_query_string():
-    return """
-        query getPatientList {
-            patients {
+GET_PATIENTS = """
+    query getPatientList {
+        patients {
+            id
+            user {
                 id
-                user {
-                    id
-                    fullName
-                    shortName
-                    email
-                    lastActive
-                    lastInsightGenerated
-                    preferredTimezone
-                }
+                fullName
+                shortName
+                email
+                lastActive
+                lastInsightGenerated
+                preferredTimezone
             }
-        }"""
+        }
+    }"""
 
-
-def get_diary_insights_paged_query_string(patient_id, limit, offset):
-    return f"""
-        query {{{{
-            patient (id: "{patient_id}") {{{{
+GET_DIARY_INSIGHTS_PAGED = """
+    query patient($patient_id: String!,
+                  $limit: PaginationAmount,
+                  $offset: Int) {
+        patient (id: $patient_id) {
+            id
+            insights (limit: $limit, offset: $offset) {
                 id
-                insights (limit: {{limit}}, offset: {{offset}}) {{{{
-                    id
-                    report {{{{
-                        id
-                    }}}}
-                    reportDate
+                report {
+                    patientId
                     reportPeriod
-                    emailNotificationSent
-                    emailLinkOpened
-                    createdAt
-                    updatedAt
-                    }}}}
-                }}}}
-            }}}}"""
+                }
+                reportDate
+                emailNotificationSent
+                emailLinkOpened
+                createdAt
+                updatedAt
+            }
+        }
+    }"""
 
 
 def get_diary_created_at_query_string(patient_id):
@@ -449,154 +441,139 @@ def get_diary_created_at_query_string(patient_id):
         }""" % patient_id
 
 
-def get_diary_labels_query_string():
-    return """
-        query getDiaryLabels(
-            $id: String!,
-            $value: String!,
-            $limit: PaginationAmount,
-            $offset: Int,
-            $from_time: Float!,
-            $to_time: Float!,
-            $from_duration: Float!,
-            $to_duration: Float!) {
-                    patient (id: $id) {
-                        id
-                        diary {
-                            id
-                            createdAt
-                            labelGroups (filters: [{name: "labelType" value: $value}]) {
-                                id
-                                labelType
-                                labelSourceType
-                                name
-                                numberOfLabels
-                                labels (limit: $limit, offset: $offset, ranges: [{ from: $from_time to: $to_time }, { from: $from_duration to: $to_duration }]) {
-                                    id
-                                    startTime
-                                    timezone
-                                    duration
-                                    note
-                                    tags {
-                                        id
-                                        tagType {
-                                            id
-                                            category  {
-                                                id
-                                                name
-                                                description
-                                            }
-                                            value
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-        """
-
-
-def get_diary_medication_alerts_query_string():
-
-    return """query getDiaryAlertMedication(
-                $id: String!,
-                $from: Float!,
-                $to: Float!
-                ) {
-                patient (id: $id) {
-                    diary {
-                        id
-                        alerts {
-                            id
-                            name
-                            labels (ranges: [{ from: $from to: $to }]) {
-                                id
-                                startTime
-                                scheduledTime
-                                alert {
-                                    name
-                                }
-                                scheduledTime
-                                startTime
-                                doses {
-                                    doseValue
-                                    doseUnit
-                                    doseExponent
-                                    medication {
-                                        brandName
-                                        drugName
-                                    }
-                                }
-                                deleted
-                            }
-                        }
-                    }
-                }
-            }"""
-
-
-def get_diary_medication_alert_windows_query_string():
-    return """
-        query getDiaryAlertWindow(
-            $id: String!,
-            $filters: [SearchFilter!]
-        ) {
-            patient (id: $id) {
-                diary {
+GET_DIARY_LABELS = """
+    query getDiaryLabels($patient_id: String!,
+                         $value: String!,
+                         $limit: PaginationAmount,
+                         $offset: Int,
+                         $from_time: Float!,
+                         $to_time: Float!,
+                         $from_duration: Float!,
+                         $to_duration: Float!) {
+        patient (id: $patient_id) {
+            id
+            diary {
+                id
+                createdAt
+                labelGroups (filters: [{name: "labelType" value: $value}]) {
                     id
-                    alerts {
+                    labelType
+                    labelSourceType
+                    name
+                    numberOfLabels
+                    labels (limit: $limit, offset: $offset,
+                            ranges: [{ from: $from_time to: $to_time },
+                                     { from: $from_duration to: $to_duration }]) {
                         id
-                        name
-                        windows (filters: $filters) {
-                            startTime
-                            timezone
-                            endTime
+                        startTime
+                        timezone
+                        duration
+                        note
+                        tags {
+                            id
+                            tagType {
+                                id
+                                category  {
+                                    id
+                                    name
+                                    description
+                                }
+                                value
+                            }
                         }
                     }
                 }
             }
-        }"""
+        }
+    }"""
 
-
-def get_diary_medication_compliance_query_string():
-
-    return """
-        query getMedicationCompliance(
-            $id: String!,
-            $from: Float!
-            $to: Float!) {
-                patient (id: $id) {
-                    id
-                    diary {
-                        id
-                        medicationCompliance (range: { from: $from, to: $to }) {
-                            label
-                            status
-                            date
-                        }
-                    }
-                }
-            }"""
-
-
-def get_documents_for_study_ids_paged_query_string(study_ids):
-    study_ids_string = get_json_list(study_ids)
-
-    return f"""
-        query {{{{
-            studies (limit: {{limit}}, offset: {{offset}}, studyIds: {study_ids_string}) {{{{
+GET_DIARY_MEDICATION_ALERTS = """
+    query getDiaryAlertMedication($patient_id: String!,
+                                  $from_time: Float!,
+                                  $to_time: Float!) {
+        patient (id: $patient_id) {
+            diary {
                 id
-                name
-                documents {{{{
+                alerts {
                     id
                     name
-                    uploaded
-                    fileSize
-                    downloadFileUrl
-                }}}}
-            }}}}
-        }}}}"""
+                    labels (ranges: [{ from: $from_time to: $to_time }]) {
+                        id
+                        startTime
+                        scheduledTime
+                        alert {
+                            name
+                        }
+                        scheduledTime
+                        startTime
+                        doses {
+                            doseValue
+                            doseUnit
+                            doseExponent
+                            medication {
+                                brandName
+                                drugName
+                            }
+                        }
+                        deleted
+                    }
+                }
+            }
+        }
+    }"""
+
+GET_DIARY_MEDICATION_ALERT_WINDOWS = """
+    query getDiaryAlertWindow($patient_id: String!,
+                              $filters: [SearchFilter!]) {
+        patient (id: $patient_id) {
+            diary {
+                id
+                alerts {
+                    id
+                    name
+                    windows (filters: $filters) {
+                        startTime
+                        timezone
+                        endTime
+                    }
+                }
+            }
+        }
+    }"""
+
+GET_DIARY_MEDICATION_COMPLIANCE = """
+    query getMedicationCompliance($patient_id: String!,
+                                  $from_time: Float!,
+                                  $to_time: Float!) {
+        patient (id: $patient_id) {
+            id
+            diary {
+                id
+                medicationCompliance (range: { from: $from_time, to: $to_time }) {
+                    label
+                    status
+                    date
+                }
+            }
+        }
+    }"""
+
+GET_DOCUMENTS_FOR_STUDY_IDS_PAGED = """
+    query studies($study_ids: [String],
+                  $limit: PaginationAmount,
+                  $offset: Int) {
+        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
+            id
+            name
+            documents {
+                id
+                name
+                uploaded
+                fileSize
+                downloadFileUrl
+            }
+        }
+    }"""
 
 
 def get_add_document_mutation_string(study_id, document):
@@ -690,29 +667,33 @@ def get_diary_study_label_groups_string(patient_id, limit, offset):
     """ % (patient_id, limit, offset)
 
 
-def get_labels_for_diary_study_paged_query_string(patient_id, label_group_id, from_time, to_time):
-    return f"""
-        query {{{{
-            patient (id: "{patient_id}") {{{{
-                id
-                diaryStudy {{{{
-                    labelGroup (labelGroupId: "{label_group_id}") {{{{
+GET_LABELS_FOR_DIARY_STUDY_PAGED = """
+    query patient($patient_id: String!,
+                  $label_group_id: String,
+                  $limit: PaginationAmount,
+                  $offset: Int,
+                  $from_time: Float,
+                  $to_time: Float) {
+        patient (id: $patient_id) {
+            id
+            diaryStudy {
+                labelGroup (labelGroupId: $label_group_id) {
+                    id
+                    labels (limit: $limit, offset: $offset, from: $from_time, to: $to_time) {
                         id
-                        labels (limit: {{limit}}, offset: {{offset}}, from: {from_time}, to: {to_time}) {{{{
-                            id
-                            startTime
-                            timezone
-                            duration
-                            tags {{{{
-                                tagType {{{{
-                                    value
-                                }}}}
-                            }}}}
-                        }}}}
-                    }}}}
-                }}}}
-            }}}}
-        }}}}"""
+                        startTime
+                        timezone
+                        duration
+                        tags {
+                            tagType {
+                                value
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }"""
 
 
 def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
@@ -741,18 +722,18 @@ def get_diary_study_channel_groups_query_string(patient_id, from_time, to_time):
         }""" % (patient_id, from_time, to_time)
 
 
-def get_study_ids_in_study_cohort_paged_query_string(study_cohort_id):
-    return f"""
-        query {{{{
-            studyCohort(id: "{study_cohort_id}") {{{{
+GET_STUDY_IDS_IN_STUDY_COHORT_PAGED = """
+    query studyCohort($study_cohort_id: String,
+                      $limit: PaginationAmount,
+                      $offset: Int) {
+        studyCohort(id: $study_cohort_id) {
+            id
+            name
+            studies(limit: $limit, offset: $offset) {
                 id
-                name
-                studies(limit: {{limit}}, offset: {{offset}}) {{{{
-                    id
-                }}}}
-            }}}}
-        }}}}
-    """
+            }
+        }
+    }"""
 
 
 def create_study_cohort_mutation_string(name, description=None, key=None, study_ids=None):
@@ -810,41 +791,40 @@ def remove_studies_from_study_cohort_mutation_string(study_cohort_id, study_ids)
     """ % (study_cohort_id, get_json_list(study_ids))
 
 
-def get_mood_survey_results_paged_query_string(survey_template_ids):
-    return f"""
-        query {{{{
-            surveys(surveyTemplateIds: {get_json_list(survey_template_ids)}, limit: {{limit}}, offset: {{offset}}) {{{{
-                completer {{{{
-                    id
-                    roles {{{{
-                        patient {{{{
-                            id
-                        }}}}
-                    }}}}
-                }}}}
+GET_MOOD_SURVEY_RESULTS_PAGED = """
+    query surveys($survey_template_ids: [String!],
+                  $limit: PaginationAmount,
+                  $offset: Int) {
+        surveys(surveyTemplateIds: $survey_template_ids, limit: $limit, offset: $offset) {
+            completer {
                 id
-                fields {{{{
-                    key
-                    value
-                }}}}
-                lastSubmittedAt
-            }}}}
-        }}}}
-    """
+                roles {
+                    patient {
+                        id
+                    }
+                }
+            }
+            id
+            fields {
+                key
+                value
+            }
+            lastSubmittedAt
+        }
+    }"""
 
-
-def get_user_ids_in_user_cohort_paged_query_string(user_cohort_id):
-    return f"""
-        query {{{{
-            userCohort(id: "{user_cohort_id}") {{{{
+GET_USER_IDS_IN_USER_COHORT_PAGED = """
+    query userCohort($user_cohort_id: String,
+                     $limit: PaginationAmount,
+                     $offset: Int) {
+        userCohort(id: $user_cohort_id) {
+            id
+            name
+            users(limit: $limit, offset: $offset) {
                 id
-                name
-                users(limit: {{limit}}, offset: {{offset}}) {{{{
-                    id
-                }}}}
-            }}}}
-        }}}}
-    """
+            }
+        }
+    }"""
 
 
 def get_create_user_cohort_mutation_string(name, description=None, key=None, user_ids=None):

@@ -1,28 +1,30 @@
-[
-    {
-        "id": "study-1-id",
-        "name": "Study 1",
-        "patient": {
-            "id": "patient-1-id"
+{
+    "studies": [
+        {
+            "id": "study-1-id",
+            "name": "Study 1",
+            "patient": {
+                "id": "patient-1-id"
+            }
+        },
+        {
+            "id": "study-2-id",
+            "name": "Study 2",
+            "patient": {
+                "id": "patient-2-id"
+            }
+        },
+        {
+            "id": "study-3-id",
+            "name": "Study 3",
+            "patient": null
+        },
+        {
+            "id": "study-4-id",
+            "name": "Study 4",
+            "patient": {
+                "id": "patient-4-id"
+            }
         }
-    },
-    {
-        "id": "study-2-id",
-        "name": "Study 2",
-        "patient": {
-            "id": "patient-2-id"
-        }
-    },
-    {
-        "id": "study-3-id",
-        "name": "Study 3",
-        "patient": null
-    },
-    {
-        "id": "study-4-id",
-        "name": "Study 4",
-        "patient": {
-            "id": "patient-4-id"
-        }
-    }
-]
+    ]
+}

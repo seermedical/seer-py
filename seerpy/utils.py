@@ -206,7 +206,7 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
 
 
 # pylint:disable=too-many-locals,too-many-arguments
-def get_channel_data(study_metadata, data_chunk_urls, download_function=requests.get, threads=None,
+def get_channel_data(study_metadata, segment_urls, download_function=requests.get, threads=None,
                      from_time=0, to_time=9e12):
     """
     Download data chunks and stitch together into a single DataFrame.
@@ -215,9 +215,10 @@ def get_channel_data(study_metadata, data_chunk_urls, download_function=requests
     ----------
     study_metadata : pd.DataFrame
         Study metadata as returned by seerpy.get_all_study_metadata_dataframe_by_*()
-    data_chunk_urls : pd.DataFrame
-        DataFrame with columns ['segments.id', 'dataChunks.url', 'dataChunks.time'] as returned by
-        `seerpy.get_data_chunk_urls`
+    segment_urls : pd.DataFrame
+        DataFrame with columns ['segments.id', 'baseDataChunkUrl'] as returned by
+        `seerpy.get_segment_urls`, or with columns ['segments.id', 'dataChunks.time',
+        'dataChunks.url'] as returned by `seerpy.get_data_chunk_urls`.
     download_function : callable
         The function used to download the channel data. Defaults to requests.get
     threads : int, optional
@@ -238,6 +239,11 @@ def get_channel_data(study_metadata, data_chunk_urls, download_function=requests
             threads = 1
         else:
             threads = 5
+
+    data_chunk_urls = segment_urls
+    if 'baseDataChunkUrl' in data_chunk_urls.columns:
+        data_chunk_urls = create_data_chunk_urls(study_metadata, data_chunk_urls, from_time,
+                                                 to_time)
 
     data_q = []
 

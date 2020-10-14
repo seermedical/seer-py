@@ -1489,16 +1489,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         >>> ecg_metadata_df = metadata_df[metadata_df['channelGroups.name'] == 'ECG']
         >>> ecg_data_df = get_channel_data(ecg_metadata_df)
         """
-        data_chunk_urls = segment_urls
-        if data_chunk_urls is None:
-            data_chunk_urls = self.get_data_chunk_urls(all_data, s3_urls=direct_s3_access,
-                                                       from_time=from_time, to_time=to_time)
-        elif 'baseDataChunkUrl' in data_chunk_urls.columns:
-            data_chunk_urls = utils.create_data_chunk_urls(all_data, data_chunk_urls, from_time,
-                                                           to_time)
+        if segment_urls is None:
+            segment_urls = self.get_data_chunk_urls(all_data, s3_urls=direct_s3_access,
+                                                    from_time=from_time, to_time=to_time)
 
-        return utils.get_channel_data(all_data, data_chunk_urls, download_function, threads,
-                                      from_time, to_time)
+        return utils.get_channel_data(all_data, segment_urls, download_function, threads, from_time,
+                                      to_time)
 
     def get_all_bookings(self, organisation_id, start_time, end_time):
         """

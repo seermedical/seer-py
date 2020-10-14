@@ -1447,7 +1447,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     # pylint:disable=too-many-locals,too-many-arguments
     def get_channel_data(self, all_data, segment_urls=None, download_function=requests.get,
-                         threads=None, from_time=0, to_time=9e12, direct_s3_access=True):
+                         threads=None, from_time=0, to_time=9e12, s3_urls=True):
         """
         Download raw data for all channel groups and segments listed in a given metadata DataFrame
         and return as a new DataFrame.
@@ -1470,9 +1470,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Timestamp in msec - only retrieve data from this point onward
         to_time : float, optional
             Timestamp in msec - only retrieve data up until this point
-        direct_s3_access : bool, optional
+        s3_urls : bool, optional
             Note: this only has an effect if segment_urls is None. If True (default), download
-            direct from S3 (otherwise download via Cloudfront). S3 should be preferred when running
+            using S3 urls (otherwise download via Cloudfront). S3 should be preferred when running
             in the same AWS region as the data is stored.
 
         Returns
@@ -1490,8 +1490,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         >>> ecg_data_df = get_channel_data(ecg_metadata_df)
         """
         if segment_urls is None:
-            segment_urls = self.get_data_chunk_urls(all_data, s3_urls=direct_s3_access,
-                                                    from_time=from_time, to_time=to_time)
+            segment_urls = self.get_data_chunk_urls(all_data, s3_urls=s3_urls, from_time=from_time,
+                                                    to_time=to_time)
 
         return utils.get_channel_data(all_data, segment_urls, download_function, threads, from_time,
                                       to_time)

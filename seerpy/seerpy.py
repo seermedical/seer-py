@@ -670,9 +670,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         s3_urls : bool, optional
             If True (default), return download URLs for S3 (otherwise return URLs for Cloudfront).
             S3 should be preferred when running in the same AWS region as the data is stored.
-        from_time : int, optional
+        from_time : float, optional
             Timestamp in msec - only retrieve data from this point onward
-        to_time : int, optional
+        to_time : float, optional
             Timestamp in msec - only retrieve data up until this point
         limit : int, options
             Batch size for repeated API calls
@@ -1466,9 +1466,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         threads : int, optional
             Number of threads to use. If > 1 will use multiprocessing. If None (default), will use
             1 on Windows and 5 on Linux/MacOS.
-        from_time : int, optional
+        from_time : float, optional
             Timestamp in msec - only retrieve data from this point onward
-        to_time : int, optional
+        to_time : float, optional
             Timestamp in msec - only retrieve data up until this point
         direct_s3_access : bool, optional
             Note: this only has an effect if segment_urls is None. If True (default), download
@@ -1491,7 +1491,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         data_chunk_urls = segment_urls
         if data_chunk_urls is None:
-            data_chunk_urls = self.get_data_chunk_urls(all_data, s3_urls=direct_s3_access)
+            data_chunk_urls = self.get_data_chunk_urls(all_data, s3_urls=direct_s3_access,
+                                                       from_time=from_time, to_time=to_time)
         elif 'baseDataChunkUrl' in data_chunk_urls.columns:
             data_chunk_urls = utils.create_data_chunk_urls(all_data, data_chunk_urls, from_time,
                                                            to_time)

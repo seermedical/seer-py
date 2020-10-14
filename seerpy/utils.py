@@ -164,9 +164,9 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
     segment_urls : pd.DataFrame
         DataFrame with columns 'segments.id', and 'baseDataChunkUrl', as returned
         by seerpy.get_segment_urls()
-    from_time : int, optional
-        Only include data chunks that start after this time
-    to_time : int, optional
+    from_time : float, optional
+        Only include data chunks that end after this time
+    to_time : float, optional
         Only include data chunks that start before this time
 
     Returns
@@ -223,9 +223,9 @@ def get_channel_data(study_metadata, data_chunk_urls, download_function=requests
     threads : int, optional
         Number of threads to use. If > 1 then will use multiprocessing. If None (default), it will
         use 1 on Windows and 5 on Linux/MacOS
-    from_time : int, optional
+    from_time : float, optional
         Timestamp in msec - only retrieve data from this point onward
-    to_time : int, optional
+    to_time : float, optional
         Timestamp in msec - only retrieve data up until this point
 
     Returns

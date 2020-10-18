@@ -43,7 +43,7 @@ class DataDownloader:
         for index, segment_id in enumerate(tqdm(segment_ids)):
             segment_metadata = channel_metadata[channel_metadata['segments.id'] == segment_id]
             segment_file = join(
-                folder_out, f'{self.study_name}_{channel_group}_{channel}_segment_{index}.json')
+                folder_out, f'{self.study_name}_{channel_group}_{channel}_segment_{index}.parquet')
             if isfile(segment_file):
                 continue
             try:
@@ -57,24 +57,10 @@ class DataDownloader:
             segment_row = segment_metadata.iloc[0, :]
 
             data = {}
-            data['id'] = segment_row['id']
-            data['channel_group'] = {}
-            data['channel_group']['channel_group_id'] = segment_row['channelGroups.id']
-            data['channel_group']['channel_group_name'] = channel_group
-            data['channel_group']['sample_rate'] = int(segment_row['channelGroups.sampleRate'])
-            data['channel_group']['units'] = segment_row['channelGroups.units']
-            data['channel_group']['exponent'] = int(segment_row['channelGroups.exponent'])
-            data['channel_group']['signal_min'] = int(segment_row['channelGroups.signalMin'])
-            data['channel_group']['signal_max'] = int(segment_row['channelGroups.signalMax'])
-            data['channel_group']['channel'] = {}
-            data['channel_group']['channel']['channel_id'] = segment_row['channels.id']
-            data['channel_group']['channel']['channel_name'] = channel
-            data['channel_group']['channel']['segment'] = {}
-            data['channel_group']['channel']['segment']['segment_index'] = index
-            data['channel_group']['channel']['segment']['segment_id'] = segment_row['segments.id']
-            data['channel_group']['channel']['segment']
-            data['channel_group']['channel']['segment']['time'] = segment_data['time'].tolist()
-            data['channel_group']['channel']['segment']['data'] = segment_data[channel].tolist()
+            data = pd.DataFrame({
+                'time': segment_data['time'].tolist(),
+                'data': segment_data[channel].tolist()
+            })
 
             yield data, segment_file
 
@@ -104,7 +90,7 @@ class DataDownloader:
                                                                     channel, channel_metadata,
                                                                     segment_ids):
                 # Save segment data to JSON
-                write_json(segment_file, segment_data)
+                segment_data.to_parquet(segment_file)
         print('Done.')
 
     def download_label_data(self):

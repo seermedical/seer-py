@@ -212,12 +212,12 @@ class TestPaginatedQuery:
 
     def test_get_diary_study_labels(self, gql_client, unused_sleep, seer_connect):
         # TODO: check that the contents of this file are appropriate
-
+        
         # run test and check result
         self.check_paginated_query_with_data_variations(
             gql_client, seer_connect, function_to_test=seer_connect.get_diary_study_labels,
-            function_args=['patient-1-id', 'label-group-1-id'], response_file='diary_labels.json',
-            empty_response_file='diary_labels_empty.json')
+            function_args=['patient-1-id', 'label-group-1-id'], response_file='diary_study_labels.json',
+            empty_response_file='diary_study_labels_empty.json')
 
     def test_get_mood_survey_results(self, gql_client, unused_sleep, seer_connect):
         # run test and check result

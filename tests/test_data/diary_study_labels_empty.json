@@ -1,0 +1,11 @@
+{
+    "patient": {
+        "id": "patient-1-id",
+        "diaryStudy": {
+            "labelGroup": {
+                "id": "label-group-1-id",
+                "labels": []
+            }
+        }
+    }
+}

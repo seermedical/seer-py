@@ -741,7 +741,7 @@ class TestGetDiaryLabels:
 
         gql_client.return_value.execute.side_effect = side_effects
 
-        expected_result = {}
+        expected_result = {'labelGroups': [{'numberOfLabels': 0, 'labels': []}]}
 
         # run test and check result
         result = seer_connect.get_diary_labels('patient-1-id')

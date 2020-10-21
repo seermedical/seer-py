@@ -1171,13 +1171,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for idx, group in enumerate(label_groups):
                 labels = group['labels']
 
+                if not labels:
+                    label_results = response
+                    continue
+
                 filtered_labels = []
                 for label in labels:
                     if any(tag['tagType']['value'] == label_type.capitalize() for tag in label['tags']):
                         filtered_labels.append(label)
 
-                if not labels:
-                    continue
                 # we need to fetch more labels
                 if len(labels) >= limit:
                     query_flag = True

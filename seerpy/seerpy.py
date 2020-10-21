@@ -1111,7 +1111,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['patient']['diary']['createdAt']
 
-    def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0,
+    def get_diary_labels(self, patient_id, label_type='seizure', offset=0, limit=100, from_time=0,
                          to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Retrieve diary label groups and labels for a given patient.
@@ -1121,8 +1121,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID for which to retrieve diary labels
         label_type : str, optional
-            The type of label to retrieve. Default = 'all'. Options = 'seizure',
-            'medications', 'cardiac'.
+            The type of label to retrieve. Default = 'seizure'. Options = 'seizure',
+            'cardiac', 'other'.
         offset : int, optional
             Index of first record to return
         limit : int, optional
@@ -1151,7 +1151,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         query_flag = True
         variable_values = {
             'patient_id': patient_id,
-            'value': label_type,
             'from_time': from_time,
             'to_time': to_time,
             'from_duration': from_duration,
@@ -1172,15 +1171,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for idx, group in enumerate(label_groups):
                 labels = group['labels']
 
+                filtered_labels = []
+                for label in labels:
+                    if any(tag['tagType']['value'] == 'Seizure' for tag in label['tags']):
+                        filtered_labels.append(label)
+
                 if not labels:
                     continue
-
                 # we need to fetch more labels
                 if len(labels) >= limit:
                     query_flag = True
 
                 if not label_results:
                     label_results = response
+                    label_results['labelGroups'][idx]['labels'] = filtered_labels
                     if any([
                             index['numberOfLabels']
                             for index in response['labelGroups']
@@ -1188,8 +1192,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                     ]):
                         query_flag = True
                     break
-
-                label_results['labelGroups'][idx]['labels'].extend(labels)
+                label_results['labelGroups'][idx]['labels'].extend(filtered_labels)
 
             offset += limit
 

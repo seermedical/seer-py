@@ -31,7 +31,7 @@ def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer
     API key authentiction will be used.
     API key files can contain the following information, separated by the '.' character:
     - a default indicator 'default' to indicate to use this file as a default
-    - a region string 'au' or 'uk' indicating the region to use
+    - a region string 'au', 'de', 'uk', or 'us' indicating the region to use
     - an id, to be used as the api_key_id value.
     e.g. seerpy.default.ac42d1f7-98c5-40ad-b35f-2026688411e8.uk.pem
 
@@ -44,7 +44,7 @@ def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer
         The id of the API key
     api_key_path : str, optional
         The file path of an API key file
-    region : {None, 'au', 'uk'}
+    region : {None, 'au', 'de', 'uk', 'us'}
         The region string of the API version to access.
     api_url : str, optional
         Base URL of API endpoint
@@ -376,7 +376,8 @@ class SeerApiKeyAuth(BaseAuth):
     @classmethod
     def _get_key_filename_parts(cls, pem_filename):
         filename_parts = os.path.splitext(os.path.basename(pem_filename))[0].split('.')[1:]
-        filename_region = cls._get_part_from_filename_parts(filename_parts, ['au', 'uk'], 'region')
+        valid_regions = ['au', 'de', 'uk', 'us']
+        filename_region = cls._get_part_from_filename_parts(filename_parts, valid_regions, 'region')
         filename_default = cls._get_part_from_filename_parts(filename_parts, ['default'],
                                                              'default indicator')
         filename_id = None

@@ -797,6 +797,11 @@ GET_MOOD_SURVEY_RESULTS_PAGED = """
         surveys(surveyTemplateIds: $survey_template_ids, limit: $limit, offset: $offset) {
             completer {
                 id
+                roles {
+                    patient {
+                        id
+                    }
+                }
             }
             id
             fields {

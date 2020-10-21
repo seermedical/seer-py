@@ -1,11 +1,13 @@
 {
     "patient": {
-        "id": "study-1-id",
-        "diaryStudy": {
-            "labelGroup": {
-                "id": "label-group-1-id",
-                "labels": []
-            }
+        "id": "patient-1-id",
+        "diary": {
+            "labelGroups": [
+                {
+                    "numberOfLabels": 0,
+                    "labels": []
+                }
+            ]
         }
     }
 }

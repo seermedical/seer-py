@@ -1185,6 +1185,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 if not label_results:
                     label_results = response
                     label_results['labelGroups'][idx]['labels'] = filtered_labels
+                    label_results['labelGroups'][idx]['numberOfLabels'] = len(filtered_labels)
                     if any([
                             index['numberOfLabels']
                             for index in response['labelGroups']
@@ -1193,7 +1194,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                         query_flag = True
                     break
                 label_results['labelGroups'][idx]['labels'].extend(filtered_labels)
-
+                label_results['labelGroups'][idx]['numberOfLabels'] += len(filtered_labels)
             offset += limit
 
         return label_results

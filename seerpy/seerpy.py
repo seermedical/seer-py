@@ -660,18 +660,19 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_data_chunk_urls(self, study_metadata, s3_urls=True, from_time=0, to_time=9e12,
                             limit=10000):
         """
-        Get a DataFrame containing download details of all data chunks that
-        comprise the segments in a provided metadata DataFrame.
+        Get a DataFrame containing download details of all data chunks that comprise the segments in
+        a provided metadata DataFrame.
 
         Parameters
         ----------
         study_metadata : pd.DataFrame
             Study metadata as returned by `get_all_study_metadata_dataframe_by_*()`
         s3_urls : bool, optional
-            Return download URLs for S3 (otherwise return URLs for Cloudfront)
-        from_time : int, optional
+            If True (default), return download URLs for S3 (otherwise return URLs for Cloudfront).
+            S3 should be preferred when running in the same AWS region as the data is stored.
+        from_time : float, optional
             Timestamp in msec - only retrieve data from this point onward
-        to_time : int, optional
+        to_time : float, optional
             Timestamp in msec - only retrieve data up until this point
         limit : int, options
             Batch size for repeated API calls
@@ -681,14 +682,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         data_chunk_df : pd.DataFrame
             The returned DataFrame has columns:
             - segments.id
-            - chunkIndex
-            - chunk_start
-            - chunk_end
-            - chunk_url
+            - dataChunks.index
+            - dataChunks.time
+            - dataChunks.end
+            - dataChunks.url
         """
+        columns = [
+            'segments.id', 'dataChunks.index', 'dataChunks.time', 'dataChunks.end', 'dataChunks.url'
+        ]
         if study_metadata.empty:
-            return pd.DataFrame(
-                columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end', 'chunk_url'])
+            return pd.DataFrame(columns=columns)
 
         study_metadata = study_metadata.drop_duplicates('segments.id')
         study_metadata = study_metadata[study_metadata['segments.startTime'] <= to_time]
@@ -700,22 +703,22 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         for row in zip(study_metadata['channelGroups.chunkPeriod'],
                        study_metadata['segments.duration'], study_metadata['segments.startTime'],
                        study_metadata['segments.id']):
-            chunk_period = row[0]
-            num_chunks = int(math.ceil(row[1] / chunk_period / 1000.))
+            chunk_period = row[0] * 1000.  # chunk period is in seconds, time is milliseconds
+            num_chunks = int(math.ceil(row[1] / chunk_period))
             for i in range(num_chunks):
                 chunk_start = row[2] + chunk_period * i
                 chunk_end = chunk_start + chunk_period
-                if chunk_start >= from_time and chunk_end <= to_time:
+                if chunk_end >= from_time and chunk_start <= to_time:
                     data_chunks.append({'segmentId': row[3], 'chunkIndex': i})
                     chunk_metadata.append({
                         'segments.id': row[3],
-                        'chunkIndex': i,
-                        'chunk_start': chunk_start,
-                        'chunk_end': chunk_end
+                        'dataChunks.index': i,
+                        'dataChunks.time': chunk_start,
+                        'dataChunks.end': chunk_end
                     })
         if not data_chunks:
-            return pd.DataFrame(
-                columns=['segments.id', 'chunkIndex', 'chunk_start', 'chunk_end', 'chunk_url'])
+            return pd.DataFrame(columns=columns)
+
         chunks = []
         counter = 0
         while int(counter * limit) < len(data_chunks):
@@ -727,7 +730,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             ])
             counter += 1
         data_chunk_urls = pd.DataFrame(chunk_metadata)
-        data_chunk_urls['chunk_url'] = chunks
+        data_chunk_urls['dataChunks.url'] = chunks
 
         return data_chunk_urls
 
@@ -1444,33 +1447,39 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     # pylint:disable=too-many-locals,too-many-arguments
     def get_channel_data(self, all_data, segment_urls=None, download_function=requests.get,
-                         threads=None, from_time=0, to_time=9e12):
+                         threads=None, from_time=0, to_time=9e12, s3_urls=True):
         """
-        Download raw data for all channel groups and segments listed in a given
-        metadata DataFrame and return as a new DataFrame.
+        Download raw data for all channel groups and segments listed in a given metadata DataFrame
+        and return as a new DataFrame.
 
         Parameters
         ----------
         all_data : pd.DataFrame
             Study metadata, as returned by `get_all_study_metadata_dataframe_by_*()`
         segment_urls : pd.DataFrame, optional
-            DataFrame with columns ['segments.id', 'baseDataChunkUrl'].
-            If None, these will be retrieved for each segment in `all_data`.
+            DataFrame with columns ['segments.id', 'baseDataChunkUrl'] as returned by
+            `get_segment_urls`, or with columns ['segments.id', 'dataChunks.time', 'dataChunks.url']
+            as returned by `get_data_chunk_urls`. If None, these will be retrieved for each segment
+            in `all_data`.
         download_function : callable, optional
             The function used to download the channel data. Defaults to requests.get
         threads : int, optional
-            Number of threads to use. If > 1 will use multiprocessing. If None
-            (default), will use 1 on Windows and 5 on Linux/MacOS.
-        from_time : int, optional
+            Number of threads to use. If > 1 will use multiprocessing. If None (default), will use
+            1 on Windows and 5 on Linux/MacOS.
+        from_time : float, optional
             Timestamp in msec - only retrieve data from this point onward
-        to_time : int, optional
+        to_time : float, optional
             Timestamp in msec - only retrieve data up until this point
+        s3_urls : bool, optional
+            Note: this only has an effect if segment_urls is None. If True (default), download
+            using S3 urls (otherwise download via Cloudfront). S3 should be preferred when running
+            in the same AWS region as the data is stored.
 
         Returns
         -------
         data_df : pd.DataFrame
-            DataFrame with 'time', 'id', 'channelGroups.id' and 'segments.id' columns,
-            as well as a column for each data channel, e.g. each EEG electrode.
+            DataFrame with 'time', 'id', 'channelGroups.id' and 'segments.id' columns, as well as a
+            column for each data channel, e.g. each EEG electrode.
 
         Example
         -------
@@ -1481,8 +1490,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         >>> ecg_data_df = get_channel_data(ecg_metadata_df)
         """
         if segment_urls is None:
-            segment_ids = all_data['segments.id'].drop_duplicates().tolist()
-            segment_urls = self.get_segment_urls(segment_ids)
+            segment_urls = self.get_data_chunk_urls(all_data, s3_urls=s3_urls, from_time=from_time,
+                                                    to_time=to_time)
 
         return utils.get_channel_data(all_data, segment_urls, download_function, threads, from_time,
                                       to_time)

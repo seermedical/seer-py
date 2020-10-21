@@ -1,5 +1,5 @@
-completer.id,completer.roles.patient.id,id,lastSubmittedAt,fields.key,fields.value
-completer1,patient1,survey1,2020-02-10 19:13:12,sleep,0
-completer1,patient1,survey1,2020-02-10 19:13:12,mood,0.5
-completer1,patient1,survey1,2020-02-10 19:13:12,free,test
-completer1,patient1,survey2,2020-02-11 19:13:12,mood,0.25
+id,lastSubmittedAt,completer1,patient1,fields.key,fields.value
+survey1,2020-02-10 19:13:12,completer1,patient1,sleep,0
+survey1,2020-02-10 19:13:12,completer1,patient1,mood,0.5
+survey1,2020-02-10 19:13:12,completer1,patient1,free,test
+survey2,2020-02-11 19:13:12,completer1,patient1,mood,0.25

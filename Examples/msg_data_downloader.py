@@ -6,9 +6,8 @@ import argparse
 from os import mkdir
 from os.path import dirname, isdir, isfile, join
 from seerpy import SeerConnect
-from urllib3.exceptions import ReadTimeoutError
-
 from downloader.downloader import DataDownloader
+from urllib3.exceptions import ReadTimeoutError
 from downloader.utils import read_json, write_json
 
 
@@ -76,9 +75,8 @@ def run(client, path_out):
 
         # If user reaches 5 attempts, break and request user to return later
         if attempts == 5:
-            print(
-                "ReadTimeoutError! Number of tries exceeded. Please re-run this script at a later time."
-            )
+            print("ReadTimeoutError! Number of tries exceeded. Please re-run \
+                this script at a later time.")
             break
 
     return

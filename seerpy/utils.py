@@ -164,9 +164,9 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
     segment_urls : pd.DataFrame
         DataFrame with columns 'segments.id', and 'baseDataChunkUrl', as returned
         by seerpy.get_segment_urls()
-    from_time : int, optional
-        Only include data chunks that start after this time
-    to_time : int, optional
+    from_time : float, optional
+        Only include data chunks that end after this time
+    to_time : float, optional
         Only include data chunks that start before this time
 
     Returns
@@ -206,26 +206,27 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
 
 
 # pylint:disable=too-many-locals,too-many-arguments
-def get_channel_data(all_data, segment_urls, download_function=requests.get, threads=None,
+def get_channel_data(study_metadata, segment_urls, download_function=requests.get, threads=None,
                      from_time=0, to_time=9e12):
     """
     Download data chunks and stitch together into a single DataFrame.
 
     Parameters
     ----------
-    all_data : pd.DataFrame
+    study_metadata : pd.DataFrame
         Study metadata as returned by seerpy.get_all_study_metadata_dataframe_by_*()
     segment_urls : pd.DataFrame
-        DataFrame with columns ['segments.id', 'baseDataChunkUrl'] as returned
-        by seerpy.get_segment_urls()
+        DataFrame with columns ['segments.id', 'baseDataChunkUrl'] as returned by
+        `seerpy.get_segment_urls`, or with columns ['segments.id', 'dataChunks.time',
+        'dataChunks.url'] as returned by `seerpy.get_data_chunk_urls`.
     download_function : callable
         The function used to download the channel data. Defaults to requests.get
     threads : int, optional
-        Number of threads to use. If > 1 then will use multiprocessing. If None
-        (default), it will use 1 on Windows and 5 on Linux/MacOS
-    from_time : int, optional
+        Number of threads to use. If > 1 then will use multiprocessing. If None (default), it will
+        use 1 on Windows and 5 on Linux/MacOS
+    from_time : float, optional
         Timestamp in msec - only retrieve data from this point onward
-    to_time : int, optional
+    to_time : float, optional
         Timestamp in msec - only retrieve data up until this point
 
     Returns
@@ -239,22 +240,23 @@ def get_channel_data(all_data, segment_urls, download_function=requests.get, thr
         else:
             threads = 5
 
-    segment_ids = all_data['segments.id'].drop_duplicates().tolist()
+    data_chunk_urls = segment_urls
+    if 'baseDataChunkUrl' in data_chunk_urls.columns:
+        data_chunk_urls = create_data_chunk_urls(study_metadata, data_chunk_urls, from_time,
+                                                 to_time)
 
     data_q = []
-    data_list = []
 
+    segment_ids = study_metadata['segments.id'].drop_duplicates().tolist()
     for segment_id in segment_ids:
-        metadata = all_data[all_data['segments.id'].values == segment_id]
+        metadata = study_metadata[study_metadata['segments.id'].values == segment_id]
         actual_channel_names = get_channel_names_or_ids(metadata)
         metadata = metadata.drop_duplicates('segments.id')
 
         study_id = metadata['id'].iloc[0]
         channel_groups_id = metadata['channelGroups.id'].iloc[0]
 
-        data_chunks = create_data_chunk_urls(metadata, segment_urls, from_time=from_time,
-                                             to_time=to_time)
-        metadata = metadata.merge(data_chunks, how='left', left_on='segments.id',
+        metadata = metadata.merge(data_chunk_urls, how='left', left_on='segments.id',
                                   right_on='segments.id', suffixes=('', '_y'))
 
         metadata = metadata[[
@@ -272,6 +274,7 @@ def get_channel_data(all_data, segment_urls, download_function=requests.get, thr
 
     download_function = functools.partial(download_channel_data,
                                           download_function=download_function)
+    data_list = []
     if data_q:
         if threads > 1:
             pool = Pool(processes=min(threads, len(data_q) + 1))

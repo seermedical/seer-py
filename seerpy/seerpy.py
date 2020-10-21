@@ -1173,7 +1173,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
                 filtered_labels = []
                 for label in labels:
-                    if any(tag['tagType']['value'] == 'Seizure' for tag in label['tags']):
+                    if any(tag['tagType']['value'] == label_type for tag in label['tags']):
                         filtered_labels.append(label)
 
                 if not labels:
@@ -1198,7 +1198,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-    def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100,
+    def get_diary_labels_dataframe(self, patient_id, label_type='seizure', offset=0, limit=100,
                                    from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Get all diary label groups and labels for a given patient as a DataFrame.

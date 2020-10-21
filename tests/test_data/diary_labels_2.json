@@ -1,0 +1,31 @@
+{ 
+    "patient": {
+        "id": "patient-1-id",
+        "diary": {
+            "labelGroups": [
+                {
+                    "numberOfLabels": 1,
+                    "labels": [
+                        {
+                            "duration": 0,
+                            "startTime": 10000,
+                            "timezone": 10,
+                            "tags": [
+                                {
+                                "tagType": {
+                                    "value": "Mobile app"
+                                    }
+                                },
+                                {
+                                "tagType": {
+                                    "value": "Cardiac"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

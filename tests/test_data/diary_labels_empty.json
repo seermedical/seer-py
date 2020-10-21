@@ -1,9 +1,13 @@
 {
     "patient": {
+        "id": "patient-1-id",
         "diary": {
-            "labelGroups": {
-                "labels": []
-            }
+            "labelGroups": [
+                {
+                    "numberOfLabels": 0,
+                    "labels": []
+                }
+            ]
         }
     }
 }

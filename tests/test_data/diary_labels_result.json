@@ -1,0 +1,28 @@
+{
+            "labelGroups": [
+                {
+                    "numberOfLabels": 2,
+                    "labels": [
+                        {
+                            "duration": 0,
+                            "startTime": 10000,
+                            "timezone": 10,
+                            "tags": [
+                                {
+                                "tagType": {
+                                    "value": "Mobile app"
+                                    }
+                                },
+                                {
+                                "tagType": {
+                                    "value": "Seizure"
+                                }
+                                }
+                            ]
+                        }
+                      
+                        ]
+                    }
+                ]
+            }
+

@@ -1173,7 +1173,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
                 filtered_labels = []
                 for label in labels:
-                    if any(tag['tagType']['value'] == label_type for tag in label['tags']):
+                    if any(tag['tagType']['value'] == label_type.capitalize() for tag in label['tags']):
                         filtered_labels.append(label)
 
                 if not labels:

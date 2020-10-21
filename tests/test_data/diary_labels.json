@@ -1,40 +1,48 @@
-{
+{ 
     "patient": {
         "id": "patient-1-id",
-        "diaryStudy": {
-            "labelGroup": {
-                "id": "label-group-1-id",
+        "diary": {
+        "labelGroups": [
+            {
                 "labels": [
                     {
-                        "duration": 3643,
-                        "id": "label-1-id",
-                        "startTime": 1499747329065,
-                        "tags":
-                            [
-                                {
-                                    "tagType": {
-                                        "value": "Normal jerk"
-                                    }
+                        "duration": 0,
+                        "startTime": 10000,
+                        "timezone": 10,
+                        "tags": [
+                            {
+                            "tagType": {
+                                "value": "Mobile app"
                                 }
-                            ],
-                        "timezone": 10
+                            },
+                            {
+                            "tagType": {
+                                "value": "Seizure"
+                            }
+                            }
+                        ]
                     },
                     {
-                        "duration": 5127,
-                        "id": "label-2-id",
-                        "startTime": 1499747431224,
-                        "tags":
-                            [
-                                {
-                                    "tagType": {
-                                        "value": "Normal jerk"
-                                    }
+
+                        "duration": 0,
+                        "startTime": 20000,
+                        "timezone": 10,
+                        "tags": [
+                              {
+                                "tagType": {
+                                  "value": "Mobile app"
                                 }
-                            ],
-                        "timezone": 10
-                    }
-                ]
-            }
+                              },
+                              {
+                                "tagType": {
+                                  "value": "Cardiac"
+                                }
+                              }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
     }
 }

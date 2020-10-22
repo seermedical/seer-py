@@ -443,6 +443,7 @@ def get_diary_created_at_query_string(patient_id):
 
 GET_DIARY_LABELS = """
     query getDiaryLabels($patient_id: String!,
+                         $value: String!,
                          $limit: PaginationAmount,
                          $offset: Int,
                          $from_time: Float!,
@@ -454,7 +455,7 @@ GET_DIARY_LABELS = """
             diary {
                 id
                 createdAt
-                labelGroups {
+                labelGroups (filters: [{name: "labelType" value: $value}]) {
                     id
                     labelType
                     labelSourceType

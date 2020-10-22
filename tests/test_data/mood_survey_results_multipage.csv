@@ -3,4 +3,4 @@ survey1,2020-02-10 19:13:12,completer1,patient1,sleep,0
 survey1,2020-02-10 19:13:12,completer1,patient1,mood,0.5
 survey1,2020-02-10 19:13:12,completer1,patient1,free,test
 survey2,2020-02-11 19:13:12,completer1,patient1,mood,0.25
-survey3,2020-02-10 19:13:12,completer2,patient2,extra,0.8 
+survey3,2020-02-10 19:13:12,completer2,patient2,extra,0.8

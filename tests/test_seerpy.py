@@ -850,3 +850,58 @@ class TestGetTagIds:
 
         # check result
         assert result == expected_result
+
+
+@mock.patch('time.sleep', return_value=None)
+@mock.patch('seerpy.seerpy.GQLClient', autospec=True)
+class TestGetDiaryLabels:
+    def test_get_diary_labels(self, gql_client, unused_sleep, seer_connect):
+        # setup
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "diary_labels_1.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "diary_labels_2.json", "r") as f:
+            side_effects.append(json.load(f))
+        with open(TEST_DATA_DIR / "diary_labels_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        with open(TEST_DATA_DIR / "diary_labels_result.json", "r") as f:
+            expected_result = json.load(f)
+
+        # run test and check result
+        result = seer_connect.get_diary_labels('patient-1-id')
+        assert result == expected_result
+
+    def test_get_diary_labels_no_labels(self, gql_client, unused_sleep, seer_connect):
+        # setup
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "diary_labels_empty.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = {'labelGroups': [{'numberOfLabels': 0, 'labels': []}]}
+
+        # run test and check result
+        result = seer_connect.get_diary_labels('patient-1-id')
+        assert result == expected_result
+
+    def test_get_diary_labels_no_matching_labels(self, gql_client, unused_sleep, seer_connect):
+        # setup
+        side_effects = []
+
+        with open(TEST_DATA_DIR / "diary_labels_2.json", "r") as f:
+            side_effects.append(json.load(f))
+
+        gql_client.return_value.execute.side_effect = side_effects
+
+        expected_result = {'labelGroups': [{'numberOfLabels': 0, 'labels': []}]}
+
+        # run test and check result
+        result = seer_connect.get_diary_labels('patient-1-id', label_type='seizure')
+
+        assert result == expected_result

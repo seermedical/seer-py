@@ -1125,7 +1125,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'medications', 'cardiac'.
         tag_type : str, optional
             The type of label to retrieve. Default = 'seizure'. Options = 'seizure',
-            'cardiac', 'other'.
+            'cardiac', 'other'. Filters client-side using label tags.
         offset : int, optional
             Index of first record to return
         limit : int, optional

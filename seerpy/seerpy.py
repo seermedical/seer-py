@@ -1175,13 +1175,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for idx, group in enumerate(label_groups):
                 labels = group['labels']
 
-                if not labels:
-                    continue
-
                 filtered_labels = []
-                for label in labels:
-                    if any(tag['tagType']['value'].lower() == tag_type for tag in label['tags']):
-                        filtered_labels.append(label)
+                if labels:
+                    for label in labels:
+                        if any(tag['tagType']['value'].lower() == tag_type 
+                            for tag in label['tags']):
+                            filtered_labels.append(label)
 
                 # we need to fetch more labels
                 if len(labels) >= limit:
@@ -1206,7 +1205,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return label_results
 
-    def get_diary_labels_dataframe(self, patient_id, label_type='seizure', offset=0, limit=100,
+    def get_diary_labels_dataframe(self, patient_id, label_type='all', tag_type='seizure', offset=0, limit=100,
                                    from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Get all diary label groups and labels for a given patient as a DataFrame.

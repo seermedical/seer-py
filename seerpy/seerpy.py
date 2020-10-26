@@ -1177,7 +1177,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
                 if not labels:
                     continue
-                    continue
 
                 filtered_labels = []
                 for label in labels:

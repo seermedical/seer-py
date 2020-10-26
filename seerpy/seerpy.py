@@ -1111,8 +1111,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['patient']['diary']['createdAt']
 
-    def get_diary_labels(self, patient_id, label_type='all', tag_type='seizure', offset=0, limit=100, from_time=0,
-                         to_time=9e12, from_duration=0, to_duration=9e12):
+    def get_diary_labels(self, patient_id, label_type='all', tag_type='seizure', offset=0, 
+                         limit=100, from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Retrieve diary label groups and labels for a given patient.
 
@@ -1178,7 +1178,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 filtered_labels = []
                 if labels:
                     for label in labels:
-                        if any(tag['tagType']['value'].lower() == tag_type 
+                        if any(tag['tagType']['value'].lower() == tag_type
                             for tag in label['tags']):
                             filtered_labels.append(label)
 
@@ -1216,7 +1216,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         diary_labels_df : pd.DataFrame
             DataFrame with diary label information
         """
-        label_results = self.get_diary_labels(patient_id, label_type, offset, limit, from_time,
+        label_results = self.get_diary_labels(patient_id, label_type, tag_type, offset, limit, from_time,
                                               to_time, from_duration, to_duration)
         if not label_results:
             return pd.DataFrame()

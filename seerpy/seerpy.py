@@ -1176,7 +1176,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 labels = group['labels']
 
                 if not labels:
-                    label_results = response
+                    continue
                     continue
 
                 filtered_labels = []

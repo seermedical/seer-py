@@ -17,7 +17,12 @@
     "id": "survey1",
     "lastSubmittedAt": "2020-02-10 19:13:12",
     "completer": {
-      "id": "completer1"
+      "id": "completer1",
+      "roles": {
+        "patient": {
+          "id": "patient1"
+        }
+      }
     }
   },
   {
@@ -30,7 +35,12 @@
     "id": "survey2",
     "lastSubmittedAt": "2020-02-11 19:13:12",
     "completer": {
-      "id": "completer1"
+      "id": "completer1",
+      "roles": {
+        "patient": {
+          "id": "patient1"
+        }
+      }
     }
   }
 ]

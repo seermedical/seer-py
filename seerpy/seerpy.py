@@ -1175,21 +1175,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for idx, group in enumerate(label_groups):
                 labels = group['labels']
 
-                filtered_labels = []
-                if labels:
-                    for label in labels:
-                        if any(tag['tagType']['value'].lower() == tag_type
-                            for tag in label['tags']):
-                            filtered_labels.append(label)
-
                 # we need to fetch more labels
                 if len(labels) >= limit:
                     query_flag = True
 
                 if not label_results:
                     label_results = response
-                    label_results['labelGroups'][idx]['labels'] = filtered_labels
-                    label_results['labelGroups'][idx]['numberOfLabels'] = len(filtered_labels)
                     if any([
                             index['numberOfLabels']
                             for index in response['labelGroups']
@@ -1197,12 +1188,21 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                     ]):
                         query_flag = True
                     break
-
-                label_results['labelGroups'][idx]['labels'].extend(filtered_labels)
-                label_results['labelGroups'][idx]['numberOfLabels'] += len(filtered_labels)
+                label_results['labelGroups'][idx]['labels'].extend(labels)
 
             offset += limit
 
+        # filter
+        for idx, group in enumerate(label_results['labelGroups']):
+            filtered_labels = []
+            labels = group['labels']
+            if labels:
+                for label in labels:
+                    if any(tag['tagType']['value'].lower() == tag_type
+                        for tag in label['tags']):
+                        filtered_labels.append(label)
+                label_results['labelGroups'][idx]['labels'] = filtered_labels
+                label_results['labelGroups'][idx]['numberOfLabels'] = len(filtered_labels)
         return label_results
 
     def get_diary_labels_dataframe(self, patient_id, label_type='all', tag_type='seizure', offset=0, limit=100,

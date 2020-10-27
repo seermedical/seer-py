@@ -2,7 +2,10 @@
     "patient": {
         "id": "patient-1-id",
         "diary": {
-            "labelGroups": [
+            "labelGroups": [{
+                "numberOfLabels": 0,
+                "labels": []
+                },
                 {
                     "numberOfLabels": 2,
                     "labels": [

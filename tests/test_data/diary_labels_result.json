@@ -1,6 +1,10 @@
 {
     "labelGroups": [
         {
+            "numberOfLabels": 0,
+            "labels": []
+        },
+        {
             "numberOfLabels": 1,
             "labels": [
                 {

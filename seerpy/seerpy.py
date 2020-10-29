@@ -1309,7 +1309,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Timestamp in msec - only retrieve data up until this point. The default value of 0 means
             up until this point in time for this query
         timezone: string, optional
-            The timezone to reteriwece medication compliance for
+            The timezone name to retrieve medication compliance for,
+            (e.g. "Australia/Melbourne")
 
         Returns
         -------

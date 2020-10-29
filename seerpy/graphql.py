@@ -544,12 +544,13 @@ GET_DIARY_MEDICATION_ALERT_WINDOWS = """
 GET_DIARY_MEDICATION_COMPLIANCE = """
     query getMedicationCompliance($patient_id: String!,
                                   $from_time: Float!,
-                                  $to_time: Float!) {
+                                  $to_time: Float!,
+                                  $timezone: String) {
         patient (id: $patient_id) {
             id
             diary {
                 id
-                medicationCompliance (range: { from: $from_time, to: $to_time }) {
+                medicationCompliance (range: { from: $from_time, to: $to_time }, timezone: $timezone) {
                     label
                     status
                     date

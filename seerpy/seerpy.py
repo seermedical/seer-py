@@ -1038,7 +1038,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         patients = self.get_patients(party_id)
         if patients is None:
-            return patients
+            return pd.DataFrame()
         return json_normalize(patients).sort_index(axis=1)
 
     def get_documents_for_studies(self, study_ids, limit=50):

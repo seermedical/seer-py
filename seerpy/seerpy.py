@@ -1038,7 +1038,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         patients = self.get_patients(party_id)
         if patients is None:
-            return patients
+            return pd.DataFrame()
         return json_normalize(patients).sort_index(axis=1)
 
     def get_documents_for_studies(self, study_ids, limit=50):
@@ -1294,7 +1294,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                       variable_values=variable_values)
         return response['patient']['diary']['alerts']
 
-    def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0):
+    def get_diary_medication_compliance(self, patient_id, from_time=0, to_time=0,
+                                        timezone_string=None):
         """
         Gets all medication compliance records for a given patient.
 
@@ -1307,6 +1308,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         to_time : int, optional
             Timestamp in msec - only retrieve data up until this point. The default value of 0 means
             up until this point in time for this query
+        timezone: string, optional
+            The timezone name to retrieve medication compliance for,
+            (e.g. "Australia/Melbourne")
 
         Returns
         -------
@@ -1315,6 +1319,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
         """
         variable_values = {'patient_id': patient_id, 'from_time': from_time, 'to_time': to_time}
+
+        if timezone_string is not None:
+            variable_values['timezone'] = timezone_string
+
         return self.execute_query(graphql.GET_DIARY_MEDICATION_COMPLIANCE,
                                   variable_values=variable_values)
 

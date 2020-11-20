@@ -465,6 +465,7 @@ GET_DIARY_LABELS = """
                             ranges: [{ from: $from_time to: $to_time },
                                      { from: $from_duration to: $to_duration }]) {
                         id
+                        createdAt
                         startTime
                         timezone
                         duration

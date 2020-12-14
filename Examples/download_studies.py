@@ -39,34 +39,33 @@ def run(client, path_out, channel_group_to_download):
     download_status = read_json(download_status_file)
     study_ids = [study_id for study_id in download_status if download_status[study_id] == 0]
 
-    attempts = 0
-    while True:
-        try:
-            if attempts != 0:
-                time.sleep(3)
-                client = SeerConnect()
-            for study_id in study_ids:
+    for study_id in study_ids:
+        attempts = 0
+        while True:
+            try:
+                if attempts != 0:
+                    time.sleep(3)
+                    client = SeerConnect()
                 downloader = DataDownloader(client, study_id, output_dir)
                 # Download channel data
                 downloader.download_channel_data(channel_group_to_download)
                 download_status[study_id] = 1
                 write_json(download_status_file, download_status)
+
+            except ReadTimeoutError:
+                attempts += 1
+                for i in range(5, 0, -1):
+                    sys.stdout.write(f'ReadTimeoutError. Re-trying after a short break... {str(i)}')
+                    sys.stdout.flush()
+                    time.sleep(1)
             print('Download completed.')
             return
-
-        except ReadTimeoutError:
-            attempts += 1
-            for i in range(5, 0, -1):
-                sys.stdout.write(f'ReadTimeoutError. Re-trying after a short break... {str(i)}')
-                sys.stdout.flush()
-                time.sleep(1)
 
         # If user reaches 5 attempts, break and request user to return later
         if attempts == 5:
             print("ReadTimeoutError! Number of tries exceeded. Please re-run \
                 this script at a later time.")
             break
-
     return
 
 

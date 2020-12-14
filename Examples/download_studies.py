@@ -37,7 +37,7 @@ def run(client, path_out, channel_group_to_download):
 
     download_status_file = get_download_status_file(client)
     download_status = read_json(download_status_file)
-    study_ids = [study_id for study_id in download_status if download_status[study_id] == 0]
+    study_ids = [study_id for study_id in download_status if not download_status[study_id]]
 
     attempts = 0
     while True:

@@ -68,9 +68,8 @@ class DataDownloader:
         print(f'Downloading channel data for {self.study_name}...')
 
         for (channel_group, channel) in self.get_channels():
-            if channel_group_to_download:
-                if not channel_group == channel_group_to_download:
-                    continue
+            if channel_group_to_download and channel_group != channel_group_to_download:
+                continue
             # Create folder
             folder_out = join(self.folder_out, channel_group)
             if not isdir(folder_out):

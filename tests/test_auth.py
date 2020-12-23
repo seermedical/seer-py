@@ -161,6 +161,22 @@ class TestSeerApiKeyAuth:
         }
         open_mock.assert_called_with('path/seerpy.pem', 'r')
 
+    @mock.patch('jwt.encode', autospec=True, return_value="an_unencoded_key")
+    def test_get_connection_parameters_no_decode(self, unused_jwt_encode, unused_glob, open_mock):
+
+        apikey_auth = SeerApiKeyAuth(api_key_id='id', api_key_path='path/seerpy.pem')
+        params = apikey_auth.get_connection_parameters()
+
+        assert params == {
+            'url': 'https://sdk-au.seermedical.com/api/graphql',
+            'headers': {
+                'Authorization': 'Bearer an_unencoded_key'
+            },
+            'use_json': True,
+            'timeout': 30
+        }
+        open_mock.assert_called_with('path/seerpy.pem', 'r')
+
     def test_no_files(self, mock_glob, open_mock):
         # setup
         mock_glob.return_value = []

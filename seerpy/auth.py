@@ -404,7 +404,14 @@ class SeerApiKeyAuth(BaseAuth):
         timestamp = int(datetime.datetime.now(tz=datetime.timezone.utc).timestamp())
         payload = {'keyId': self.api_key_id, 'iat': timestamp}
         token = jwt.encode(payload, self.api_key, algorithm='RS256')
-        return {"Authorization": "Bearer " + token.decode('utf-8')}
+
+        try:
+            token = token.decode('utf-8')
+        except AttributeError:
+            # prior to PyJWT 2.0.0 jwt.encode returned a byte object
+            pass
+
+        return {"Authorization": "Bearer " + token}
 
     def handle_query_error_pre_sleep(self, ex):
         if 'NOT_AUTHENTICATED' in str(ex):

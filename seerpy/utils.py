@@ -9,13 +9,9 @@ import gzip
 from multiprocessing import Pool
 import os
 
-from matplotlib.collections import LineCollection
-from matplotlib import gridspec
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
-from scipy.signal import butter, sosfilt
 
 
 # pylint:disable=too-many-locals,too-many-statements
@@ -357,6 +353,14 @@ def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
     >>> data_series = data_df.iloc[:, 0]
     >>> plot_eeg(x=data_series)
     """
+    try:
+        from matplotlib.collections import LineCollection
+        from matplotlib import gridspec
+        from matplotlib import pyplot as plt
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            'Must have `matplotlib` installed. Try `pip install -U seerpy[viz]`')
+
     if not isinstance(x, np.ndarray):
         x = np.asarray(x)
 
@@ -430,6 +434,12 @@ def butter_bandstop(lowcut, highcut, fs, order=5):
     filter_params : np.ndarray
         Second-order-section filter parameters
     """
+    try:
+        from scipy.signal import butter
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            'Must have `scipy` installed. Try `pip install -U seerpy[filter]`')
+
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -460,6 +470,12 @@ def butter_bandstop_filter(data, lowcut, highcut, fs, order=5):
     filtered_data : np.ndarray
         The original data after applying the filter
     """
+    try:
+        from scipy.signal import sosfilt
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            'Must have `scipy` installed. Try `pip install -U seerpy[filter]`')
+
     sos = butter_bandstop(lowcut, highcut, fs, order=order)
     y = sosfilt(sos, data)
     return y
@@ -486,6 +502,12 @@ def butter_bandpass(lowcut, highcut, fs, order=5):
     filter_params : np.ndarray
         Second-order-section filter parameters
     """
+    try:
+        from scipy.signal import butter
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            'Must have `scipy` installed. Try `pip install -U seerpy[filter]`')
+
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -516,6 +538,12 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
     filtered_data : np.ndarray
         The original data after applying the filter
     """
+    try:
+        from scipy.signal import sosfilt
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            'Must have `scipy` installed. Try `pip install -U seerpy[filter]`')
+
     sos = butter_bandpass(lowcut, highcut, fs, order=order)
     y = sosfilt(sos, data)
     return y

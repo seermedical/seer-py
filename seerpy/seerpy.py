@@ -1080,6 +1080,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             for document in study['documents']:
                 document['document.id'] = document.pop('id')
                 document['document.name'] = document.pop('name')
+                document['document.uploaded'] = document.pop('uploaded')
                 document['id'] = study['id']
                 document['name'] = study['name']
                 documents.append(document)

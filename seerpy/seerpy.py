@@ -45,7 +45,7 @@ import json
 from gql import gql, Client as GQLClient
 from gql.transport.requests import RequestsHTTPTransport
 import pandas as pd
-from pandas.io.json import json_normalize
+from pandas import json_normalize
 import requests
 
 from . import auth

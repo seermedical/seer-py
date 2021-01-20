@@ -64,12 +64,18 @@ class DataDownloader:
 
             yield data, segment_file
 
-    def download_channel_data(self, channel_group_to_download=None):
+    def download_channel_data(self, channel_groups_to_download=None, channels_to_download=None):
         print(f'Downloading channel data for {self.study_name}...')
 
+        if isinstance(channel_groups_to_download, str):
+            channel_groups_to_download = list(channel_groups_to_download)
+
         for (channel_group, channel) in self.get_channels():
-            if channel_group_to_download and channel_group != channel_group_to_download:
+            if channel_groups_to_download and channel_group not in channel_groups_to_download:
                 continue
+            if channels_to_download and channel not in channels_to_download:
+                continue
+
             # Create folder
             folder_out = join(self.folder_out, channel_group)
             if not isdir(folder_out):
@@ -93,7 +99,6 @@ class DataDownloader:
                                                                     segment_ids):
                 # Save segment data to JSON
                 segment_data.to_parquet(segment_file)
-        print('Done.')
 
     def download_label_data(self):
         print(f'Downloading label data for {self.study_name}...')

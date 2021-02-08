@@ -65,12 +65,12 @@ def download_channel_data(data_q, download_function):
 
         if meta_data['channelGroups.timestamped']:
             # timestamped data is not stored in records as EDF data is
-            # it is just a sequence of (ts, ch1, ch2, ..., chN), (ts, ch1, ch2, ..., chN), ...
+            # it is just a sequence of (ts1, ch1, ch2, ..., chN), (ts2, ch1, ch2, ..., chN), ...
             # the timestamp is milliseconds relative to chunk start
             column_names = ['time'] + channel_names
             data = data.reshape(-1, len(column_names))
         else:
-            # EDF data is in the format [record 1: (ch1 sample1, ch1 sample2, ..., ch2 sampleN),
+            # EDF data is in the format [record 1: (ch1 sample1, ch1 sample2, ..., ch1 sampleN),
             # (ch2 sample1, ch2 sample2, ..., ch2 sampleN), ...][record2: ...], ..., [recordN: ...]
             data = data.reshape(-1, len(channel_names),
                                 int(meta_data['channelGroups.samplesPerRecord']))
@@ -293,7 +293,7 @@ def get_channel_data(study_metadata, segment_urls, download_function=requests.ge
                                 na_position='last')
         data = data.reset_index(drop=True)
     else:
-        data = None
+        data = pd.DataFrame()
 
     return data
 

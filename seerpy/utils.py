@@ -6,7 +6,6 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 """
 import functools
 import gzip
-import json
 from multiprocessing import Pool
 import os
 

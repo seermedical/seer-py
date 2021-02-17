@@ -6,6 +6,7 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 """
 import functools
 import gzip
+import json
 from multiprocessing import Pool
 import os
 
@@ -179,11 +180,11 @@ def _get_data_chunk(study_id, meta_data, download_function):
             break
 
         print(f'download_channel_data: {status_code} status code returned')
+        print('response content', data)
         print('study_id', study_id)
         print('dataChunks.url', meta_data['dataChunks.url'])
         print(f"dataChunks.time {meta_data['dataChunks.time']:.2f}")
         print('meta_data', meta_data)
-        print('response', response)
 
         if status_code == 404:
             # we sometimes get chunk urls which don't exist
@@ -195,6 +196,8 @@ def _get_data_chunk(study_id, meta_data, download_function):
             message = 'Unable to read chunk - most likely a performance error'
             if i < (max_attempts - 1):
                 print(message, '- retrying')
+                # if we find that we get multiple errors, particularly 503, then we should consider
+                # sleeping between retries with backoff, but keep it simple for now
                 continue
             print(message, '- max attempts exceeded')
 

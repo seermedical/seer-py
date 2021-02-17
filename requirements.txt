@@ -1,9 +1,7 @@
 gql
 requests
-matplotlib
 numpy
 pandas
-scipy
 # TODO: graphql-core 3.0.0 has a problem as at 02/12/2019
 # revisit in the future, we may be able to remove the restriction
 graphql-core<3.0.0

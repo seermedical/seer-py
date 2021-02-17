@@ -9,13 +9,9 @@ import gzip
 from multiprocessing import Pool
 import os
 
-from matplotlib.collections import LineCollection
-from matplotlib import gridspec
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
-from scipy.signal import butter, sosfilt
 
 
 # pylint:disable=too-many-locals,too-many-statements
@@ -417,6 +413,14 @@ def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
     >>> data_series = data_df.iloc[:, 0]
     >>> plot_eeg(x=data_series)
     """
+    try:
+        from matplotlib.collections import LineCollection
+        from matplotlib import gridspec
+        from matplotlib import pyplot as plt
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            'Must have `matplotlib` installed. Try `pip install -U seerpy[viz]`')
+
     if not isinstance(x, np.ndarray):
         x = np.asarray(x)
 
@@ -467,118 +471,6 @@ def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
 
     plt.tight_layout()
     return plt
-
-
-def butter_bandstop(lowcut, highcut, fs, order=5):
-    """
-    Get second-order-sections representation of an IIR Butterworth digital
-    bandstop filter.
-
-    Parameters
-    ----------
-    lowcut : float
-        The lowcut critical frequency
-    highcut : float
-        The highcut critical frequency
-    fs : float
-        The sampling frequency of the digital system
-    order : int
-        The order of the filter
-
-    Returns
-    -------
-    filter_params : np.ndarray
-        Second-order-section filter parameters
-    """
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    sos = butter(order, [low, high], analog=False, btype='bandstop', output='sos')
-    return sos
-
-
-def butter_bandstop_filter(data, lowcut, highcut, fs, order=5):
-    """
-    Apply a bandstop filter to data along one dimension using cascaded
-    second-order sections.
-
-    Parameters
-    ----------
-    data : np.ndarray
-        Array of data to apply filter to
-    lowcut : float
-        The lowcut critical frequency
-    highcut : float
-        The highcut critical frequency
-    fs : float
-        The sampling frequency of the digital system
-    order : int
-        The order of the filter
-
-    Returns
-    -------
-    filtered_data : np.ndarray
-        The original data after applying the filter
-    """
-    sos = butter_bandstop(lowcut, highcut, fs, order=order)
-    y = sosfilt(sos, data)
-    return y
-
-
-def butter_bandpass(lowcut, highcut, fs, order=5):
-    """
-    Get second-order-sections representation of an IIR Butterworth digital
-    bandpass filter.
-
-    Parameters
-    ----------
-    lowcut : float
-        The lowcut critical frequency
-    highcut : float
-        The highcut critical frequency
-    fs : float
-        The sampling frequency of the digital system
-    order : int
-        The order of the filter
-
-    Returns
-    -------
-    filter_params : np.ndarray
-        Second-order-section filter parameters
-    """
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    sos = butter(order, [low, high], analog=False, btype='bandpass', output='sos')
-    return sos
-
-
-def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
-    """
-    Apply a bandpass filter to data along one dimension using cascaded
-    second-order sections.
-
-    Parameters
-    ----------
-    data : np.ndarray
-        Array of data to apply filter to
-    lowcut : float
-        The lowcut critical frequency
-    highcut : float
-        The highcut critical frequency
-    fs : float
-        The sampling frequency of the digital system
-    order : int
-        The order of the filter
-
-    Returns
-    -------
-    filtered_data : np.ndarray
-        The original data after applying the filter
-    """
-    sos = butter_bandpass(lowcut, highcut, fs, order=order)
-    y = sosfilt(sos, data)
-    return y
 
 
 def get_diary_fitbit_data(data_url):

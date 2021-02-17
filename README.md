@@ -7,7 +7,7 @@ Note that by default there is no public access to any data on the Seer Cloud. Yo
 
 ## Install
 
-To install, simply clone or download this repository, then type `pip install .` which will install all the dependencies.
+To install, simply clone or download this repository, then type `pip install .` which will install all the dependencies. To enabling plotting signal data (required by the example notebook), use `pip install .[viz]`
 
 ### Epilepsy Ecosystem Data
 

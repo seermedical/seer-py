@@ -725,12 +725,15 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             data_chunks_batch = data_chunks[int(counter * limit):int((counter + 1) * limit)]
             query_string = graphql.get_data_chunk_urls_query_string(data_chunks_batch, s3_urls)
             response = self.execute_query(query_string)
-            chunks.extend([
-                chunk for chunk in response['studyChannelGroupDataChunkUrls'] if chunk is not None
-            ])
+            chunks.extend(response['studyChannelGroupDataChunkUrls'])
             counter += 1
         data_chunk_urls = pd.DataFrame(chunk_metadata)
         data_chunk_urls['dataChunks.url'] = chunks
+
+        # If there is an error in uploading a segment to the platform or in processing, you can get
+        # a situation where the metadata for a segment exists but the data is missing, in which case
+        # there will be no data chunk url.
+        data_chunk_urls = data_chunk_urls[~data_chunk_urls['dataChunks.url'].isnull()]
 
         return data_chunk_urls
 
@@ -943,7 +946,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             views['createdAt'] = pd.to_datetime(views['createdAt'])
             views['updatedAt'] = pd.to_datetime(views['updatedAt'])
         else:
-            views = None
+            views = pd.DataFrame(columns=['user', 'id', 'startTime', 'duration', 'createdAt',
+                                          'updatedAt'])
         return views
 
     def get_organisations(self):

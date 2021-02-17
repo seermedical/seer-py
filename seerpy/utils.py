@@ -17,9 +17,8 @@ import requests
 # pylint:disable=too-many-locals,too-many-statements
 def download_channel_data(data_q, download_function):
     """
-    Download data for a single channel of a single segment, decompress if
-    needed, convert to numeric type & apply exponentiation etc, and return as a
-    DataFrame.
+    Download data for a single segment, decompress if needed, convert to numeric type & apply
+    exponentiation etc, and return as a DataFrame.
 
     Parameters
     ----------
@@ -42,16 +41,11 @@ def download_channel_data(data_q, download_function):
         DataFrame with columns 'time', 'id', 'channelGroups.id', 'segments.id',
         and a column with data for each channel in channel_names
     """
-    meta_data, study_id, channel_groups_id, segments_id, channel_names = data_q
+    meta_data, study_id, channel_groups_id, segment_id, channel_names = data_q
     try:
-        raw_data = download_function(meta_data['dataChunks.url'])
-        data = raw_data.content
-
-        try:
-            if meta_data['channelGroups.compression'] == 'gzip':
-                data = gzip.decompress(data)
-        except OSError:
-            pass
+        data = _get_data_chunk(study_id, meta_data, download_function)
+        if data is None:
+            return None
 
         data_type = meta_data['channelGroups.sampleEncoding']
         data = np.frombuffer(data, dtype=np.dtype(data_type))
@@ -61,12 +55,12 @@ def download_channel_data(data_q, download_function):
 
         if meta_data['channelGroups.timestamped']:
             # timestamped data is not stored in records as EDF data is
-            # it is just a sequence of (ts, ch1, ch2, ..., chN), (ts, ch1, ch2, ..., chN), ...
+            # it is just a sequence of (ts1, ch1, ch2, ..., chN), (ts2, ch1, ch2, ..., chN), ...
             # the timestamp is milliseconds relative to chunk start
             column_names = ['time'] + channel_names
             data = data.reshape(-1, len(column_names))
         else:
-            # EDF data is in the format [record 1: (ch1 sample1, ch1 sample2, ..., ch2 sampleN),
+            # EDF data is in the format [record 1: (ch1 sample1, ch1 sample2, ..., ch1 sampleN),
             # (ch2 sample1, ch2 sample2, ..., ch2 sampleN), ...][record2: ...], ..., [recordN: ...]
             data = data.reshape(-1, len(channel_names),
                                 int(meta_data['channelGroups.samplesPerRecord']))
@@ -123,7 +117,7 @@ def download_channel_data(data_q, download_function):
 
         data['id'] = study_id
         data['channelGroups.id'] = channel_groups_id
-        data['segments.id'] = segments_id
+        data['segments.id'] = segment_id
         data = data[['time', 'id', 'channelGroups.id', 'segments.id'] + channel_names]
 
         # chunks are all the same size for a given channel group (usually 10s)
@@ -136,16 +130,82 @@ def download_channel_data(data_q, download_function):
 
     except Exception as ex:
         print(ex)
-        print(study_id)
-        print(channel_names)
-        print(meta_data['dataChunks.url'])
-        print('{0:.2f}'.format(meta_data['dataChunks.time']))
-        print(meta_data)
-        try:
-            print(raw_data.headers)
-        except Exception as ex:  # pylint: disable=broad-except
-            pass
+        print('study_id', study_id)
+        print('channel_names', channel_names)
+        print('dataChunks.url', meta_data['dataChunks.url'])
+        print(f"dataChunks.time {meta_data['dataChunks.time']:.2f}")
+        print('meta_data', meta_data)
         raise
+
+
+def _get_data_chunk(study_id, meta_data, download_function):
+    """
+    Internal function. Download a single chunk of data and decompress if needed. If the supplied
+    download_function is compatabile with requests.get, it will retry if certain recoverable errors
+    are encountered (500, 503), or will return None if a 404 error is encountered.
+
+    Parameters
+    ----------
+    study_id : str
+        The id of the study the data chunk belongs to
+    meta_data : Dataframe
+        A metadata DataFrame with fields including: a data chunk URL, timestamp, sample encoding,
+        sample rate, compression, signal min/max, exponent etc. See `get_channel_data` for series
+        derivation
+    download_function : callable
+        A function that will be used to download data from the URL in meta_data['dataChunks.url']
+
+    Returns
+    -------
+    data : byte buffer
+        The data returned from the given URL by the given download_function, potentially
+        decompressed
+    """
+    max_attempts = 3
+    for i in range(max_attempts):
+        response = download_function(meta_data['dataChunks.url'])
+        data = response.content
+
+        try:
+            status_code = response.status_code
+        except AttributeError:
+            break  # the download function used does not return a status_code
+
+        if status_code == 200:
+            break
+
+        print(f'download_channel_data: {status_code} status code returned')
+        print('response content', data)
+        print('study_id', study_id)
+        print('dataChunks.url', meta_data['dataChunks.url'])
+        print(f"dataChunks.time {meta_data['dataChunks.time']:.2f}")
+        print('meta_data', meta_data)
+
+        if status_code == 404:
+            # we sometimes get chunk urls which don't exist
+            print('The chunk requested does not exist')
+            return None
+
+        if status_code in (500, 503):
+            # s3 sometimes returns 500 or 503 if it's overwhelmed, we can retry
+            message = 'Unable to read chunk - most likely a performance error'
+            if i < (max_attempts - 1):
+                print(message, '- retrying')
+                # if we find that we get multiple errors, particularly 503, then we should consider
+                # sleeping between retries with backoff, but keep it simple for now
+                continue
+            print(message, '- max attempts exceeded')
+
+        # throw an error for other status codes
+        raise requests.exceptions.HTTPError(f'HTTPError {status_code}')
+
+    try:
+        if meta_data['channelGroups.compression'] == 'gzip':
+            data = gzip.decompress(data)
+    except OSError:
+        pass
+
+    return data
 
 
 # pylint:disable=too-many-locals
@@ -289,7 +349,7 @@ def get_channel_data(study_metadata, segment_urls, download_function=requests.ge
                                 na_position='last')
         data = data.reset_index(drop=True)
     else:
-        data = None
+        data = pd.DataFrame()
 
     return data
 

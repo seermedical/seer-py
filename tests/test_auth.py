@@ -425,3 +425,14 @@ class TestSeerApiKeyAuth:
                            api_url=None)
 
         open_mock.assert_not_called()
+
+    @mock.patch.dict('os.environ', { 'SDK_API_BASE_URL': 'https://random-sdk.url' })
+    @mock.patch('jwt.encode', autospec=True, return_value="an_encoded_key".encode('utf-8'))
+    def test_api_url_read_from_env_var(self, unused_jwt_encode, mock_glob, open_mock):
+        apikey_auth = SeerApiKeyAuth(api_key_id='id', api_key_path=None, api_key='key')
+        params = apikey_auth.get_connection_parameters()
+
+        assert apikey_auth.api_url == 'https://random-sdk.url'
+        assert params['url'] == 'https://random-sdk.url/graphql'
+        open_mock.assert_not_called()
+        mock_glob.assert_not_called()

@@ -2,40 +2,39 @@
 
 Python SDK for the Seer data platform, which handles authenticating a user, downloading channel data, and uploading labels/annotations.
 
-## Access to data
-Note that by default there is no public access to any data on the Seer Cloud. You need to be added to an organisation or user group within the Seer Cloud in order to gain access to data. The only publicly accessible data is through the https://www.epilepsyecosystem.org/ user group.
+## Setup
 
-## Install
+**Installing Python & dependencies**
+
+- Anaconda (recommended): This library currently requires Python 3, and it if you don't currently have a Python 3 installation, we recommend you use the Anaconda distribution for its simplicity, support, stability, and extensibility. It can be downloaded here: https://www.anaconda.com/download
+- DIY Python:
+  - Install a version of Python 3 (specific instructions depend on your OS, but downloads are available at https://www.python.org/downloads/)
+  - Run `pip install --upgrade pip` to get latest version of `pip`.
+  - To run the Jupyter notebook example (optional): `pip install notebook`
+
+**Installing `seer-py`**
 
 To install, simply clone or download this repository, then type `pip install .` which will install all the dependencies. To enable plotting signal data (required by the example notebook), use `pip install .[viz]`
+
+## Accessing data
+
+Note that by default there is no public access to any data on the Seer Cloud. You need to be added to an organisation or user group within the Seer Cloud in order to gain access to data. The only publicly accessible data is through the https://www.epilepsyecosystem.org/ user group.
 
 ### Epilepsy Ecosystem Data
 
 For users attempting to download data for the [Epilepsy Ecosystem](https://www.epilepsyecosystem.org/howitworks/), please download the [latest master version](https://github.com/seermedical/seer-py/tree/master).
 
-#### My Seizure Gauge Data
+### My Seizure Gauge Data
 
 For the My Seizure Gauge dataset, use the script `msg_data_downloader.py` in `Examples` to begin the download process. To specify a save-path for the downloaded data, use the command `python msg_data_downloader.py -o /path/to/directory` where `/path/to/directory` is the desired save path. If download is aborted, this script can be re-run and the download should resume from where it was stopped.
 
-#### NeuroVista Data
+### NeuroVista Data
 
 For the NeuroVista dataset, open the script `neurovista_contest_data_downloader.py.py` in `Examples` and it will guide you through the download process (you will need to change a few things in this script including the path to download the data to).
 
-## Requirements
-
-This library currently requires Python 3, and it if you don't currently have a Python 3 installation, we recommend you use the Anaconda distribution for its simplicity, support, stability and extensibility. It can be downloaded here: https://www.anaconda.com/download
-
-The install instructions above will install all the required dependencies, however, if you wish to install them yourself, here's what you'll need:
-
-- [`gql`](https://github.com/graphql-python/gql): a GraphQL python library is required to query the Seer platform. To install, simply run: `pip install gql`
-- Pandas, numpy, and matplotlib are also required. Some of these installs can be tricky, so Anaconda is recommended, however, they can be installed separately. Please see these guides for more detailed information:
-  - https://scipy.org/install.html
-  - https://matplotlib.org/users/installing.html
-  - https://pandas.pydata.org/pandas-docs/stable/install.html
-
-To run the Jupyter notebook example (optional, included in Anaconda): `pip install notebook`
-
 ## Getting Started
+
+Note: Some example scripts have extra dependencies not included in `setup.py`. If you run into an error, install the missing package and re-run the script.
 
 Check out the [Example](Examples/Example.ipynb) for a step-by-step example of how to use the SDK to access data on the Seer platform.
 

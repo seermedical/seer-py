@@ -8,6 +8,7 @@ import functools
 import gzip
 from multiprocessing import Pool
 import os
+from warnings import warn
 
 import numpy as np
 import pandas as pd
@@ -60,10 +61,30 @@ def download_channel_data(data_q, download_function):
             column_names = ['time'] + channel_names
             data = data.reshape(-1, len(column_names))
         else:
+            samples_per_record = int(meta_data['channelGroups.samplesPerRecord'])
+            n_excess_samples = len(data) % samples_per_record
+
+            if n_excess_samples > 0:
+                warn(f'WARNING: {n_excess_samples} were dropped from the end '
+                     f'of this file, because the number of samples ({len(data)}) '
+                     'is not a multiple of the samples per record '
+                     f'({meta_data["channelGroups.samplesPerRecord"]}). '
+                     'See below for more information:\n')
+                print('study_id', study_id)
+                print('channel_names', channel_names)
+                print('dataChunks.url', meta_data['dataChunks.url'])
+                print(f"dataChunks.time {meta_data['dataChunks.time']:.2f}")
+                print('meta_data', meta_data)
+
+                # Data length must be divisible by number of samplesPerRecord
+                # for correct reshaping. Incorrect lengths tend to go a little
+                # over rather than a little under, so we slice rather than pad
+                # the array
+                data = data[:-n_excess_samples]
+
             # EDF data is in the format [record 1: (ch1 sample1, ch1 sample2, ..., ch1 sampleN),
             # (ch2 sample1, ch2 sample2, ..., ch2 sampleN), ...][record2: ...], ..., [recordN: ...]
-            data = data.reshape(-1, len(channel_names),
-                                int(meta_data['channelGroups.samplesPerRecord']))
+            data = data.reshape(-1, len(channel_names), samples_per_record)
             data = np.transpose(data, (0, 2, 1))
             data = data.reshape(-1, data.shape[2])
 

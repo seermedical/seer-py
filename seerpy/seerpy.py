@@ -177,16 +177,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             {"userCohort": {"users": [{"id": "user1"}, {"id": "user2"}]}}
             would give [{"id": "user1"}, {"id": "user2"}]
         iteration_path : list of str, optional
-            None (default), one, or more levels of key giving the path to the node where the
-            response can vary with each query iteration. If None then the response varies at the
-            path given by object_path
+            None (default), one, or more levels of key giving the path to the
+            node (relative to the `object_path` level) where the response can
+            vary with each query iteration. If None then the response varies at
+            the path given by object_path.
 
             Eg: We may be interested in the surveys for a user. The heirarchy
             will look something like ["user", "surveys"]. We are interested in
             keeping the user information, although this doesnt change with each
             iteration, so we set `object_path=["user"]`. But we actually want
             to iterate through the survey  information, which does change with
-            each iteration, so we set `iteration_path=["user", "surveys"]`
+            each iteration, so we set `iteration_path=["surveys"]`
         party_id : str, optional
             The organisation/entity to specify for the query
 

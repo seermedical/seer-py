@@ -171,7 +171,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         variable_values : dict, optional
             Values for GraphQL to substitute into the query
         limit : int
-            Batch size for repeated API calls
+            Batch size for repeated API calls. Does not affect the total number
+            of items retrieved
         object_path : list of str
             One or more levels of key giving the path to the object to be returned
             e.g. ['userCohort', 'users'] for a query response of
@@ -801,7 +802,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         to_time : int, optional
             Timestamp in msec - only retrieve data up until this point
         limit : int, optional
-            Batch size for repeated API calls
+            Batch size for repeated API calls. Does not affect the total number
+            of items retrieved
         offset : int, optional
             Index of first label to retrieve
         max_items: int, optional
@@ -1171,7 +1173,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID
         limit : int, optional
-            Optional batch size for repeated API calls
+            Batch size for repeated API calls. Does not affect the total number
+            of items retrieved
         offset : int, optional
             Optional index of first record to return
         max_items: int, optional
@@ -2051,7 +2054,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         user_cohort_id : str
             ID of the user cohort to retrieve
         limit : int, optional
-            Batch size for repeated API calls
+            Batch size for repeated API calls. Does not affect the total number
+            of items retrieved
         offset : int, optional
             Index of the first result to return
         max_items: int, optional

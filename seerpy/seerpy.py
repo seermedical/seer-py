@@ -577,7 +577,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_df: pd.DataFrame
             DataFrame with details of all matching studies
         """
-        studies = self.get_studies(limit=limit, search_term=search_term, party_id=party_id, max_items=max_items)
+        studies = self.get_studies(limit=limit, search_term=search_term, party_id=party_id,
+            max_items=max_items)
         studies_dataframe = json_normalize(studies).sort_index(axis=1)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
@@ -787,7 +788,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return data_chunk_urls
 
     # pylint:disable=too-many-arguments
-    def get_labels(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200, offset=0, max_items=None):
+    def get_labels(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200, offset=0,
+        max_items=None):
         """
         Get labels for a given study and label group.
 
@@ -1625,7 +1627,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return response['organisation']['bookings']
 
-    def get_all_bookings_dataframe(self, organisation_id, start_time, end_time, include_cancelled=False):
+    def get_all_bookings_dataframe(self, organisation_id, start_time, end_time,
+        include_cancelled=False):
         """
         Get all bookings for any studies that are active at any point between
         `start_time` and `end_time` as a DataFrame. See `get_all_bookings()`.
@@ -1915,7 +1918,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                            max_items=max_items
                                            )
 
-    def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0, max_items=None):
+    def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0,
+        max_items=None):
         """
         Get mood survey results as a DataFrame. See `get_mood_survey_results()`
         for details.

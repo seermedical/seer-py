@@ -408,6 +408,27 @@ GET_PATIENTS = """
         }
     }"""
 
+
+GET_PATIENTS_PAGED = """
+    query patientsPaged(
+                  $limit: PaginationAmount,
+                  $offset: Int) {
+        patients (limit: $limit, offset: $offset) {
+          id
+          user {
+              id
+              fullName
+              shortName
+              email
+              lastActive
+              lastInsightGenerated
+              preferredTimezone
+          }
+        }
+    }
+    """
+
+
 GET_DIARY_INSIGHTS_PAGED = """
     query patient($patient_id: String!,
                   $limit: PaginationAmount,

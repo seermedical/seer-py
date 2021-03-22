@@ -1197,7 +1197,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return response['patient']['diary']['createdAt']
 
     def get_diary_labels(self, patient_id, label_type='all', offset=0, limit=100, from_time=0,
-                         to_time=9e12, from_duration=0, to_duration=9e12, max_items=None):
+                         to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Retrieve diary label groups and labels for a given patient.
 
@@ -1224,8 +1224,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         to_duration : int, optional
             Time in milliseconds to apply a range filter on the duration of labels.
             Retrieves labels of duration < to_duration
-        max_items: int, optional
-            max number of diary labels to return
 
         Returns
         -------
@@ -1284,15 +1282,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return label_results
 
     def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100,
-                                   from_time=0, to_time=9e12, from_duration=0, to_duration=9e12, max_items=None):
+                                   from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
         Get all diary label groups and labels for a given patient as a DataFrame.
         See `get_diary_labels()` for details.
-
-        TODO: docstring for this function
-
-            max_items: int, optional
-                max number of diary labels to return.
 
         Returns
         -------

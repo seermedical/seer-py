@@ -41,6 +41,7 @@ from datetime import datetime
 import math
 import time
 import json
+from copy import deepcopy
 
 from gql import gql, Client as GQLClient
 from gql.transport.requests import RequestsHTTPTransport
@@ -156,7 +157,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             raise
 
     def get_paginated_response(self, query_string, variable_values, limit, object_path,
-                               iteration_path=None, party_id=None):
+                               iteration_path=None, party_id=None, max_items=None):
         """
         For queries expecting a large number of objects returned, split query into iterative calls
         to `execute_query()`.
@@ -190,45 +191,73 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             each iteration, so we set `iteration_path=["surveys"]`
         party_id : str, optional
             The organisation/entity to specify for the query
+        max_items: int, optional
+            max number of items to return. In the case of queries containing
+            nested lists of items it only limits the number of items specified
+            on the `iteration_path` level of the heirarchy (this defaults to
+            `object_path` if no argument is passed to `iteration_path` )
+
+            eg: with `max_items=2, object_path=["users"]`, querying a list of
+            users, and for each user, the list of surveys, then it limits the
+            number of users to 2, irrespective of number of surveys per user).
+
+            eg: with `max_items=10, object_path=["user"], iteration_path=["user", "surveys"]`
+            querying a single user, and the list of surveys for this user, then
+            it limits the number surveys to 10 for this user, while still
+            returning the information at the `user` level.
 
         Returns
         -------
         responses: list of dict
             List of query result dictionaries
         """
+        variable_values = deepcopy(variable_values) # prevent local changes affecting external one
         variable_values['limit'] = limit
-        offset = 0
+        offset = variable_values.get('offset', 0) # Try get offset from variable values if it exists
         result = []
+        total_items_returned = 0
+        remaining_items = 0
 
         while True:
-            variable_values['offset'] = offset
+            # Update the number of items remaining
+            # And set the limit for the final batch if needed
+            if max_items is not None:
+                remaining_items = max_items - total_items_returned
+                limit = min(remaining_items, limit)
+                variable_values['limit'] = limit
+                if remaining_items <= 0:
+                    break
+
+            variable_values['offset'] = offset  # update pagination location
             response = self.execute_query(query_string, variable_values=variable_values,
                                           party_id=party_id)
 
             # select the part of the response we are interested in
-            for key in object_path:
-                response = response[key]
+            response = utils.get_nested_dict_item(response, *object_path)
+
 
             # select the part of the response which can vary. if iteration_path is None this will be
             # the same as the part of the response we are interested in
             response_increment = response
             if iteration_path:
-                for key in iteration_path:
-                    response_increment = response_increment[key]
+                response_increment = utils.get_nested_dict_item(response_increment, *iteration_path)
             if not response_increment:
                 # if the part of the response which varies is empty, we are finished iterating
                 break
+
+            # Update the number of items received
+            total_items_returned += len(response)
+            # print(f"items: {len(response)}  limit: {limit}  fetched: {total_items_returned} remain: {remaining_items}") # for debuging purposes
 
             if not result:
                 # if this is the first response, save it
                 result = response
             else:
                 # otherwise add the response increment to the existing result at the correct level
-                result_increment_container = result
+                values_container = result
                 if iteration_path:
-                    for key in iteration_path:
-                        result_increment_container = result_increment_container[key]
-                result_increment_container.extend(response_increment)
+                    values_container = utils.get_nested_dict_item(values_container, *iteration_path)
+                values_container.extend(response_increment)
 
             offset += limit
 

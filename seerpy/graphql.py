@@ -671,6 +671,55 @@ def get_bookings_query_string(organisation_id, start_time, end_time):
             }""" % (organisation_id, start_time, end_time)
 
 
+# NOTE: This provides more flexibility than using `get_bookings_query_string()`
+#       eg, allowing null values for variables.
+# But it is not plug and play compatible with the returned value of that
+# function, so keeping this separate.
+# TODO: maybe remove get_bookings_query_string()
+ORGANIZATION_BOOKINGS = """
+    query organizationBookings($organization_id: String!, $startTime: Float, $endTime: Float, $includeCancelled: Boolean = false){
+        organisation(id: $organization_id) {
+            bookings(startTime: $startTime, endTime: $endTime, includeCancelled: $includeCancelled) {
+                id
+                equipmentItems {
+                    name
+                    equipmentType {
+                        type
+                    }
+                }
+                bookingTemplate {
+                    name
+                }
+                referral {
+                    id
+                }
+                startTime {
+                    datetime
+                    timezone
+                }
+                endTime {
+                    datetime
+                    timezone
+                }
+                patient {
+                    id
+                    user {
+                        fullName
+                    }
+                    studies {
+                        id
+                        name
+                    }
+                }
+                location {
+                        name
+                        suburb
+                        }
+            }
+        }
+    }"""
+
+
 def get_diary_study_label_groups_string(patient_id, limit, offset):
 
     return """

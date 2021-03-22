@@ -1597,7 +1597,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return utils.get_channel_data(all_data, segment_urls, download_function, threads, from_time,
                                       to_time)
 
-    def get_all_bookings(self, organisation_id, start_time, end_time):
+    def get_all_bookings(self, organisation_id, start_time, end_time, include_cancelled=False):
         """
         Get all bookings for any studies that are active at any point between
         `start_time` and `end_time`.
@@ -1610,18 +1610,26 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Timestamp in msec - find studies active after this point
         end_time : int
             Timestamp in msec - find studies active before this point
-
+        include_cancelled: bool, optional
+            Whether to include cancelled bookings
         Returns
         -------
         bookings : list of dict
             Booking information, with keys including 'id', 'startTime', 'endTime',
             'patient', 'referral', 'equipmentItems', and 'location'
         """
-        query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
-        response = self.execute_query(query_string)
+        # TODO: request changes to seer-api so we can perform pagination
+        query_string = graphql.ORGANIZATION_BOOKINGS
+        vars = dict(organization_id=organisation_id, startTime=start_time, endTime=end_time,
+                    includeCancelled=include_cancelled)
+        response = self.execute_query(query_string, variable_values=vars)
+
+        # query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
+        # response = self.execute_query(query_string)
+
         return response['organisation']['bookings']
 
-    def get_all_bookings_dataframe(self, organisation_id, start_time, end_time):
+    def get_all_bookings_dataframe(self, organisation_id, start_time, end_time, include_cancelled=False):
         """
         Get all bookings for any studies that are active at any point between
         `start_time` and `end_time` as a DataFrame. See `get_all_bookings()`.
@@ -1634,13 +1642,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Timestamp in msec - find studies active after this point
         end_time : int
             Timestamp in msec - find studies active before this point
+        include_cancelled: bool, optional
+            Whether to include cancelled bookings
 
         Returns
         -------
         bookings_df : pd.DataFrame
             DataFrame with details about all relevant bookings
         """
-        bookings_response = self.get_all_bookings(organisation_id, start_time, end_time)
+        bookings_response = self.get_all_bookings(organisation_id, start_time, end_time,
+            include_cancelled=include_cancelled)
         bookings = json_normalize(bookings_response).sort_index(axis=1)
         studies = self.pandas_flatten(bookings, 'patient.', 'studies')
         equipment = self.pandas_flatten(bookings, '', 'equipmentItems')

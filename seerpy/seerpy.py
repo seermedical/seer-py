@@ -664,7 +664,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         print(str(len(items)) + " items found")
         # convert list to dataframe
         items_df = pd.DataFrame(items)
-        return(items_df)
+        return items_df
 
 
     def get_segment_urls(self, segment_ids, limit=10000):

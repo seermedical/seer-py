@@ -231,6 +231,30 @@ def get_channel_groups_query_string(study_id):
         }""" % study_id
 
 
+def get_channel_group_segments_paged(channel_group_id, limit = 500, after=""):
+    return """
+        query segments {
+            resource {
+                channelGroupSegment {
+                list(
+                    filter:{ studyChannelGroupId:{ in: ["%s"]}}
+                    pagination: { limit: %.0f, after: "%s"}
+                ) {
+                    pageInfo {
+                    endCursor
+                    hasNextPage
+                    }
+                    items {
+                    id
+                    startTime
+                    duration
+                    timezone
+                    }
+                }
+                }
+            }
+            }""" % (channel_group_id, limit, after)
+
 #    studyChannelGroupSegments
 def get_segment_urls_query_string(segment_ids):
     segment_ids_string = get_json_list(segment_ids)

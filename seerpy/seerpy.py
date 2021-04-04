@@ -624,6 +624,49 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
+    def get_segment_ids(self, channel_group_id, limit = 5000):
+        """
+        Get a DataFrame with all segment ids from a channel group. Used to fetch 
+        segment ids when a channel group contains more than 5000 segments
+
+        Parameters
+        ----------
+        channel_group_id : str
+            A unique ID identifying a channel group
+        limit: int, optional
+            Batch size for repeated API calls (default: 5000)
+
+        Returns
+        -------
+        items_df: pd.DataFrame
+            DataFrame with columns 'duration','id','startTime' and 'timezone'
+        """
+        if not channel_group_id:
+            print('Please provide a channel group ID')
+            raise
+        
+        response = self.execute_query(graphql.get_channel_group_segments_paged(channel_group_id, limit=limit))
+        items = response['resource']['channelGroupSegment']['list']['items']
+        if len(items)==0:
+            print('channel group has no items')
+            return
+        hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
+        if hasNext:
+            endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
+            while hasNext:
+                response = self.execute_query(graphql.get_channel_group_segments_paged(channel_group_id, limit=limit, after = endCursor))
+                items_ = response['resource']['channelGroupSegment']['list']['items']
+                for it in items_:
+                    items.append(it)
+                hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
+                endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
+
+        print(str(len(items)) + " items found")
+        # convert list to dataframe
+        items_df = pd.DataFrame(items)
+        return(items_df)
+
+
     def get_segment_urls(self, segment_ids, limit=10000):
         """
         Get a DataFrame with segment IDs and URLs from which to download them.

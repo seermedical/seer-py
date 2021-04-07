@@ -524,47 +524,6 @@ def quote_str(value):
     return f'"{value}"'
 
 
-def raises_error(error, func, *args, **kwargs):
-    """
-    Given an Error, a function object, along with the arguments and keyword
-    arguments to pass to the function, it returns True, of calling the function
-    with those arguments raises the error you expected.
-
-    Parameters
-    ----------
-    error: Exception object
-        The Error/Exception you expect to be thrown
-    func:   function object
-        The function to run
-    *args:
-        positional arguments to pass to `func`
-    **kwargs:
-        keyword arguments to pass to `func`
-
-    Returns
-    ----------
-    bool
-        Whether it throws the expected error
-
-    Examples
-    ----------
-    >>> raises_error(ZeroDivisionError, lambda x: x/0, 4)
-    True
-
-    Tests
-    ----------
-    >>> assert raises_error(ZeroDivisionError, lambda x: x/0, 4), "Failed Test"
-    >>> assert raises_error(FileNotFoundError, lambda x: x/0, 4) == False, "Failed Test"
-    >>> assert raises_error(KeyError, lambda d, k: d[k], dict(b=42), "c"), "Failed Test"
-    """
-    try:
-        func(*args, **kwargs)
-    except error:
-        return True
-    except:
-        return False
-
-
 def get_nested_dict_item(dct, keys, allow_missing_keys=False, default=None):
     """
     Given a dictionary with potentially many nested dictionaries, get the

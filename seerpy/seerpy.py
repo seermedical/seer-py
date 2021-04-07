@@ -823,9 +823,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'to_time': to_time
         }
         return self.get_paginated_response(graphql.GET_LABELS_PAGED,
-                                           variable_values=variable_values,
-                                           limit=limit,
-                                           object_path=['labelGroup', 'labels'],
+                                           variable_values,
+                                           limit,
+                                           ['study'],
+                                           ['labelGroup', 'labels'],
                                            max_items=max_items
                                            )
 

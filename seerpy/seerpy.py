@@ -234,14 +234,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                           party_id=party_id)
 
             # select the part of the response we are interested in
-            response = utils.get_nested_dict_item(response, *object_path)
+            response = utils.get_nested_dict_item(response, object_path)
 
 
             # select the part of the response which can vary. if iteration_path is None this will be
             # the same as the part of the response we are interested in
             response_increment = response
             if iteration_path:
-                response_increment = utils.get_nested_dict_item(response_increment, *iteration_path)
+                response_increment = utils.get_nested_dict_item(response_increment, iteration_path)
             if not response_increment:
                 # if the part of the response which varies is empty, we are finished iterating
                 break
@@ -257,7 +257,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 # otherwise add the response increment to the existing result at the correct level
                 values_container = result
                 if iteration_path:
-                    values_container = utils.get_nested_dict_item(values_container, *iteration_path)
+                    values_container = utils.get_nested_dict_item(values_container, iteration_path)
                 values_container.extend(response_increment)
 
             offset += limit

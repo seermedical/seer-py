@@ -1976,7 +1976,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Unique IDs, each identifying a study
         """
         variable_values = {'study_cohort_id': study_cohort_id}
-        return self.get_paginated_response(graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
+        results = self.get_paginated_response(graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
                                    variable_values=variable_values,
                                    limit=limit,
                                    object_path=['studyCohort', 'studies'],
@@ -2071,7 +2071,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             User IDs that are in the cohort
         """
         variable_values = {'user_cohort_id': user_cohort_id}
-        return self.get_paginated_response(graphql.GET_USER_IDS_IN_USER_COHORT_PAGED,
+        results = self.get_paginated_response(graphql.GET_USER_IDS_IN_USER_COHORT_PAGED,
                                    variable_values=variable_values,
                                    limit=limit,
                                    object_path=['userCohort', 'users'],

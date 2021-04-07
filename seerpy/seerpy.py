@@ -248,8 +248,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             # Update the number of items received
             total_items_returned += len(response)
-            # print(f"items: {len(response)}  limit: {limit}  fetched: {total_items_returned} remain: {remaining_items}") # for debuging purposes
-
+            
             if not result:
                 # if this is the first response, save it
                 result = response

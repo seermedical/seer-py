@@ -548,9 +548,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         variable_values = {'search_term': search_term}
         return self.get_paginated_response(graphql.GET_STUDIES_BY_SEARCH_TERM_PAGED,
-                                           variable_values=variable_values,
-                                           limit=limit,
-                                           object_path=['studies'],
+                                           variable_values,
+                                           limit,
+                                           ['studies'],
                                            party_id=party_id,
                                            max_items=max_items
                                            )
@@ -829,7 +829,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                            ['labelGroup', 'labels'],
                                            max_items=max_items
                                            )
-
 
     # pylint:disable=too-many-arguments
     def get_labels_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200,
@@ -1190,10 +1189,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         variable_values = {'patient_id': patient_id}
         return self.get_paginated_response(graphql.GET_DIARY_INSIGHTS_PAGED,
-                                   variable_values=variable_values,
-                                   limit=limit,
-                                   object_path=['patient'],
-                                   iteration_path=['insights'],
+                                   variable_values,
+                                   limit,
+                                   ['patient'],
+                                   ['insights'],
                                    max_items=max_items
                                    )
 
@@ -1742,10 +1741,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'to_time': to_time
         }
         return self.get_paginated_response(graphql.GET_LABELS_FOR_DIARY_STUDY_PAGED,
-                                           variable_values=variable_values,
-                                           limit=limit,
-                                           object_path=['patient', 'diaryStudy'],
-                                           iteration_path=['labelGroup', 'labels'],
+                                           variable_values,
+                                           limit,
+                                           ['patient', 'diaryStudy'],
+                                           ['labelGroup', 'labels'],
                                            max_items=max_items,
                                            )
 
@@ -1913,9 +1912,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         variable_values = {'survey_template_ids': survey_template_ids}
         return self.get_paginated_response(graphql.GET_MOOD_SURVEY_RESULTS_PAGED,
-                                           variable_values=variable_values,
-                                           limit=limit,
-                                           object_path=['surveys'],
+                                           variable_values,
+                                           limit,
+                                           ['surveys'],
                                            max_items=max_items
                                            )
 
@@ -1978,12 +1977,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         variable_values = {'study_cohort_id': study_cohort_id}
         results = self.get_paginated_response(graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
-                                   variable_values=variable_values,
-                                   limit=limit,
-                                   object_path=['studyCohort', 'studies'],
+                                   variable_values,
+                                   limit,
+                                   ['studyCohort', 'studies'],
                                    max_items=max_items,
                                    )
-
         return [study['id'] for study in results]
 
     def create_study_cohort(self, name, description=None, key=None, study_ids=None):
@@ -2073,12 +2071,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         variable_values = {'user_cohort_id': user_cohort_id}
         results = self.get_paginated_response(graphql.GET_USER_IDS_IN_USER_COHORT_PAGED,
-                                   variable_values=variable_values,
-                                   limit=limit,
-                                   object_path=['userCohort', 'users'],
+                                   variable_values,
+                                   limit,
+                                   ['userCohort', 'users'],
                                    max_items=max_items
                                    )
-
         return [user['id'] for user in results]
 
     def create_user_cohort(self, name, description=None, key=None, user_ids=None):

@@ -193,7 +193,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         party_id : str, optional
             The organisation/entity to specify for the query
         max_items: int, optional
-            max number of items to return. In the case of queries containing
+            Max number of items to return. In the case of queries containing
             nested lists of items it only limits the number of items specified
             on the `iteration_path` level of the heirarchy (this defaults to
             `object_path` if no argument is passed to `iteration_path` )
@@ -212,9 +212,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         responses: list of dict
             List of query result dictionaries
         """
-        variable_values = deepcopy(variable_values) # prevent local changes affecting external one
+        variable_values = deepcopy(variable_values)  # prevent local changes affecting external one
         variable_values['limit'] = limit
-        offset = variable_values.get('offset', 0) # Try get offset from variable values if it exists
+        offset = variable_values.get('offset', 0)  # Try get offset from variable values if exists
         result = []
         total_items_returned = 0
         remaining_items = 0
@@ -248,7 +248,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             # Update the number of items received
             total_items_returned += len(response)
-            
+
             if not result:
                 # if this is the first response, save it
                 result = response
@@ -1620,10 +1620,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         vars = dict(organization_id=organisation_id, startTime=start_time, endTime=end_time,
                     includeCancelled=include_cancelled)
         response = self.execute_query(query_string, variable_values=vars)
-
-        # query_string = graphql.get_bookings_query_string(organisation_id, start_time, end_time)
-        # response = self.execute_query(query_string)
-
         return response['organisation']['bookings']
 
     def get_all_bookings_dataframe(self, organisation_id, start_time, end_time,

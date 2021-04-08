@@ -1068,7 +1068,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return pd.DataFrame()
         return json_normalize(patient).sort_index(axis=1)
 
-    def get_patients(self, party_id=None, limit=50, max_items=None):
+    def get_patients(self, party_id=None, limit=5000, max_items=None):
         """
         Get available patient IDs and user names.
 
@@ -1097,7 +1097,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                     )
         return response
 
-    def get_patients_dataframe(self, party_id=None, limit=50, max_items=None):
+    def get_patients_dataframe(self, party_id=None, limit=5000, max_items=None):
         """
         Get available patient IDs and user names as a DataFrame.
 

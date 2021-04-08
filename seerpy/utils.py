@@ -524,7 +524,7 @@ def quote_str(value):
     return f'"{value}"'
 
 
-def get_nested_dict_item(dct, keys, allow_missing_keys=False, default=None):
+def get_nested_dict_item(input_dict, keys, allow_missing_keys=False, default=None):
     """
     Given a dictionary with potentially many nested dictionaries, get the
     value of one of the nested keys by providing the sequence of keys as
@@ -532,7 +532,7 @@ def get_nested_dict_item(dct, keys, allow_missing_keys=False, default=None):
 
     Parameters
     ----------
-    dct: dict
+    input_dict: dict
         The dictionary
     keys: list of str
         The sequence of keys to traverse along the heirarchy of the dictionary
@@ -576,6 +576,6 @@ def get_nested_dict_item(dct, keys, allow_missing_keys=False, default=None):
     Based on this code: https://stackoverflow.com/a/46890853
     """
     if allow_missing_keys:
-        return functools.reduce(lambda d, key: d.get(key, default) if isinstance(d, dict) else default, keys, dct)
+        return functools.reduce(lambda d, key: d.get(key, default) if isinstance(d, dict) else default, keys, input_dict)
     else:
-        return functools.reduce(lambda d, key: d[key], keys, dct)
+        return functools.reduce(lambda d, key: d[key], keys, input_dict)

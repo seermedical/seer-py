@@ -1616,6 +1616,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'patient', 'referral', 'equipmentItems', and 'location'
         """
         # TODO: paginate using the new resource schema
+        assert (start_time is not None) and (end_time is not None), "start_time and end_time should not be None"
         query_string = graphql.ORGANIZATION_BOOKINGS
         vars = dict(organization_id=organisation_id, startTime=start_time, endTime=end_time,
                     includeCancelled=include_cancelled)

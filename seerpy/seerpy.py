@@ -535,7 +535,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         party_id : str
             The organisation/entity to specify for the query
         max_items: int, optional
-            max number of studies to return.
+            Max number of studies to return.
 
         Returns
         -------
@@ -569,7 +569,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         party_id : str, optional
             The organisation/entity to specify for the query
         max_items: int, optional
-            max number of studies to return.
+            Max number of studies to return.
 
         Returns
         -------
@@ -808,7 +808,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             Index of first label to retrieve
         max_items: int, optional
-            max number of labels to return.
+            Max number of labels to return.
 
         Returns
         -------
@@ -1080,7 +1080,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Batch size for repeated API calls. Does not affect the total number
             of items retrieved
         max_items: int, optional
-            max number of patients to return
+            Max number of patients to return
 
         Returns
         -------
@@ -1109,7 +1109,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Batch size for repeated API calls. Does not affect the total number
             of items retrieved
         max_items: int, optional
-            max number of patients to return
+            Max number of patients to return
 
         Returns
         -------
@@ -1179,7 +1179,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             Optional index of first record to return
         max_items: int, optional
-            max number of diary insights to return.
+            Max number of diary insights to return.
 
         Returns
         -------
@@ -1722,7 +1722,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             The index of the first label group to return
         max_items: int, optional
-            max number of study labels to return.
+            Max number of study labels to return.
 
         Returns
         -------
@@ -1767,7 +1767,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             The index of the first label group to return
         max_items: int, optional
-            max number of study labels to return.
+            Max number of study labels to return.
 
         Returns
         -------
@@ -1897,7 +1897,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             Index of the first result to return
         max_items: int, optional
-            max number of surveys to return.
+            Max number of surveys to return.
 
         Returns
         -------
@@ -1930,7 +1930,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             Index of the first result to return
         max_items: int, optional
-            max number of surveys to return.
+            Max number of surveys to return.
 
         Returns
         -------
@@ -1964,7 +1964,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             Index of the first result to return
         max_items: int, optional
-            max number of study ids to return.
+            Max number of study ids to return.
 
         Returns
         -------
@@ -2058,7 +2058,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset : int, optional
             Index of the first result to return
         max_items: int, optional
-            max number of studies to return.
+            Max number of studies to return.
 
         Returns
         -------

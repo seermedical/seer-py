@@ -184,12 +184,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             vary with each query iteration. If None then the response varies at
             the path given by object_path.
 
-            Eg: We may be interested in the surveys for a user. The heirarchy
-            will look something like ["user", "surveys"]. We are interested in
-            keeping the user information, although this doesnt change with each
-            iteration, so we set `object_path=["user"]`. But we actually want
-            to iterate through the survey  information, which does change with
-            each iteration, so we set `iteration_path=["surveys"]`
+            e.g. We may be interested in the surveys for a user, while keeping
+            information about the user. The hierarchy will look something like
+            ["user", "surveys"]. At the "user" level, it contains the user
+            information which we want to keep, so we set `object_path=["user"]`.
+            But we cannot iterate at this level, we want to iterate at the
+            "surveys" level, so we set `iteration_path=["surveys"]`
         party_id : str, optional
             The organisation/entity to specify for the query
         max_items: int, optional

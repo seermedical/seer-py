@@ -547,7 +547,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         study_ids_df : pd.DataFrame
-            A DataFrarme wihth study names and IDs
+            A DataFrame with study names and IDs
         """
         if isinstance(study_names, str):
             study_names = [study_names]
@@ -624,10 +624,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
-    def get_segment_ids(self, channel_group_id, limit = 5000):
+    def get_segment_ids(self, channel_group_id, limit=5000):
         """
-        Get a DataFrame with all segment ids from a channel group. Used to fetch 
-        segment ids when a channel group contains more than 5000 segments
+        Get a DataFrame with all segment ids from a channel group. Used to fetch segment IDs when a
+        channel group contains more than 5000 segments.
 
         Parameters
         ----------
@@ -642,30 +642,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             DataFrame with columns 'duration','id','startTime' and 'timezone'
         """
         if not channel_group_id:
-            print('Please provide a channel group ID')
-            raise
-        
-        response = self.execute_query(graphql.get_channel_group_segments_paged(channel_group_id, limit=limit))
-        items = response['resource']['channelGroupSegment']['list']['items']
-        if len(items)==0:
-            print('channel group has no items')
-            return
-        hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
-        if hasNext:
-            endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
-            while hasNext:
-                response = self.execute_query(graphql.get_channel_group_segments_paged(channel_group_id, limit=limit, after = endCursor))
-                items_ = response['resource']['channelGroupSegment']['list']['items']
-                for it in items_:
-                    items.append(it)
-                hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
-                endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
+            raise ValueError('Please provide a channel group ID')
+
+        query_variables = {'channelGroupId': channel_group_id, 'limit': limit}
+
+        items = []
+        has_next = True
+        while has_next:
+            response = self.execute_query(graphql.GET_CHANNEL_GROUP_SEGMENTS_PAGES,
+                                          variable_values=query_variables)
+
+            body = response['resource']['channelGroupSegment']['list']
+            items.extend(body['items'])
+            has_next = body['pageInfo']['hasNextPage']
+            query_variables['paginationCursor'] = body['pageInfo']['endCursor']
 
         print(str(len(items)) + " items found")
-        # convert list to dataframe
-        items_df = pd.DataFrame(items)
-        return items_df
 
+        return pd.DataFrame(items)
 
     def get_segment_urls(self, segment_ids, limit=10000):
         """
@@ -989,8 +983,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             views['createdAt'] = pd.to_datetime(views['createdAt'])
             views['updatedAt'] = pd.to_datetime(views['updatedAt'])
         else:
-            views = pd.DataFrame(columns=['user', 'id', 'startTime', 'duration', 'createdAt',
-                                          'updatedAt'])
+            views = pd.DataFrame(
+                columns=['user', 'id', 'startTime', 'duration', 'createdAt', 'updatedAt'])
         return views
 
     def get_organisations(self):

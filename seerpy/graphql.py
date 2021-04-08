@@ -78,7 +78,7 @@ def get_string_from_list_of_dicts(list_of_dicts):
 
 
 GET_STUDY_WITH_DATA = """
-    query study_with_data($study_id: String!) {
+    query study_with_data($study_id: String!, $offset: Int) {
         study (id: $study_id) {
             id
             patient {
@@ -109,7 +109,7 @@ GET_STUDY_WITH_DATA = """
                 channelGroupType {
                     id
                 }
-                segments {
+                segments(offset: $offset) {
                     id
                     startTime
                     duration
@@ -210,6 +210,36 @@ GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
         }
     }"""
 
+GET_CHANNEL_GROUP_SEGMENTS_PAGES = """
+    query getSegments($channelGroupId: ID!, $limit: NonNegativeInt, $paginationCursor: ID) {
+        resource {
+            channelGroupSegment {
+                list(
+                    filter: {
+                        studyChannelGroupId: {
+                            in: [ $channelGroupId ]
+                        }
+                    }
+                    pagination: {
+                            limit: $limit
+                            after: $paginationCursor
+                    }
+                ) {
+                    pageInfo {
+                        endCursor
+                        hasNextPage
+                    }
+                    items {
+                        id
+                        startTime
+                        duration
+                        timezone
+                    }
+                }
+            }
+        }
+    }"""
+
 
 def get_channel_groups_query_string(study_id):
     return """
@@ -230,30 +260,6 @@ def get_channel_groups_query_string(study_id):
             }
         }""" % study_id
 
-
-def get_channel_group_segments_paged(channel_group_id, limit = 500, after=""):
-    return """
-        query segments {
-            resource {
-                channelGroupSegment {
-                list(
-                    filter:{ studyChannelGroupId:{ in: ["%s"]}}
-                    pagination: { limit: %.0f, after: "%s"}
-                ) {
-                    pageInfo {
-                    endCursor
-                    hasNextPage
-                    }
-                    items {
-                    id
-                    startTime
-                    duration
-                    timezone
-                    }
-                }
-                }
-            }
-            }""" % (channel_group_id, limit, after)
 
 #    studyChannelGroupSegments
 def get_segment_urls_query_string(segment_ids):

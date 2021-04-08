@@ -1615,7 +1615,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Booking information, with keys including 'id', 'startTime', 'endTime',
             'patient', 'referral', 'equipmentItems', and 'location'
         """
-        # TODO: request changes to seer-api so we can perform pagination
+        # TODO: paginate using the new resource schema
         query_string = graphql.ORGANIZATION_BOOKINGS
         vars = dict(organization_id=organisation_id, startTime=start_time, endTime=end_time,
                     includeCancelled=include_cancelled)

@@ -28,7 +28,7 @@ for idx, patient_id in enumerate(patient_ids):
     if patient_email == 'EMAIL':
 
 #        Get available channel groups
-        diary_data_channels = seer_client.get_diary_channel_groups_dataframe(patient_id, from_time, to_time)
+        diary_data_channels = seer_client.get_diary_study_channel_groups_dataframe(patient_id, from_time, to_time)
 
 #        can change to get heart rate or step count here
         segments = diary_data_channels.loc[diary_data_channels['name'] == fitbit_heart_rate_name]

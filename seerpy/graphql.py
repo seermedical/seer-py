@@ -231,29 +231,37 @@ def get_channel_groups_query_string(study_id):
         }""" % study_id
 
 
-def get_channel_group_segments_paged(channel_group_id, limit = 500, after=""):
-    return """
-        query segments {
-            resource {
-                channelGroupSegment {
-                list(
-                    filter:{ studyChannelGroupId:{ in: ["%s"]}}
-                    pagination: { limit: %.0f, after: "%s"}
-                ) {
-                    pageInfo {
+STUDY_CHANNEL_GROUP_SEGMENTS = """
+    query segments3($study_id: ID!,$limit: NonNegativeInt,$after: ID){
+        resource {
+            channelGroupSegment{
+            list(filter: {
+                studyChannelGroup:{
+                studyId: {
+                    in: [$study_id]
+                }
+                }
+            }, pagination:{
+                limit: $limit, after: $after}) {        
+                pageInfo {
                     endCursor
                     hasNextPage
-                    }
-                    items {
+                }items {
                     id
                     startTime
                     duration
                     timezone
+                    studyChannelGroup{
+                        name
+                        id
                     }
                 }
-                }
             }
-            }""" % (channel_group_id, limit, after)
+            }
+        }
+    }
+  """
+
 
 #    studyChannelGroupSegments
 def get_segment_urls_query_string(segment_ids):

@@ -624,46 +624,75 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
-    def get_segment_ids(self, channel_group_id, limit = 5000):
+    def get_channel_segments(self, study_id, limit = 5000, channel_group_id = None ):
         """
-        Get a DataFrame with all segment ids from a channel group. Used to fetch 
-        segment ids when a channel group contains more than 5000 segments
+        Get a DataFrame with all segment ids from channel groups in a study. Used to fetch 
+        segment ids when a channel group contains more than 5000 segments. 
 
         Parameters
         ----------
-        channel_group_id : str
-            A unique ID identifying a channel group
+        study_id : str
+            A unique ID identifying a study
         limit: int, optional
             Batch size for repeated API calls (default: 5000)
+        channel_group_id: str, optional
+            Unique channel group ID. Providing this variable filters results to this 
+            single channel group only
 
         Returns
         -------
         items_df: pd.DataFrame
-            DataFrame with columns 'duration','id','startTime' and 'timezone'
+            DataFrame with columns 'duration','id','startTime', 'timezone', 
+            'studyChannelGroup.id' and 'studyChannelGroup.name'.
         """
-        if not channel_group_id:
-            print('Please provide a channel group ID')
+        if not study_id:
+            print('Please provide a study ID')
             raise
         
-        response = self.execute_query(graphql.get_channel_group_segments_paged(channel_group_id, limit=limit))
+        variable_values = {
+            'study_id': study_id,
+            'limit': limit
+        }
+        response = self.execute_query(graphql.STUDY_CHANNEL_GROUP_SEGMENTS, variable_values = variable_values)
         items = response['resource']['channelGroupSegment']['list']['items']
         if len(items)==0:
-            print('channel group has no items')
+            print('study has no channel groups')
             return
         hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
         if hasNext:
             endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
             while hasNext:
-                response = self.execute_query(graphql.get_channel_group_segments_paged(channel_group_id, limit=limit, after = endCursor))
+                variable_values = {
+                    'study_id': study_id,
+                    'limit': limit,
+                    'after': endCursor
+                }
+                response = self.execute_query(graphql.STUDY_CHANNEL_GROUP_SEGMENTS, variable_values = variable_values)
+
                 items_ = response['resource']['channelGroupSegment']['list']['items']
+                
                 for it in items_:
                     items.append(it)
                 hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
                 endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
-
-        print(str(len(items)) + " items found")
+        
+        if channel_group_id:
+            # only keep items from channel_group_id
+            items = [item for item in items if item["studyChannelGroup"]["id"] == channel_group_id]
+        
+        print(str(len(items)) + " channel group items found")
         # convert list to dataframe
         items_df = pd.DataFrame(items)
+
+        # grab the values from the studyChannelGroup dict 
+        cgn = [items_df.iloc[i]['studyChannelGroup']['name'] for i in range(len(items_df))]
+        cgid = [items_df.iloc[i]['studyChannelGroup']['id'] for i in range(len(items_df))]
+        # add them to new columns in the DataFrame
+        items_df['studyChannelGroup.id'] = cgid
+        items_df['studyChannelGroup.name'] = cgn
+        # remove the old dict column
+        items_df = items_df.drop(columns=['studyChannelGroup'])
+        
         return items_df
 
 

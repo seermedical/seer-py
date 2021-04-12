@@ -232,7 +232,7 @@ def get_channel_groups_query_string(study_id):
 
 
 STUDY_CHANNEL_GROUP_SEGMENTS = """
-    query segments3($study_id: ID!,$limit: NonNegativeInt,$after: ID){
+    query segments($study_id: ID!, $limit: NonNegativeInt, $after: ID){
         resource {
             channelGroupSegment{
             list(filter: {
@@ -246,7 +246,7 @@ STUDY_CHANNEL_GROUP_SEGMENTS = """
                 pageInfo {
                     endCursor
                     hasNextPage
-                }items {
+                } items {
                     id
                     startTime
                     duration

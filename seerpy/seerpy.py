@@ -649,33 +649,37 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             print('Please provide a study ID')
             raise
         
+        
+        #response = self.execute_query(graphql.STUDY_CHANNEL_GROUP_SEGMENTS, variable_values = variable_values)
+        items = []#response['resource']['channelGroupSegment']['list']['items']
+        
+        has_next = True #response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
         variable_values = {
             'study_id': study_id,
-            'limit': limit
+            'limit': limit,
+            'after': ""
         }
-        response = self.execute_query(graphql.STUDY_CHANNEL_GROUP_SEGMENTS, variable_values = variable_values)
-        items = response['resource']['channelGroupSegment']['list']['items']
+        while has_next:
+            #endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']            
+            
+            response = self.execute_query(graphql.STUDY_CHANNEL_GROUP_SEGMENTS, variable_values = variable_values)
+
+            #items_ = response['resource']['channelGroupSegment']['list']['items']
+
+            body = response['resource']['channelGroupSegment']['list']
+            items.extend(body['items'])
+            has_next = body['pageInfo']['hasNextPage']
+            #query_variables['paginationCursor'] = body['pageInfo']['endCursor']
+            #hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
+            end_cursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
+            variable_values['after'] = end_cursor
+            # for it in items_:
+            #     items.append(it)
+            
         if len(items)==0:
             print('study has no channel groups')
             return
-        hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
-        if hasNext:
-            endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
-            while hasNext:
-                variable_values = {
-                    'study_id': study_id,
-                    'limit': limit,
-                    'after': endCursor
-                }
-                response = self.execute_query(graphql.STUDY_CHANNEL_GROUP_SEGMENTS, variable_values = variable_values)
 
-                items_ = response['resource']['channelGroupSegment']['list']['items']
-                
-                for it in items_:
-                    items.append(it)
-                hasNext = response['resource']['channelGroupSegment']['list']['pageInfo']['hasNextPage']
-                endCursor = response['resource']['channelGroupSegment']['list']['pageInfo']['endCursor']
-        
         if channel_group_id:
             # only keep items from channel_group_id
             items = [item for item in items if item["studyChannelGroup"]["id"] == channel_group_id]

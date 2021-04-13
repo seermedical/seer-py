@@ -303,7 +303,7 @@ class SeerApiKeyAuth(BaseAuth):
                                                                     region)
 
         if not api_url:
-            api_url = os.getenv('SDK_API_BASE_URL', f'https://sdk-{region}.seermedical.com/api')
+            api_url = os.getenv('SDK_API_BASE_URL') or f'https://sdk-{region}.seermedical.com/api'
 
         super(SeerApiKeyAuth, self).__init__(api_url)
 

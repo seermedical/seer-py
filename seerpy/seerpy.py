@@ -624,6 +624,66 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(query_string)
         return response['study']['channelGroups']
 
+    def get_channel_segments(self, study_id, limit=5000, channel_group_id=None):
+        """
+        Get a DataFrame with all segment ids from channel groups in a study. Used to fetch 
+        segment ids when a channel group contains more than 5000 segments. 
+
+        Parameters
+        ----------
+        study_id : str
+            A unique ID identifying a study
+        limit: int, optional
+            Batch size for repeated API calls (default: 5000)
+        channel_group_id: str, optional
+            Unique channel group ID. Providing this variable filters results to this
+            single channel group only
+
+        Returns
+        -------
+        items_df: pd.DataFrame
+            DataFrame with columns 'duration','id','startTime', 'timezone', 
+            'studyChannelGroup.id' and 'studyChannelGroup.name'.
+        """
+        if not study_id:
+            raise ValueError('Please provide a study ID')
+
+        items = []
+        has_next = True
+        variable_values = {'study_id': study_id, 'limit': limit, 'after': ""}
+        while has_next:
+            response = self.execute_query(graphql.STUDY_CHANNEL_GROUP_SEGMENTS,
+                                          variable_values=variable_values)
+            body = response['resource']['channelGroupSegment']['list']
+            items.extend(body['items'])
+            has_next = body['pageInfo']['hasNextPage']
+            end_cursor = response['resource']['channelGroupSegment']['list']['pageInfo'][
+                'endCursor']
+            variable_values['after'] = end_cursor
+
+        if len(items) == 0:
+            print('study has no channel groups')
+            return
+
+        if channel_group_id:
+            # only keep items from channel_group_id
+            items = [item for item in items if item["studyChannelGroup"]["id"] == channel_group_id]
+
+        print(str(len(items)) + " channel group items found")
+        # convert list to dataframe
+        items_df = pd.DataFrame(items)
+
+        # grab the values from the studyChannelGroup dict
+        cgn = [items_df.iloc[i]['studyChannelGroup']['name'] for i in range(len(items_df))]
+        cgid = [items_df.iloc[i]['studyChannelGroup']['id'] for i in range(len(items_df))]
+        # add them to new columns in the DataFrame
+        items_df['studyChannelGroup.id'] = cgid
+        items_df['studyChannelGroup.name'] = cgn
+        # remove the old dict column
+        items_df = items_df.drop(columns=['studyChannelGroup'])
+
+        return items_df
+
     def get_segment_urls(self, segment_ids, limit=10000):
         """
         Get a DataFrame with segment IDs and URLs from which to download them.
@@ -946,8 +1006,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             views['createdAt'] = pd.to_datetime(views['createdAt'])
             views['updatedAt'] = pd.to_datetime(views['updatedAt'])
         else:
-            views = pd.DataFrame(columns=['user', 'id', 'startTime', 'duration', 'createdAt',
-                                          'updatedAt'])
+            views = pd.DataFrame(
+                columns=['user', 'id', 'startTime', 'duration', 'createdAt', 'updatedAt'])
         return views
 
     def get_organisations(self):

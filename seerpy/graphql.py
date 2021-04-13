@@ -231,6 +231,38 @@ def get_channel_groups_query_string(study_id):
         }""" % study_id
 
 
+STUDY_CHANNEL_GROUP_SEGMENTS = """
+    query segments($study_id: ID!, $limit: NonNegativeInt, $after: ID){
+        resource {
+            channelGroupSegment{
+            list(filter: {
+                studyChannelGroup:{
+                studyId: {
+                    in: [$study_id]
+                }
+                }
+            }, pagination:{
+                limit: $limit, after: $after}) {        
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                } items {
+                    id
+                    startTime
+                    duration
+                    timezone
+                    studyChannelGroup{
+                        name
+                        id
+                    }
+                }
+            }
+            }
+        }
+    }
+  """
+
+
 #    studyChannelGroupSegments
 def get_segment_urls_query_string(segment_ids):
     segment_ids_string = get_json_list(segment_ids)

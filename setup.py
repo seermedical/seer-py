@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='seerpy',
-    version='0.4.1',
+    version='0.4.2',
     description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',

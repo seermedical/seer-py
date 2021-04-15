@@ -661,28 +661,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 'endCursor']
             variable_values['after'] = end_cursor
 
-        if len(items) == 0:
-            print('study has no channel groups')
-            return
+        if not items:
+            return pd.DataFrame(columns=[
+                'segments.id', 'segments.startTime', 'segments.duration', 'segments.timezone',
+                'studyChannelGroup.id', 'studyChannelGroup.name'
+            ])
+
+        items_df = json_normalize(items)
 
         if channel_group_id:
-            # only keep items from channel_group_id
-            items = [item for item in items if item["studyChannelGroup"]["id"] == channel_group_id]
+            items_df = items_df[items_df['studyChannelGroup.id'] == channel_group_id]
 
-        print(str(len(items)) + " channel group items found")
-        # convert list to dataframe
-        items_df = pd.DataFrame(items)
-
-        # grab the values from the studyChannelGroup dict
-        cgn = [items_df.iloc[i]['studyChannelGroup']['name'] for i in range(len(items_df))]
-        cgid = [items_df.iloc[i]['studyChannelGroup']['id'] for i in range(len(items_df))]
-        # add them to new columns in the DataFrame
-        items_df['studyChannelGroup.id'] = cgid
-        items_df['studyChannelGroup.name'] = cgn
-        # remove the old dict column
-        items_df = items_df.drop(columns=['studyChannelGroup'])
-
-        return items_df
+        return items_df.rename(
+            {
+                'id': 'segments.id',
+                'startTime': 'segments.startTime',
+                'duration': 'segments.duration',
+                'timezone': 'segments.timezone'
+            }, axis=1)
 
     def get_segment_urls(self, segment_ids, limit=10000):
         """
@@ -1432,7 +1428,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             study_ids = self.get_study_ids_from_names(study_names, party_id)
         return self.get_all_study_metadata_by_ids(study_ids)
 
-    def get_all_study_metadata_by_ids(self, study_ids=None):
+    def get_all_study_metadata_by_ids(self, study_ids=None, limit=5000):
         """
         Get all metadata available about studies with supplied IDs.
 
@@ -1441,6 +1437,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_ids : list of str, optional
             Unique IDs, each identifying a study. If not provided, data will be
             returned for all available studies.
+        limit : int, optional
+            Batch size for repeated API calls
 
         Returns
         -------
@@ -1455,13 +1453,33 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         elif not study_ids:  # treat empty list as asking for nothing, not everything
             return {'studies': []}
 
-        result = [
-            self.execute_query(graphql.GET_STUDY_WITH_DATA,
-                               variable_values={'study_id': study_id})['study']
-            for study_id in study_ids
-        ]
+        full_result = []
+        for study_id in study_ids:
+            query_variables = {'study_id': study_id, 'offset': 0, 'limit': limit}
+            study_result = self.execute_query(graphql.GET_STUDY_WITH_DATA,
+                                              variable_values=query_variables)['study']
+            max_segments_returned = total_segments_returned = max(
+                [len(channel_group['segments']) for channel_group in study_result['channelGroups']])
 
-        return {'studies': result}
+            # If any channel groups have at least `limit` segments, paginate
+            # Can't use get_paginated_result() because need to paginate within a nested list
+            while max_segments_returned == limit:
+                query_variables['offset'] = total_segments_returned
+                result = self.execute_query(graphql.GET_STUDY_WITH_DATA,
+                                            variable_values=query_variables)['study']
+
+                for i, channel_group in enumerate(result['channelGroups']):
+                    if len(channel_group['segments']) > 0:
+                        study_result['channelGroups'][i]['segments'].extend(
+                            channel_group['segments'])
+
+                max_segments_returned = max(
+                    [len(channel_group['segments']) for channel_group in result['channelGroups']])
+                total_segments_returned += max_segments_returned
+
+            full_result.append(study_result)
+
+        return {'studies': full_result}
 
     def get_all_study_metadata_dataframe_by_names(self, study_names=None):
         """

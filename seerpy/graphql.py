@@ -78,7 +78,7 @@ def get_string_from_list_of_dicts(list_of_dicts):
 
 
 GET_STUDY_WITH_DATA = """
-    query study_with_data($study_id: String!) {
+    query study_with_data($study_id: String!, $limit: PaginationAmount, $offset: Int) {
         study (id: $study_id) {
             id
             patient {
@@ -109,7 +109,7 @@ GET_STUDY_WITH_DATA = """
                 channelGroupType {
                     id
                 }
-                segments {
+                segments(limit: $limit, offset: $offset) {
                     id
                     startTime
                     duration
@@ -229,6 +229,38 @@ def get_channel_groups_query_string(study_id):
                 }
             }
         }""" % study_id
+
+
+STUDY_CHANNEL_GROUP_SEGMENTS = """
+    query segments($study_id: ID!, $limit: NonNegativeInt, $after: ID){
+        resource {
+            channelGroupSegment{
+            list(filter: {
+                studyChannelGroup:{
+                studyId: {
+                    in: [$study_id]
+                }
+                }
+            }, pagination:{
+                limit: $limit, after: $after}) {        
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                } items {
+                    id
+                    startTime
+                    duration
+                    timezone
+                    studyChannelGroup{
+                        name
+                        id
+                    }
+                }
+            }
+            }
+        }
+    }
+  """
 
 
 #    studyChannelGroupSegments

@@ -522,3 +522,60 @@ def quote_str(value):
     '"some value"'
     """
     return f'"{value}"'
+
+
+def get_nested_dict_item(input_dict, keys, allow_missing_keys=False, default=None):
+    """
+    Given a dictionary with potentially many nested dictionaries, get the
+    value of one of the nested keys by providing the sequence of keys as
+    arguments.
+
+    Parameters
+    ----------
+    input_dict: dict
+        The dictionary
+    keys: list of str
+        The sequence of keys to traverse along the heirarchy of the dictionary
+    allow_missing_keys: bool, optional
+        Allow traversing along missing keys? If so, this acts like the
+        multi-level equivalent of the `get()` function for a dictionary,
+        returning a default value.
+        If this argument is not set, or set to False, then it raises a KeyError
+        if the path of keys does not exist.
+    default: optional
+        If `allow_missing_keys` is set to True, and the path of keys does not
+        exist in the dictionary, then it returns this value.
+
+    Notes
+    ----------
+    Apart from the first argument, and the dictionary keys, you should pass all
+    other arguments as keyword arguments.
+
+    Examples
+    ----------
+    >>> d1 = dict(a = dict(b = dict(c = 42 )))
+    >>> get_nested_dict_item(d1, ["a", "b", "c"])
+    # 42
+    >>> get_nested_dict_item(d1, ["a", "x", "y"], allow_missing_keys=True, default=999)
+    # 999
+
+    Tests
+    ----------
+    >>> d0 = dict()
+    >>> d1 = dict(a=dict(b=dict(c=42)))
+    >>> d2 = dict(a=dict(b=33, z=42))
+    >>>
+    >>> assert get_nested_dict_item(d1, ["a", "b", "c"]) == 42, "Failed Test"
+    >>> assert get_nested_dict_item(d1, ["a", "x", "y"], allow_missing_keys=True, default=999) == 999, "Failed Test"
+
+    >>> # TODO: test for checking that it throws a key error for the following:
+    >>> # get_nested_dict_item(d1, ["a", "x", "y"], allow_missing_keys=False)
+
+    Credit
+    ----------
+    Based on this code: https://stackoverflow.com/a/46890853
+    """
+    if allow_missing_keys:
+        return functools.reduce(lambda d, key: d.get(key, default) if isinstance(d, dict) else default, keys, input_dict)
+    else:
+        return functools.reduce(lambda d, key: d[key], keys, input_dict)

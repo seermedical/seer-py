@@ -87,5 +87,5 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--channels", nargs="+", help="Name of channels to download (optional).")
     parser.add_argument("-p", "--party_id", help="Party ID for specific organisation to download studies from.")
     args = parser.parse_args()
-    breakpoint()
+ 
     run(SeerConnect(), args.outpath, args.update, args.channelgroups, args.channels, args.party_id)

@@ -123,14 +123,18 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         See queries in graphql.py for structure of results returned
         """
         resolvable_api_errors = [
-            '502 Server Error', '503 Server Error', '504 Server Error', 'Read timed out.',
-            'NOT_AUTHENTICATED'
+            '502 Server Error',
+            '503 Server Error',
+            '504 Server Error',
+            'Read timed out.',
+            'NOT_AUTHENTICATED',
+            'SERVER_ERROR'  # 500 server error raised by gql library
         ]
 
         try:
             time.sleep(
-                max(0, ((self.api_limit_expire / self.api_limit) -
-                        (time.time() - self.last_query_time))))
+                max(0., ((self.api_limit_expire / self.api_limit) -
+                         (time.time() - self.last_query_time))))
             response = self.graphql_client(party_id).execute(gql(query_string),
                                                              variable_values=variable_values)
             self.last_query_time = time.time()
@@ -217,7 +221,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         offset = variable_values.get('offset', 0)  # Try get offset from variable values if exists
         result = []
         total_items_returned = 0
-        remaining_items = 0
 
         while True:
             # Update the number of items remaining
@@ -235,7 +238,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
             # select the part of the response we are interested in
             response = utils.get_nested_dict_item(response, object_path)
-
 
             # select the part of the response which can vary. if iteration_path is None this will be
             # the same as the part of the response we are interested in
@@ -547,12 +549,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         variable_values = {'search_term': search_term}
         return self.get_paginated_response(graphql.GET_STUDIES_BY_SEARCH_TERM_PAGED,
-                                           variable_values,
-                                           limit,
-                                           ['studies'],
-                                           party_id=party_id,
-                                           max_items=max_items
-                                           )
+                                           variable_values, limit, ['studies'], party_id=party_id,
+                                           max_items=max_items)
 
     def get_studies_dataframe(self, limit=50, search_term='', party_id=None, max_items=None):
         """
@@ -577,7 +575,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             DataFrame with details of all matching studies
         """
         studies = self.get_studies(limit=limit, search_term=search_term, party_id=party_id,
-            max_items=max_items)
+                                   max_items=max_items)
         studies_dataframe = json_normalize(studies).sort_index(axis=1)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
@@ -844,7 +842,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     # pylint:disable=too-many-arguments
     def get_labels(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200, offset=0,
-        max_items=None):
+                   max_items=None):
         """
         Get labels for a given study and label group.
 
@@ -877,13 +875,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'from_time': from_time,
             'to_time': to_time
         }
-        return self.get_paginated_response(graphql.GET_LABELS_PAGED,
-                                           variable_values,
-                                           limit,
-                                           ['study'],
-                                           ['labelGroup', 'labels'],
-                                           max_items=max_items
-                                           )
+        return self.get_paginated_response(graphql.GET_LABELS_PAGED, variable_values, limit,
+                                           ['study'], ['labelGroup', 'labels'], max_items=max_items)
 
     # pylint:disable=too-many-arguments
     def get_labels_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200,
@@ -898,7 +891,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Details of all matching labels
         """
         label_results = self.get_labels(study_id, label_group_id, from_time, to_time, limit, offset,
-            max_items=max_items)
+                                        max_items=max_items)
         if not label_results:
             return pd.DataFrame()
         label_group = json_normalize(label_results).sort_index(axis=1)
@@ -1143,14 +1136,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patients : list of dict
             Patient details, with keys 'id' and 'user'
         """
-        response = self.get_paginated_response(
-                                    graphql.GET_PATIENTS_PAGED,
-                                    variable_values=dict(),
-                                    limit=limit,
-                                    object_path=["patients"],
-                                    party_id=party_id,
-                                    max_items=max_items
-                                    )
+        response = self.get_paginated_response(graphql.GET_PATIENTS_PAGED, variable_values=dict(),
+                                               limit=limit, object_path=["patients"],
+                                               party_id=party_id, max_items=max_items)
         return response
 
     def get_patients_dataframe(self, party_id=None, limit=5000, max_items=None):
@@ -1243,13 +1231,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Returns a dictionary patient insights.
         """
         variable_values = {'patient_id': patient_id}
-        return self.get_paginated_response(graphql.GET_DIARY_INSIGHTS_PAGED,
-                                   variable_values,
-                                   limit,
-                                   ['patient'],
-                                   ['insights'],
-                                   max_items=max_items
-                                   )
+        return self.get_paginated_response(graphql.GET_DIARY_INSIGHTS_PAGED, variable_values, limit,
+                                           ['patient'], ['insights'], max_items=max_items)
 
     def get_diary_created_at(self, patient_id):
         query_string = graphql.get_diary_created_at_query_string(patient_id)
@@ -1694,7 +1677,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'patient', 'referral', 'equipmentItems', and 'location'
         """
         # TODO: paginate using the new resource schema
-        assert (start_time is not None) and (end_time is not None), "start_time and end_time should not be None"
+        assert (start_time
+                is not None) and (end_time
+                                  is not None), "start_time and end_time should not be None"
         query_string = graphql.ORGANIZATION_BOOKINGS
         vars = dict(organization_id=organisation_id, startTime=start_time, endTime=end_time,
                     includeCancelled=include_cancelled)
@@ -1702,7 +1687,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return response['organisation']['bookings']
 
     def get_all_bookings_dataframe(self, organisation_id, start_time, end_time,
-        include_cancelled=False):
+                                   include_cancelled=False):
         """
         Get all bookings for any studies that are active at any point between
         `start_time` and `end_time` as a DataFrame. See `get_all_bookings()`.
@@ -1724,7 +1709,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             DataFrame with details about all relevant bookings
         """
         bookings_response = self.get_all_bookings(organisation_id, start_time, end_time,
-            include_cancelled=include_cancelled)
+                                                  include_cancelled=include_cancelled)
         bookings = json_normalize(bookings_response).sort_index(axis=1)
         studies = self.pandas_flatten(bookings, 'patient.', 'studies')
         equipment = self.pandas_flatten(bookings, '', 'equipmentItems')
@@ -1814,13 +1799,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'from_time': from_time,
             'to_time': to_time
         }
-        return self.get_paginated_response(graphql.GET_LABELS_FOR_DIARY_STUDY_PAGED,
-                                           variable_values,
-                                           limit,
-                                           ['patient', 'diaryStudy'],
-                                           ['labelGroup', 'labels'],
-                                           max_items=max_items,
-                                           )
+        return self.get_paginated_response(
+            graphql.GET_LABELS_FOR_DIARY_STUDY_PAGED,
+            variable_values,
+            limit,
+            ['patient', 'diaryStudy'],
+            ['labelGroup', 'labels'],
+            max_items=max_items,
+        )
 
     # pylint:disable=too-many-arguments
     def get_diary_study_labels_dataframe(self, patient_id, label_group_id, from_time=0,
@@ -1961,7 +1947,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return data
 
-    def get_mood_survey_results(self, survey_template_ids, limit=200, offset=0,  max_items=None):
+    def get_mood_survey_results(self, survey_template_ids, limit=200, offset=0, max_items=None):
         """
         Get mood survey results for one or more survey template IDs.
 
@@ -1985,15 +1971,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             list of dictionaries with keys 'key' and 'value'
         """
         variable_values = {'survey_template_ids': survey_template_ids}
-        return self.get_paginated_response(graphql.GET_MOOD_SURVEY_RESULTS_PAGED,
-                                           variable_values,
-                                           limit,
-                                           ['surveys'],
-                                           max_items=max_items
-                                           )
+        return self.get_paginated_response(graphql.GET_MOOD_SURVEY_RESULTS_PAGED, variable_values,
+                                           limit, ['surveys'], max_items=max_items)
 
     def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0,
-        max_items=None):
+                                          max_items=None):
         """
         Get mood survey results as a DataFrame. See `get_mood_survey_results()`
         for details.
@@ -2016,7 +1998,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Dataframe with survey.id, survey.lastSubmittedAt, surveyField.key, surveyField.value
         """
         results = self.get_mood_survey_results(survey_template_ids, limit, offset,
-            max_items=max_items)
+                                               max_items=max_items)
 
         if results is None or len(results) == 0:
             return pd.DataFrame()
@@ -2050,12 +2032,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Unique IDs, each identifying a study
         """
         variable_values = {'study_cohort_id': study_cohort_id}
-        results = self.get_paginated_response(graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
-                                   variable_values,
-                                   limit,
-                                   ['studyCohort', 'studies'],
-                                   max_items=max_items,
-                                   )
+        results = self.get_paginated_response(
+            graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
+            variable_values,
+            limit,
+            ['studyCohort', 'studies'],
+            max_items=max_items,
+        )
         return [study['id'] for study in results]
 
     def create_study_cohort(self, name, description=None, key=None, study_ids=None):
@@ -2145,11 +2128,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         """
         variable_values = {'user_cohort_id': user_cohort_id}
         results = self.get_paginated_response(graphql.GET_USER_IDS_IN_USER_COHORT_PAGED,
-                                   variable_values,
-                                   limit,
-                                   ['userCohort', 'users'],
-                                   max_items=max_items
-                                   )
+                                              variable_values, limit, ['userCohort', 'users'],
+                                              max_items=max_items)
         return [user['id'] for user in results]
 
     def create_user_cohort(self, name, description=None, key=None, user_ids=None):

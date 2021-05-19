@@ -7,28 +7,32 @@ from collections import namedtuple
 import datetime
 import getpass
 from glob import glob
-import os
 import json
+import logging
+import os
 import random
 import time
 
 import jwt
 import requests
 
+logger = logging.getLogger(__name__)
+
 KeyFileInfo = namedtuple('KeyFileInfo', ['key_path', 'key_id', 'region', 'default'])
 
 
 def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer_auth=None,
-             use_email=None, email=None, password=None):
+             use_email=None, email=None, password=None, timeout=None):
     """
-    Get the correct Auth implemetation based on passed parameters and the existence of config files.
+    Get the correct Auth implementation based on passed parameters and the existence of config
+    files.
 
     If seer_auth is passed, it will be used and other parameters will be ignored.
     If use_email is True or email or password are passed, email authentication will be used.
     If no API key or id are passed and no API key files are found, email authentication will be
     used.
     If nothing is passed and API key files exist in ~/.seerpy matching the pattern seerpy*.pem then
-    API key authentiction will be used.
+    API key authentication will be used.
     API key files can contain the following information, separated by the '.' character:
     - a default indicator 'default' to indicate to use this file as a default
     - a region string 'au', 'de', 'uk', or 'us' indicating the region to use
@@ -56,8 +60,9 @@ def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer
         The email address for a user's Seer account
     password : str, optional
         The password for a user's Seer account
+    timeout: int, optional
+            Timeout for queries made using the returned auth
     """
-
     if seer_auth:
         return seer_auth
 
@@ -68,9 +73,9 @@ def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer
     if ((use_email is True)
             or (use_email is None and
                 (email or password or not (api_key_id or api_key_path or pem_files)))):
-        return SeerAuth(api_url, email, password)
+        return SeerAuth(api_url, email, password, timeout=timeout)
 
-    return SeerApiKeyAuth(api_key_id, api_key_path, region, api_url)
+    return SeerApiKeyAuth(api_key_id, api_key_path, region, api_url, timeout=timeout)
 
 
 # pylint: disable=no-self-use
@@ -79,8 +84,9 @@ class BaseAuth:
     An authenticated connection to the Seer API. Should not be used directly,
     instead use one of the deriving classes.
     """
-    def __init__(self, api_url):
+    def __init__(self, api_url, timeout=None):
         self.api_url = api_url
+        self.timeout = timeout
 
     def get_connection_parameters(self, party_id=None):
         url_suffix = '?partyId=' + party_id if party_id else ''
@@ -89,7 +95,7 @@ class BaseAuth:
             'url': self.api_url + '/graphql' + url_suffix,
             'headers': self.get_headers(),
             'use_json': True,
-            'timeout': 30
+            'timeout': self.timeout or 30
         }
 
     def handle_query_error_pre_sleep(self, ex):  # pylint: disable=unused-argument
@@ -104,14 +110,13 @@ class BaseAuth:
 
 class SeerAuth(BaseAuth):
     """
-    Creates an authenticated connection to the Seer API. This is the default for most use cases.
+    Creates an authenticated connection to the Seer API.
     """
-
     default_cookie_key = 'seer.sid'
     help_message_displayed = False
 
     def __init__(self, api_url=None, email=None, password=None, cookie_key=default_cookie_key,
-                 credential_namespace='cookie'):
+                 credential_namespace='cookie', timeout=None):
         """
         Authenticate session using email address and password
 
@@ -124,12 +129,15 @@ class SeerAuth(BaseAuth):
         password : str, optional
             The password for a user's Seer account
         cookie_key : str, optional
-            ?
+            Key for the login cookie returned by the auth endpoint
         credential_namespace : str, optional
-            ?
+            Subfolder to store credential and cookie files
+        timeout: int, optional
+            Timeout for queries made using this auth
         """
 
-        super(SeerAuth, self).__init__(api_url if api_url else 'https://api.seermedical.com/api')
+        super(SeerAuth, self).__init__(api_url if api_url else 'https://api.seermedical.com/api',
+                                       timeout)
 
         self.cookie = None
         self.cookie_key = cookie_key
@@ -159,13 +167,12 @@ class SeerAuth(BaseAuth):
         body = {'email': self.email, 'password': self.password}
         login_url = self.api_url + '/auth/login'
         response = requests.post(url=login_url, data=body)
-        print("login status_code", response.status_code)
+        logger.info(f'Login status_code {response.status_code}')
         if (response.status_code == requests.codes.ok  # pylint: disable=maybe-no-member
                 and response.cookies):
 
             seer_sid = response.cookies.get(self.cookie_key, False)
-            self.cookie = {}
-            self.cookie[self.cookie_key] = seer_sid
+            self.cookie = {self.cookie_key: seer_sid}
 
         else:
             self.cookie = None
@@ -180,7 +187,7 @@ class SeerAuth(BaseAuth):
     def _attempt_login(self):
         response = self._verify_login()
         if response == requests.codes.ok:  # pylint: disable=maybe-no-member
-            print('Login Successful')
+            logger.info('Login Successful')
             return
 
         allowed_attempts = 4
@@ -189,22 +196,22 @@ class SeerAuth(BaseAuth):
             response = self._verify_login()
 
             if response == requests.codes.ok:  # pylint: disable=maybe-no-member
-                print('Login Successful')
+                logger.info('Login Successful')
                 return
 
             if i >= allowed_attempts - 1:
-                print('Login failed. please check your username and password or go to',
-                      'app.seermedical.com to reset your password')
+                logger.warning('Login failed. please check your username and password or go to '
+                               'app.seermedical.com to reset your password')
                 raise InterruptedError('Authentication Failed')
 
             if response == 401:
-                print('\nLogin error, please re-enter your email and password: \n')
+                logger.info('\nLogin error, please re-enter your email and password:\n')
                 self.cookie = None
                 self.password = None
             else:
-                # Sleep for ~5, 20, 60 seconds, with jitter to avoid thundering heard problem
+                # Sleep for ~5, 20, 60 seconds, with jitter to avoid thundering herd problem
                 sleep_time = 5 + 5 * i + 11 * i**2 + random.uniform(0, 5)
-                print(f'\nLogin failed, retrying in {sleep_time:.0f} seconds...')
+                logger.info(f'\nLogin failed, retrying in {sleep_time:.0f} seconds...')
                 time.sleep(sleep_time)
 
     def _verify_login(self):
@@ -218,21 +225,19 @@ class SeerAuth(BaseAuth):
         verify_url = self.api_url + '/auth/verify'
         response = requests.get(url=verify_url, cookies=self.cookie)
         if response.status_code != requests.codes.ok:  # pylint: disable=maybe-no-member
-            print("api verify call returned", response.status_code, "status code")
+            logger.info(f"API verify call returned {response.status_code} status code")
             return response.status_code
 
         json_response = response.json()
         if not json_response or not json_response['session'] == "active":
-            print("api verify call did not return an active session")
+            logger.info("API verify call did not return an active session")
             return 440
 
         self._write_cookie()
         return response.status_code
 
     def _login_details(self):
-        """
-        Get user's email address and password, either from file or stdin.
-        """
+        """Get user's email address and password, either from file or stdin."""
         home = os.path.expanduser('~')
         pswdfile = home + '/.seerpy/credentials'
         if os.path.isfile(pswdfile):
@@ -244,8 +249,8 @@ class SeerAuth(BaseAuth):
             self.email = input('Email Address: ')
             self.password = getpass.getpass('Password: ')
             if not self.help_message_displayed:
-                print(f"\nHint: To skip this in future, save your details to {pswdfile}")
-                print("See README.md - 'Authenticating' for details\n")
+                logger.info(f"\nHint: To skip this in future, save your details to {pswdfile}")
+                logger.info("See README.md - 'Authenticating' for details\n")
                 self.help_message_displayed = True
 
     def _get_cookie_path(self):
@@ -275,12 +280,13 @@ class SeerAuth(BaseAuth):
 
 class SeerApiKeyAuth(BaseAuth):
     """
-    Creates an authenticated connection to the Seer API using an API key. This will become the
+    Create an authenticated connection to the Seer API using an API key. This is the recommended
     default for most use cases.
     """
-    def __init__(self, api_key_id, api_key_path=None, region='au', api_key=None, api_url=None):
+    def __init__(self, api_key_id, api_key_path=None, region='au', api_key=None, api_url=None,
+                 timeout=None):
         """
-        Authenticate session using API key
+        Authenticate session using API key.
 
         Parameters
         ----------
@@ -292,8 +298,9 @@ class SeerApiKeyAuth(BaseAuth):
             The actual api key string - for the case where you can't use a file e.g. in AWS Lambda
         api_url : str, optional
             Base URL of API endpoint
+        timeout: int, optional
+            Timeout for queries made using this auth
         """
-
         if api_key:
             self.api_key = api_key
             if not (api_key_id and (region or api_url)):
@@ -305,7 +312,7 @@ class SeerApiKeyAuth(BaseAuth):
         if not api_url:
             api_url = os.getenv('SDK_API_BASE_URL') or f'https://sdk-{region}.seermedical.com/api'
 
-        super(SeerApiKeyAuth, self).__init__(api_url)
+        super(SeerApiKeyAuth, self).__init__(api_url, timeout)
 
         self.api_key_id = api_key_id
         if not api_key:
@@ -320,6 +327,7 @@ class SeerApiKeyAuth(BaseAuth):
             raise ValueError('No API key file available')
 
         api_key_file = None
+        api_key_files = []
         if api_key_path:
             api_key_file = self._get_key_filename_parts(api_key_path)
         else:
@@ -371,7 +379,7 @@ class SeerApiKeyAuth(BaseAuth):
         if (not region or region == 'au') and api_key_file.region:
             region = api_key_file.region
 
-        return (api_key_id, api_key_path, region)
+        return api_key_id, api_key_path, region
 
     @classmethod
     def _get_key_filename_parts(cls, pem_filename):
@@ -394,10 +402,11 @@ class SeerApiKeyAuth(BaseAuth):
         if len(parts) > 1:
             raise ValueError(f'Multiple {part_title}s found in key file name')
         part = parts[0]
-        filename_parts = filename_parts.remove(part)
+        filename_parts.remove(part)
         return part
 
-    def _get_objects_matching_value(self, objects, attr_name, value):
+    @staticmethod
+    def _get_objects_matching_value(objects, attr_name, value):
         return [obj for obj in objects if getattr(obj, attr_name) == value]
 
     def get_headers(self):
@@ -422,9 +431,9 @@ class SeerApiKeyAuth(BaseAuth):
 
 class SeerDevAuth(SeerAuth):
     """
-    Creates an auth instance for connecting to dev servers, based on the default
-    SeerAuth authentication approach.
+    Create an auth instance for connecting to dev servers, based on the default SeerAuth
+    authentication approach.
     """
-    def __init__(self, api_url, email=None, password=None):
+    def __init__(self, api_url, email=None, password=None, timeout=None):
         super(SeerDevAuth, self).__init__(api_url, email, password, cookie_key='seerdev.sid',
-                                          credential_namespace='cookie-dev')
+                                          credential_namespace='cookie-dev', timeout=timeout)

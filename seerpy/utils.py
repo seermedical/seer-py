@@ -1,17 +1,20 @@
 """
-Utility and helper functions for downloading data, as well as plotting and
-filtering signals.
+Utility and helper functions for downloading data, as well as plotting.
 
 Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved.
 """
 import functools
 import gzip
+import logging
+import time
 from multiprocessing import Pool
 import os
 
 import numpy as np
 import pandas as pd
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 # pylint:disable=too-many-locals,too-many-statements
@@ -129,12 +132,9 @@ def download_channel_data(data_q, download_function):
         return data
 
     except Exception as ex:
-        print(ex)
-        print('study_id', study_id)
-        print('channel_names', channel_names)
-        print('dataChunks.url', meta_data['dataChunks.url'])
-        print(f"dataChunks.time {meta_data['dataChunks.time']:.2f}")
-        print('meta_data', meta_data)
+        logger.error(f"{repr(ex)}:\nstudy_id: {study_id}\nchannel_names: {channel_names}\n"
+                     f"dataChunks.url: {meta_data['dataChunks.url']}\ndataChunks.time: "
+                     f"{meta_data['dataChunks.time']:.2f}\nmeta_data: {meta_data}")
         raise
 
 
@@ -170,31 +170,33 @@ def _get_data_chunk(study_id, meta_data, download_function):
             status_code = response.status_code
         except AttributeError:
             break  # the download function used does not return a status_code
+        try:
+            reason = response.reason
+        except AttributeError:
+            reason = 'unknown reason'
 
         if status_code == 200:
             break
 
-        print(f'download_channel_data: {status_code} status code returned')
-        print('response content', data)
-        print('study_id', study_id)
-        print('dataChunks.url', meta_data['dataChunks.url'])
-        print(f"dataChunks.time {meta_data['dataChunks.time']:.2f}")
-        print('meta_data', meta_data)
+        logger.warning(f"download_channel_data(): {status_code} status code returned: {reason}\n"
+                       f"response content {data}\nstudy_id: {study_id}\ndataChunks.url: "
+                       f"{meta_data['dataChunks.url']}\ndataChunks.time: "
+                       f"{meta_data['dataChunks.time']:.2f}\nmeta_data: {meta_data}")
 
         if status_code == 404:
-            # we sometimes get chunk urls which don't exist
-            print('The chunk requested does not exist')
+            # we sometimes get chunk URLs which don't exist
+            logger.warning('The chunk requested does not exist')
             return None
 
         if status_code in (500, 503):
-            # s3 sometimes returns 500 or 503 if it's overwhelmed, we can retry
+            # S3 sometimes returns 500 or 503 if it's overwhelmed; retry
             message = 'Unable to read chunk - most likely a performance error'
             if i < (max_attempts - 1):
-                print(message, '- retrying')
-                # if we find that we get multiple errors, particularly 503, then we should consider
-                # sleeping between retries with backoff, but keep it simple for now
+                sleep_for = 2**(i + 1)  # Just a tiny sleep
+                logger.info(f'{message} - sleeping for {sleep_for} then retrying')
+                time.sleep(sleep_for)
                 continue
-            print(message, '- max attempts exceeded')
+            logger.error(f'{message} - max attempts exceeded')
 
         # throw an error for other status codes
         raise requests.exceptions.HTTPError(f'HTTPError {status_code}')
@@ -251,7 +253,7 @@ def create_data_chunk_urls(metadata, segment_urls, from_time=0, to_time=9e12):
         for i in range(num_chunks):
             chunk_start_time = chunk_period * 1000 * i + start_time
             next_chunk_start_time = chunk_period * 1000 * (i + 1) + start_time
-            if (chunk_start_time < to_time and next_chunk_start_time > from_time):
+            if chunk_start_time < to_time and next_chunk_start_time > from_time:
                 data_chunk_name = str(i).zfill(len(chunk_pattern) - 4) + chunk_pattern[-4:]
                 data_chunk_url = seg_base_url.replace(chunk_pattern, data_chunk_name)
                 data_chunk = [row['segments.id'], data_chunk_url, chunk_start_time]
@@ -291,10 +293,7 @@ def get_channel_data(study_metadata, segment_urls, download_function=requests.ge
         DataFrame containing study ID, channel group IDs, semgment IDs, time, and raw data
     """
     if threads is None:
-        if os.name == 'nt':
-            threads = 1
-        else:
-            threads = 5
+        threads = 1 if os.name == 'nt' else 5
 
     data_chunk_urls = segment_urls
     if 'baseDataChunkUrl' in data_chunk_urls.columns:
@@ -439,7 +438,7 @@ def plot_eeg(x, y=None, pred=None, squeeze=5.0, scaling_factor=None):
     if scaling_factor is None:
         scaling_factor = np.nanmedian(np.abs(x)) * squeeze  # Crowd them a bit.
     y_bottom = -scaling_factor  # pylint: disable=invalid-unary-operand-type
-    y_top = (channels) * scaling_factor
+    y_top = channels * scaling_factor
     ax2.set_ylim(y_bottom, y_top)
     ax2.set_xlim(ticks.min(), ticks.max())
 
@@ -490,8 +489,8 @@ def get_diary_fitbit_data(data_url):
     raw_data = requests.get(data_url)
     data = raw_data.content
 
-    # Hardcoded here as in the database the sample encoding for Fitbit channel groups
-    # is saved as 'int16' but float32 is correct
+    # Hardcoded here as in the database the sample encoding for Fitbit channel groups is saved as
+    # 'int16' but float32 is correct
     data_type = 'float32'
     data = np.frombuffer(data, dtype=np.dtype(data_type))
     data = data.astype(np.float32)
@@ -526,9 +525,8 @@ def quote_str(value):
 
 def get_nested_dict_item(input_dict, keys, allow_missing_keys=False, default=None):
     """
-    Given a dictionary with potentially many nested dictionaries, get the
-    value of one of the nested keys by providing the sequence of keys as
-    arguments.
+    Given a dictionary with potentially many nested dictionaries, get the value of one of the nested
+    keys by providing the sequence of keys as arguments.
 
     Parameters
     ----------
@@ -537,19 +535,12 @@ def get_nested_dict_item(input_dict, keys, allow_missing_keys=False, default=Non
     keys: list of str
         The sequence of keys to traverse along the heirarchy of the dictionary
     allow_missing_keys: bool, optional
-        Allow traversing along missing keys? If so, this acts like the
-        multi-level equivalent of the `get()` function for a dictionary,
-        returning a default value.
-        If this argument is not set, or set to False, then it raises a KeyError
-        if the path of keys does not exist.
+        Allow traversing along missing keys? If so, this acts like the multi-level equivalent of the
+        `get()` function for a dictionary, returning a default value. If this argument is not set,
+        or set to False, then it raises a KeyError if the path of keys does not exist.
     default: optional
-        If `allow_missing_keys` is set to True, and the path of keys does not
-        exist in the dictionary, then it returns this value.
-
-    Notes
-    ----------
-    Apart from the first argument, and the dictionary keys, you should pass all
-    other arguments as keyword arguments.
+        If `allow_missing_keys` is set to True, and the path of keys does not exist in the
+        dictionary, then it returns this value.
 
     Examples
     ----------
@@ -576,6 +567,8 @@ def get_nested_dict_item(input_dict, keys, allow_missing_keys=False, default=Non
     Based on this code: https://stackoverflow.com/a/46890853
     """
     if allow_missing_keys:
-        return functools.reduce(lambda d, key: d.get(key, default) if isinstance(d, dict) else default, keys, input_dict)
+        return functools.reduce(
+            lambda d, key: d.get(key, default)
+            if isinstance(d, dict) else default, keys, input_dict)
     else:
         return functools.reduce(lambda d, key: d[key], keys, input_dict)

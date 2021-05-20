@@ -5,39 +5,36 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 
 Concepts
 --------
-- study: A defined period of time monitoring a patient, typically with EEG-ECG-video.
-    A patient may have multiple studies, and a given study may or may not be
-    attached to a patient.
-- diary: Use of the Seer app by a patient to record events such as seizures
-    ("labels") and "alerts" for medication use
-- diary study: A patient study which is not time-bound. May include data from
-    devices such as smart phones or watches. A diary study must be attached to
-    a patient, and there can only be one diary study per patient.
+- study: A defined period of time monitoring a patient, typically with EEG-ECG-video. A patient may
+    have multiple studies, and a given study may or may not be attached to a patient.
+- diary: Use of the Seer app by a patient to record events such as seizures ("labels") and "alerts"
+    for medication use
+- diary study: A patient study which is not time-bound. May include data from devices such as smart
+    phones or watches. A diary study must be attached to a patient, and there can only be one diary
+    study per patient.
 - channel group: A mode of monitoring data, dependent on the study type.
     Study: EEG, ECG, video
     Diary study: Wearable data, e.g. heart rate, step count
-- channel: A channel group may have multiple channels. E.g. The different
-    electrodes for EEG: Fz, C4, Fp1 etc.
+- channel: A channel group may have multiple channels. E.g. The for EEG: Fz, C4, Fp1 etc.
 - label group: Categories of labels relevant to a study. Depends on the study type.
     Study: clinical annotations, e.g. Abnormal / Epileptiform, Normal / Routine
     Diary: self-reported annotations of events, e.g. Seizure / Other
     Diary study: labels from a wearable device, e.g. Sleep annotations
 - label: Belongs to a label group. Labels typically involve the following fields:
     id, startTime, duration, timezone, note, tags, confidence, createdAt, createdBy
-- tag: An ontology of "attributes" that may be atached to a label to provide
-    info or clarifications, e.g. Jaw clenching, Beta, Exemplar, Generalised, Sleep.
+- tag: An ontology of "attributes" that may be atached to a label to provide info or clarifications,
+    e.g. Jaw clenching, Beta, Exemplar, Generalised, Sleep.
     Tags are arranged into categories, e.g. Band, Brain area, Channel, Seizure type, Sleep
-- segment: A duration of recording for a given channel group. Segments lengths
-    are variable, though generally capped at 135 minutes (at least for EEG)
-- data chunk: Segments are saved to disk as 10-second data chunks, which must be
-    reassembled to yield a complete segment
-- party ID: The ID associated with e.g. an organisation, which will filter the
-    values returned
-- API response: Data returned from the GraphQL endpoint, as a dictionary with
-    string-type keys, and values that may be strings, numbers, bools, dictionaries,
-    lists of dicts etc.
+- segment: A duration of recording for a given channel group. Segments lengths are variable, though
+    generally capped at 135 minutes (at least for EEG)
+- data chunk: Segments are saved to disk as 10-second data chunks, which must be reassembled to
+    yield a complete segment
+- party ID: The ID associated with e.g. an organisation, which will filter the values returned
+- API response: Data returned from the GraphQL endpoint, as a dictionary with string-type keys, and
+    values that may be strings, numbers, bools, dictionaries, lists of dicts etc.
 """
 from datetime import datetime
+import logging
 import math
 import time
 import json
@@ -53,15 +50,18 @@ from . import auth
 from . import utils
 from . import graphql
 
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class SeerConnect:  # pylint: disable=too-many-public-methods
     graphql_client = None
 
     def __init__(self, api_url=None, email=None, password=None, api_key_id=None, api_key_path=None,
-                 seer_auth=None, use_email=None, region='au'):
+                 seer_auth=None, use_email=None, region='au', timeout=None):
         """
-        Creates a GraphQL client able to interact with the Seer database, handling login and
-        authorisation
+        Create a GraphQL client able to interact with the Seer database, handling login and
+        authorisation.
 
         Parameters
         ----------
@@ -73,12 +73,19 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             User password associated with Seer account
         api_key_id : str, optional
             The UUID for a Seer api key
-        api_key_file : str, optional
+        api_key_path : str, optional
             The path to a Seer api key file
+        seer_auth : auth.BaseAuth, optional
+        use_email : bool, optional
+            Whether to use email authentication. Will override non-email options if True
+        region : str, optional
+            {None, 'au', 'de', 'uk', 'us'}
+        timeout: int, optional
+            Timeout for queries
         """
 
         self.seer_auth = auth.get_auth(api_key_id, api_key_path, region, api_url, seer_auth,
-                                       use_email, email, password)
+                                       use_email, email, password, timeout)
 
         self.create_client()
 
@@ -87,9 +94,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         self.api_limit = 580
 
     def create_client(self):
-        """
-        Create a GraphQL client with parameters from the current SeerAuth object.
-        """
+        """Create a GraphQL client with parameters from the current SeerAuth object."""
         def graphql_client(party_id=None):
             connection_params = self.seer_auth.get_connection_parameters(party_id)
             return GQLClient(transport=RequestsHTTPTransport(**connection_params))
@@ -99,8 +104,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def execute_query(self, query_string, party_id=None, invocations=0, variable_values=None):
         """
-        Execute a GraphQL query and return response. Handle retrying upon
-        failure and rate limiting requests.
+        Execute a GraphQL query and return the response. Handle retrying upon failure and rate
+        limiting requests.
 
         Parameters
         ----------
@@ -117,10 +122,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -------
         graphql_results : dict
             Query results as a dictionary matching the structure of the query
-
-        Notes
-        -----
-        See queries in graphql.py for structure of results returned
         """
         resolvable_api_errors = [
             '502 Server Error',
@@ -141,12 +142,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return response
         except Exception as ex:
             if invocations > 4:
-                print('Too many failed query invocations. raising error')
+                logger.error('Too many failed query invocations, raising error')
                 raise
-            error_string = str(ex)
+            error_string = repr(ex)
             if any(api_error in error_string for api_error in resolvable_api_errors):
                 if self.seer_auth.handle_query_error_pre_sleep(ex):
-                    print('"', error_string, '" raised, trying again after a short break')
+                    logger.warning(f'"{error_string}" raised, trying again after a short break')
                     time.sleep(
                         min(30 * (invocations + 1)**2,
                             max(self.last_query_time + self.api_limit_expire - time.time(), 0)))
@@ -175,41 +176,32 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         variable_values : dict, optional
             Values for GraphQL to substitute into the query
         limit : int
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
+            Batch size for repeated API calls. Does not affect the total number of items retrieved
         object_path : list of str
-            One or more levels of key giving the path to the object to be returned
-            e.g. ['userCohort', 'users'] for a query response of
-            {"userCohort": {"users": [{"id": "user1"}, {"id": "user2"}]}}
-            would give [{"id": "user1"}, {"id": "user2"}]
+            One or more levels of key giving the path to the object to be returned, e.g. for query
+            result {"userCohort": {"users": [{"id": "user1"}, {"id": "user2"}]}},
+            providing ['userCohort', 'users'] would return [{"id": "user1"}, {"id": "user2"}]
         iteration_path : list of str, optional
-            None (default), one, or more levels of key giving the path to the
-            node (relative to the `object_path` level) where the response can
-            vary with each query iteration. If None then the response varies at
-            the path given by object_path.
+            None (default), one, or more levels of key giving the path to the node (relative to the
+            `object_path` level) where the response can vary with each query iteration. If None then
+            the response varies at the path given by `object_path`.
 
-            e.g. We may be interested in the surveys for a user, while keeping
-            information about the user. The hierarchy will look something like
-            ["user", "surveys"]. At the "user" level, it contains the user
-            information which we want to keep, so we set `object_path=["user"]`.
-            But we cannot iterate at this level, we want to iterate at the
-            "surveys" level, so we set `iteration_path=["surveys"]`
+            E.g. For a query like `{ user { surveys }}`, "user" level data is desired, so
+            `object_path` is set as ["user"]. But if iteration is desired at the "surveys" level,
+            set `iteration_path`=["surveys"]
         party_id : str, optional
             The organisation/entity to specify for the query
         max_items: int, optional
-            Max number of items to return. In the case of queries containing
-            nested lists of items it only limits the number of items specified
-            on the `iteration_path` level of the heirarchy (this defaults to
-            `object_path` if no argument is passed to `iteration_path` )
+            Max number of items to return. In the case of queries containing nested lists of items
+            it only limits the number of items specified on the `iteration_path` level of the
+            hierarchy (this defaults to `object_path` if no argument is passed to `iteration_path` )
 
-            eg: with `max_items=2, object_path=["users"]`, querying a list of
-            users, and for each user, the list of surveys, then it limits the
-            number of users to 2, irrespective of number of surveys per user).
+            E.g. for `max_items=2, object_path=["users"]`, querying `{ user { surveys }}`, it will
+            limit the number of users to 2, irrespective of number of surveys per user.
 
-            eg: with `max_items=10, object_path=["user"], iteration_path=["user", "surveys"]`
-            querying a single user, and the list of surveys for this user, then
-            it limits the number surveys to 10 for this user, while still
-            returning the information at the `user` level.
+            For `max_items=10, object_path=["user"], iteration_path=["user", "surveys"]`, querying a
+            single user, it will limit the number surveys to 10 for this user, while still returning
+            the information at the `user` level.
 
         Returns
         -------
@@ -272,8 +264,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         - A column named like f'{parent_name}id'
         - A `child_name` column, where each cell is a list of dicts.
 
-        Return a new DataFrame that retains the ID column and creates new
-        columns from the dictionary keys.
+        Return a new DataFrame that retains the ID column and creates new columns from the
+        dictionary keys.
 
         Parameters
         ----------
@@ -292,14 +284,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Example
         -------
         >>> df
-           start.id                           start.nested
-        0         A  [{'key1': 5, 'key2': 6}, {'key1': 7}]
-        1         B                          [{'key2': 8}]
+           top.id                              top.nested
+        0       A   [{'key1': 5, 'key2': 6}, {'key1': 7}]
+        1       B                           [{'key2': 8}]
         >>> pandas_flatten(df, 'top.', 'nested')
-           nested.key1  nested.key2  start.id
-        0          5.0          6.0         A
-        1          7.0          NaN         A
-        2          NaN          8.0         B
+           nested.key1  nested.key2  top.id
+        0          5.0          6.0       A
+        1          7.0          NaN       A
+        2          NaN          8.0       B
         """
         child_list = []
         for i in range(len(parent)):
@@ -500,26 +492,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         tag_ids = json_normalize(tag_ids).sort_index(axis=1)
         return tag_ids
 
-    def get_study_ids(self, limit=50, search_term='', party_id=None):
+    def get_study_ids(self, limit=50, search_term='', party_id=None, max_items=None):
         """
-        Get the IDs of all available studies.
-
-        Parameters
-        ----------
-        limit : int, optional
-            Batch size for repeated API calls
-        search_term : str, optional
-            Filter results to studies that match this string on their study name,
-            study description, study code, and/or patient name
-        party_id : str, optional
-            The organisation/entity to specify for the query
+        Get the IDs of all available studies. See `get_studies()` for details.
 
         Returns
         -------
         study_ids : list of str
             Unique IDs, each identifying a study
         """
-        studies = self.get_studies(limit, search_term, party_id)
+        studies = self.get_studies(limit, search_term, party_id, max_items)
         return [study['id'] for study in studies]
 
     def get_studies(self, limit=50, search_term='', party_id=None, max_items=None):
@@ -554,20 +536,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_studies_dataframe(self, limit=50, search_term='', party_id=None, max_items=None):
         """
-        Get details of study IDs, names and patient info as a DataFrame. See
-        `get_studies()` for details.
-
-        Parameters
-        ----------
-        limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
-        search_term : str, optional
-            A string used to filter the studies returned
-        party_id : str, optional
-            The organisation/entity to specify for the query
-        max_items: int, optional
-            Max number of studies to return.
+        Get details of study IDs, names and patient info as a DataFrame. See `get_studies()` for
+        details.
 
         Returns
         -------
@@ -579,29 +549,27 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         studies_dataframe = json_normalize(studies).sort_index(axis=1)
         return studies_dataframe.drop('patient', errors='ignore', axis='columns')
 
-    def get_study_ids_from_names_dataframe(self, study_names, party_id=None):
+    def get_study_ids_from_names_dataframe(self, study_names, party_id=None, max_items=None):
         """
-        Get the IDs of all available studies as a DataFrame. See `get_studies()`
-        for details.
+        Get the IDs corresponding to provided study names as a DataFrame. See `get_studies()` for
+        details.
 
         Parameters
         ----------
         study_names : str or list of str
-            Study names to retrieve
-        party_id : str, optional
-            The organisation/entity to specify for the query
+            Study name or names to look up
 
         Returns
         -------
         study_ids_df : pd.DataFrame
-            A DataFrarme wihth study names and IDs
+            A DataFrame with study names and IDs
         """
         if isinstance(study_names, str):
             study_names = [study_names]
 
         studies = json_normalize([
-            study for study_name in study_names
-            for study in self.get_studies(search_term=study_name, party_id=party_id)
+            study for study_name in study_names for study in self.get_studies(
+                search_term=study_name, party_id=party_id, max_items=max_items)
         ])
 
         if studies.empty:
@@ -609,24 +577,22 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return studies[['name', 'id']].reset_index(drop=True)
 
-    def get_study_ids_from_names(self, study_names, party_id=None):
+    def get_study_ids_from_names(self, study_names, party_id=None, max_items=None):
         """
-        Get the IDs of studies corresponding to given study names.
-        See `get_studies()` for details.
+        Get the IDs corresponding to provided study names. See `get_studies()` for details.
 
         Parameters
         ----------
         study_names : str or list of str
             Study name or names to look up
-        party_id : str, optional
-            The organisation/entity to specify for the query
 
         Returns
         -------
         study_ids: list of str
             Unique IDs, each identifying a study
         """
-        return self.get_study_ids_from_names_dataframe(study_names, party_id)['id'].tolist()
+        return self.get_study_ids_from_names_dataframe(study_names, party_id,
+                                                       max_items)['id'].tolist()
 
     def get_studies_by_id(self, study_ids, limit=50):
         """
@@ -673,8 +639,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_channel_segments(self, study_id, limit=5000, channel_group_id=None):
         """
-        Get a DataFrame with all segment ids from channel groups in a study. Used to fetch 
-        segment ids when a channel group contains more than 5000 segments. 
+        Get a DataFrame with all segment ids from channel groups in a study. Can be used to fetch
+        segment IDs when a channel group contains more than 5000 segments.
 
         Parameters
         ----------
@@ -882,8 +848,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_labels_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12, limit=200,
                              offset=0, max_items=None):
         """
-        Get all labels for a given study and label group as a DataFrame.
-        See `get_labels()` for details.
+        Get all labels for a given study and label group as a DataFrame. See `get_labels()` for
+        details.
 
         Returns
         -------
@@ -908,9 +874,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_labels_string(self, study_id, label_group_id, from_time=0, to_time=9e12):
         """
-        Get all labels for a given study and label group as an abridged string
-        representation. Because the GraphQL response is unvalidated, it can
-        perform significantly faster for larger datasets.
+        Get all labels for a given study and label group as an abridged string representation.
+        Because the GraphQL response is unvalidated, it can perform significantly faster for larger
+        datasets.
 
         Parameters
         ----------
@@ -926,8 +892,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         labels_str : dict
-            Has a key 'labelString' which indexes a JSON-like string with only
-            3 keys per label: 'id', 's' (for startTime), and 'd' (for duration)
+            Has a key 'labelString' which indexes a JSON-like string with only 3 keys per label:
+            'id', 's' (for startTime), and 'd' (for duration)
         """
         variable_values = {
             'study_id': study_id,
@@ -938,11 +904,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         response = self.execute_query(graphql.GET_LABELS_STRING, variable_values=variable_values)
         return response['study']
 
-    # pylint:disable=too-many-arguments
     def get_labels_string_dataframe(self, study_id, label_group_id, from_time=0, to_time=9e12):
         """
-        Get all labels for a given study and label group in an abridged string
-        representation, as a DataFrame. See `get_labels_string()` for details.
+        Get all labels for a given study and label group in an abridged string representation, as a
+        DataFrame. See `get_labels_string()` for details.
 
         Returns
         -------
@@ -992,14 +957,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
         """
-        Get label group information for all provided study IDs as a DataFrame.
-        See `get_label_groups_for_studies()`.
+        Get label group information for all provided study IDs as a DataFrame. See
+        `get_label_groups_for_studies()` for details.
 
         Returns
         -------
         label_groups_df : pd.DataFrame
-            Columns with details on name, id, type, and number of labels, as
-            well as study ID and name
+            Columns with details on name, id, type, number of labels, study ID and name
         """
         # TODO: can we use json_normalize or pandas_flatten for this?
         label_groups = []
@@ -1017,8 +981,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_viewed_times_dataframe(self, study_id, limit=250, offset=0):
         """
-        Get timestamp info about all parts of a study that have been viewed by
-        various users.
+        Get timestamp info about all parts of a study that have been viewed by various users.
 
         Parameters
         ----------
@@ -1087,10 +1050,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_user_from_patient(self, patient_id):
         """
         Get user ID and info from patient ID.
+
         Parameters
         ----------
         patient_id : str
             The patient ID
+
         Returns
         -------
         patient : dict
@@ -1103,10 +1068,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_user_from_patient_dataframe(self, patient_id):
         """
         Get user ID and info from patient ID.
+
         Parameters
         ----------
         patient_id : str
             The patient ID
+
         Returns
         -------
         patient : pd.DataFrame
@@ -1126,8 +1093,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         party_id : str, optional
             The organisation/entity to specify for the query
         limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
+            Batch size for repeated API calls. Does not affect the total number of items retrieved
         max_items: int, optional
             Max number of patients to return
 
@@ -1150,8 +1116,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         party_id : str, optional
             The organisation/entity to specify for the query
         limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
+            Batch size for repeated API calls. Does not affect the total number of items retrieved
         max_items: int, optional
             Max number of patients to return
 
@@ -1171,7 +1136,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         Parameters
         ----------
-        study_id : str or list of str
+        study_ids : str or list of str
             One or more unique IDs, each identifying a study
         limit : int, optional
             Batch size for repeated API calls
@@ -1179,8 +1144,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         documents : list of dict
-            Document details. Dict has key 'documents' that indexes a nested dict
-            with keys including: 'id', 'name', 'fileSize', 'downloadFileUrl'
+            Document details. Dict has key 'documents' that indexes a nested dict with keys
+            including: 'id', 'name', 'fileSize', 'downloadFileUrl'
         """
         if isinstance(study_ids, str):
             study_ids = [study_ids]
@@ -1191,8 +1156,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_documents_for_studies_dataframe(self, study_ids, limit=50):
         """
-        Get details of all documents associated with given study ID(s) as a DataFrame.
-        See `get_documents_for_studies()` for details.
+        Get details of all documents associated with given study ID(s) as a DataFrame. See
+        `get_documents_for_studies()` for details.
 
         Returns
         -------
@@ -1235,6 +1200,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                            ['patient'], ['insights'], max_items=max_items)
 
     def get_diary_created_at(self, patient_id):
+        """Get the created at timestamp for a given patient's diary."""
         query_string = graphql.get_diary_created_at_query_string(patient_id)
         response = self.execute_query(query_string)
         return response['patient']['diary']['createdAt']
@@ -1249,8 +1215,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID for which to retrieve diary labels
         label_type : str, optional
-            The type of label to retrieve. Default = 'all'. Options = 'seizure',
-            'medications', 'cardiac'.
+            The type of label to retrieve. Default = 'all'. Options = 'seizure', 'medications',
+            'cardiac'.
         offset : int, optional
             Index of first record to return
         limit : int, optional
@@ -1259,10 +1225,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Unix timestamp (in milliseconds) to apply a range filter on label start times.
             Retrieves labels from the given time onward
         to_time : int, optional
-            Unix timestamp (in milliseconds) to apply a range filter label start times.
+            Unix timestamp (in milliseconds) to apply a range filter on label start times.
             Retrieves labels up until the given time
         from_duration : int, optional
-            Time in millseconds to apply a range filter on the duration of labels.
+            Time in milliseconds to apply a range filter on the duration of labels.
             Retrieves labels of duration > from_duration
         to_duration : int, optional
             Time in milliseconds to apply a range filter on the duration of labels.
@@ -1327,8 +1293,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_labels_dataframe(self, patient_id, label_type='all', offset=0, limit=100,
                                    from_time=0, to_time=9e12, from_duration=0, to_duration=9e12):
         """
-        Get all diary label groups and labels for a given patient as a DataFrame.
-        See `get_diary_labels()` for details.
+        Get all diary label groups and labels for a given patient as a DataFrame. See
+        `get_diary_labels()` for details.
 
         Returns
         -------
@@ -1362,18 +1328,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         patient_id : str
             The patient ID for which to retrieve diary medications
         from_time : int, optional
-            Timestamp in msec - only retrieve alert labels with a startTime
-            from this point onward
+            Timestamp in msec - only retrieve alert labels with a startTime from this point onward
         to_time : int, optional
-            Timestamp in msec - only retrieve alert labels with a startTime
-            up until this point
+            Timestamp in msec - only retrieve alert labels with a startTime up until this point
 
         Returns
         -------
         medications : dict
-            Medication information with key 'alerts', which indexes to a dictionary
-             with a 'labels' key that indexes list of dict with keys 'doses',
-             'alert', 'startTime', 'scheduledTime' etc.
+            Medication information with key 'alerts', which indexes to a dictionary with a 'labels'
+            key that indexes to a list of dicts, each with keys 'doses', 'alert', 'startTime',
+            'scheduledTime' etc.
         """
         variable_values = {'patient_id': patient_id, 'from_time': from_time, 'to_time': to_time}
         response = self.execute_query(graphql.GET_DIARY_MEDICATION_ALERTS,
@@ -1400,19 +1364,20 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_medication_alert_windows(self, patient_id, is_active=None):
         """
         Gets all medication alert windows for a given patient.
+
         Parameters
         ----------
         patient_id : str
             The patient ID for which to retrieve medication compliance
         is_active : string, optional
-            Filters alert windows to active, not active or both. Options: True,
-            False, None. Default is None
+            Filters alert windows to active, not active or both. Options: True, False, None. Default
+            is None
+
         Returns
         -------
         medication_alert_windows : dict
-            Medication information with key 'alerts', which indexes to a dictionary
-            with a 'windows' key that indexes list of dict with keys 'startTime',
-            'timezone', and 'endTime'.
+            Medication information with key 'alerts', which indexes to a dictionary with a 'windows'
+            key that indexes list of dict with keys 'startTime', 'timezone', and 'endTime'.
         """
         filters = [{
             'name': 'isActive',
@@ -1437,15 +1402,14 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         to_time : int, optional
             Timestamp in msec - only retrieve data up until this point. The default value of 0 means
             up until this point in time for this query
-        timezone: string, optional
-            The timezone name to retrieve medication compliance for,
-            (e.g. "Australia/Melbourne")
+        timezone_string: string, optional
+            The timezone name to retrieve medication compliance for, e.g. 'Australia/Melbourne'
 
         Returns
         -------
         medication_compliance : dict
-            Has a single key, 'patient', which indexes a nested dictionary with a
-            'diary' key, which indexes a dictionary with a 'medicationCompliance' key.
+            Has a single key, 'patient', which indexes a nested dictionary with a 'diary' key, which
+            indexes a dictionary with a 'medicationCompliance' key.
         """
         variable_values = {'patient_id': patient_id, 'from_time': from_time, 'to_time': to_time}
 
@@ -1457,8 +1421,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_medication_compliance_dataframe(self, patient_id, from_time=0, to_time=0):
         """
-        Get all medication compliance records for a given patient as a DataFrame.
-        See `get_diary_medication_compliance()` for details.
+        Get all medication compliance records for a given patient as a DataFrame. See
+        `get_diary_medication_compliance()` for details.
 
         Returns
         -------
@@ -1476,8 +1440,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_all_study_metadata_by_names(self, study_names=None, party_id=None):
         """
-        Get all metadata available about provided study names. See
-        `get_all_study_metadata_by_ids()` for details.
+        Get all metadata available about provided study names. See `get_all_study_metadata_by_ids()`
+        for details.
 
         Parameters
         ----------
@@ -1489,8 +1453,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         metadata : dict
-            Nested dictionaries with information on patient, channel groups,
-            channels and segments
+            Nested dictionaries with information on patient, channel groups, channels and segments
         """
         study_ids = None
         if study_names:
@@ -1504,18 +1467,17 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Parameters
         ----------
         study_ids : list of str, optional
-            Unique IDs, each identifying a study. If not provided, data will be
-            returned for all available studies.
+            Unique IDs, each identifying a study. If not provided, data will be returned for all
+            available studies.
         limit : int, optional
             Batch size for repeated API calls
 
         Returns
         -------
         metadata : dict
-            A dictionary with a single key 'studies', which indexes a list of
-            dictionaries with keys 'id', 'name', 'description', 'patient' and
-            'channelGroups'. 'channelGroup' indexes a dictionary with keys
-            'channels', 'segments', 'sampleRate' etc.
+            A dictionary with a single key 'studies', which indexes a list of dictionaries with keys
+            'id', 'name', 'description', 'patient' and 'channelGroups'. 'channelGroup' indexes a
+            dictionary with keys 'channels', 'segments', 'sampleRate' etc.
         """
         if study_ids is None:
             study_ids = self.get_study_ids()
@@ -1552,8 +1514,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_all_study_metadata_dataframe_by_names(self, study_names=None):
         """
-        Get all metadata available about studies with the suppled names as a
-        DataFrame. See `get_all_study_metadata_by_ids()` for details.
+        Get all metadata available about studies with the supplied names as a DataFrame. See
+        `get_all_study_metadata_by_ids()` for details.
 
         Parameters
         ----------
@@ -1572,13 +1534,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_all_study_metadata_dataframe_by_ids(self, study_ids=None):
         """
-        Get all metadata available about studies with the suppled IDs as a
-        DataFrame. See `get_all_study_metadata_by_ids()` for more details.
-
-        Parameters
-        ----------
-        study_ids : list of str
-            Unique IDs, each identifying a study
+        Get all metadata available about studies with the supplied IDs as a DataFrame. See
+        `get_all_study_metadata_by_ids()` for more details.
 
         Returns
         -------
@@ -1657,8 +1614,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_all_bookings(self, organisation_id, start_time, end_time, include_cancelled=False):
         """
-        Get all bookings for any studies that are active at any point between
-        `start_time` and `end_time`.
+        Get all bookings for any studies that are active at any point between `start_time` and
+        `end_time`.
 
         Parameters
         ----------
@@ -1670,11 +1627,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Timestamp in msec - find studies active before this point
         include_cancelled: bool, optional
             Whether to include cancelled bookings
+
         Returns
         -------
         bookings : list of dict
-            Booking information, with keys including 'id', 'startTime', 'endTime',
-            'patient', 'referral', 'equipmentItems', and 'location'
+            Booking information, with keys including 'id', 'startTime', 'endTime', 'patient',
+            'referral', 'equipmentItems', and 'location'
         """
         # TODO: paginate using the new resource schema
         assert (start_time
@@ -1689,19 +1647,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_all_bookings_dataframe(self, organisation_id, start_time, end_time,
                                    include_cancelled=False):
         """
-        Get all bookings for any studies that are active at any point between
-        `start_time` and `end_time` as a DataFrame. See `get_all_bookings()`.
-
-        Parameters
-        ----------
-        organisation_id : str
-            Organisation ID associated with patient bookings
-        start_time : int
-            Timestamp in msec - find studies active after this point
-        end_time : int
-            Timestamp in msec - find studies active before this point
-        include_cancelled: bool, optional
-            Whether to include cancelled bookings
+        Get all bookings for any studies that are active at any point between `start_time` and
+        `end_time` as a DataFrame. See `get_all_bookings()` for details.
 
         Returns
         -------
@@ -1746,8 +1693,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_study_label_groups_dataframe(self, patient_id, limit=20, offset=0):
         """
-        Get diary label groups (e.g. heart rate, steps) for a patient diary
-        study as a DataFrame. See `get_diary_data_groups()` for details.
+        Get diary label groups (e.g. heart rate, steps) for a patient diary study as a DataFrame.
+        See `get_diary_data_groups()` for details.
 
         Returns
         -------
@@ -1766,8 +1713,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_diary_study_labels(self, patient_id, label_group_id, from_time=0, to_time=9e12,
                                limit=200, offset=0, max_items=None):
         """
-        Get all diary study labels for a given patient and diary label group,
-        e.g. heart rate.
+        Get all diary study labels for a given patient and diary label group, e.g. heart rate.
 
         Parameters
         ----------
@@ -1790,8 +1736,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         data_labels : dict
-            A dict with one key, 'labelGroup', which indexes to a dict with
-        a 'labels' key. Labels include ['id', 'startTime', 'duration', 'tags', 'timezone']
+            A dict with one key, 'labelGroup', which indexes to a dict with a 'labels' key. Labels
+            include ['id', 'startTime', 'duration', 'tags', 'timezone']
         """
         variable_values = {
             'patient_id': patient_id,
@@ -1799,39 +1745,16 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'from_time': from_time,
             'to_time': to_time
         }
-        return self.get_paginated_response(
-            graphql.GET_LABELS_FOR_DIARY_STUDY_PAGED,
-            variable_values,
-            limit,
-            ['patient', 'diaryStudy'],
-            ['labelGroup', 'labels'],
-            max_items=max_items,
-        )
+        return self.get_paginated_response(graphql.GET_LABELS_FOR_DIARY_STUDY_PAGED,
+                                           variable_values, limit, ['patient', 'diaryStudy'],
+                                           ['labelGroup', 'labels'], max_items=max_items)
 
     # pylint:disable=too-many-arguments
     def get_diary_study_labels_dataframe(self, patient_id, label_group_id, from_time=0,
                                          to_time=9e12, limit=200, offset=0, max_items=None):
         """
-        Get all diary study labels for a given patient and diary label group,
-        returned as a DataFrame. See `get_diary_data_labels()` for details.
-
-        Parameters
-        ----------
-        patient_id : str
-            The patient ID for which to retrieve diary labels
-        label_group_id : str
-            The ID of the diary study label group for which to retrieve labels
-        from_time : int, optional
-            Timestamp in msec - find diary labels from this point onward
-        to_time : int, optional
-            Timestamp in msec - find diary labels up until this point
-        limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
-        offset : int, optional
-            The index of the first label group to return
-        max_items: int, optional
-            Max number of study labels to return.
+        Get all diary study labels for a given patient and diary label group, returned as a
+        DataFrame. See `get_diary_study_labels()` for details.
 
         Returns
         -------
@@ -1879,8 +1802,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
     def get_diary_study_channel_groups_dataframe(self, patient_id, from_time=0, to_time=9e12):
         """
-        Get all diary study channel groups and associated segment information for a given
-        patient, as a DataFrame. See `get_diary_channel_groups()` for details.
+        Get all diary study channel groups and associated segment information for a given patient,
+        as a DataFrame. See `get_diary_channel_groups()` for details.
 
         Returns
         -------
@@ -1904,11 +1827,12 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
 
         return channel_groups
 
-    def get_diary_fitbit_data(self, segments):
+    @staticmethod
+    def get_diary_fitbit_data(segments):
         """
-        Get Fitbit data from a patient diary study. `segments` should be a
-        DataFrame as returned by `get_diary_channel_groups_dataframe()` that
-        includes columns ['dataChunks.url', 'name', 'segments.startTime'].
+        Get Fitbit data from a patient diary study. `segments` should be a DataFrame as returned by
+        `get_diary_channel_groups_dataframe()` that includes columns ['dataChunks.url', 'name',
+        'segments.startTime'].
 
         Parameters
         ----------
@@ -1922,7 +1846,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Fitbit data DataFrame with timestamp (adjusted), value, and group name
 
         """
-        if not 'dataChunks.url' in segments.columns:
+        if 'dataChunks.url' not in segments.columns:
             return pd.DataFrame(columns=['name', 'timestamp', 'value'])
         segment_urls = segments['dataChunks.url']
         group_names = segments['name']
@@ -1956,8 +1880,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         survey_template_ids : str or list of str
             A list of survey_template_ids for which to retrieve results
         limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
+            Batch size for repeated API calls. Does not affect the total number of items retrieved
         offset : int, optional
             Index of the first result to return
         max_items: int, optional
@@ -1966,9 +1889,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         Returns
         -------
         mood_survey_results : list of dict
-            A list of dictionaries with survey result data, including keys
-            'completer', 'lastSubmittedAt', and 'fields', which indexes to a
-            list of dictionaries with keys 'key' and 'value'
+            A list of dictionaries with survey result data, including keys 'completer',
+            'lastSubmittedAt', and 'fields', which indexes to a list of dictionaries with keys
+            'key' and 'value'
         """
         variable_values = {'survey_template_ids': survey_template_ids}
         return self.get_paginated_response(graphql.GET_MOOD_SURVEY_RESULTS_PAGED, variable_values,
@@ -1977,20 +1900,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
     def get_mood_survey_results_dataframe(self, survey_template_ids, limit=200, offset=0,
                                           max_items=None):
         """
-        Get mood survey results as a DataFrame. See `get_mood_survey_results()`
-        for details.
-
-        Parameters
-        ----------
-        survey_template_ids : str or list of str
-            A list of survey_template_ids for which to retrieve results
-        limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
-        offset : int, optional
-            Index of the first result to return
-        max_items: int, optional
-            Max number of surveys to return.
+        Get mood survey results as a DataFrame. See `get_mood_survey_results()` for details.
 
         Returns
         -------
@@ -2019,8 +1929,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_cohort_id : str
             The study cohort ID to retrieve
         limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
+            Batch size for repeated API calls. Does not affect the total number of items retrieved
         offset : int, optional
             Index of the first result to return
         max_items: int, optional
@@ -2032,13 +1941,9 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Unique IDs, each identifying a study
         """
         variable_values = {'study_cohort_id': study_cohort_id}
-        results = self.get_paginated_response(
-            graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
-            variable_values,
-            limit,
-            ['studyCohort', 'studies'],
-            max_items=max_items,
-        )
+        results = self.get_paginated_response(graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
+                                              variable_values, limit, ['studyCohort', 'studies'],
+                                              max_items=max_items)
         return [study['id'] for study in results]
 
     def create_study_cohort(self, name, description=None, key=None, study_ids=None):
@@ -2114,8 +2019,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         user_cohort_id : str
             ID of the user cohort to retrieve
         limit : int, optional
-            Batch size for repeated API calls. Does not affect the total number
-            of items retrieved
+            Batch size for repeated API calls. Does not affect the total number of items retrieved
         offset : int, optional
             Index of the first result to return
         max_items: int, optional

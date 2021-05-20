@@ -39,7 +39,7 @@ class TestGetAuth:
 
         # check result
         assert isinstance(result, SeerAuth)
-        seer_auth_init.assert_called_once_with(mock.ANY, None, None, None)
+        seer_auth_init.assert_called_once_with(mock.ANY, None, None, None, timeout=None)
 
     @mock.patch.object(SeerAuth, '__init__', autospec=True, return_value=None)
     def test_email_provided(self, seer_auth_init, mock_glob):
@@ -52,7 +52,7 @@ class TestGetAuth:
 
         # check result
         assert isinstance(result, SeerAuth)
-        seer_auth_init.assert_called_once_with(mock.ANY, None, 'email', 'password')
+        seer_auth_init.assert_called_once_with(mock.ANY, None, 'email', 'password', timeout=None)
 
     @mock.patch.object(SeerAuth, '__init__', autospec=True, return_value=None)
     def test_no_pem_files(self, seer_auth_init, mock_glob):
@@ -64,7 +64,7 @@ class TestGetAuth:
 
         # check result
         assert isinstance(result, SeerAuth)
-        seer_auth_init.assert_called_once_with(mock.ANY, None, None, None)
+        seer_auth_init.assert_called_once_with(mock.ANY, None, None, None, timeout=None)
 
     @mock.patch.object(SeerApiKeyAuth, '__init__', autospec=True, return_value=None)
     def test_pem_files_exist(self, seer_key_auth_init, mock_glob):
@@ -76,7 +76,7 @@ class TestGetAuth:
 
         # check result
         assert isinstance(result, SeerApiKeyAuth)
-        seer_key_auth_init.assert_called_once_with(mock.ANY, None, None, None, None)
+        seer_key_auth_init.assert_called_once_with(mock.ANY, None, None, None, None, timeout=None)
 
     def test_email_false(self, mock_glob):
         # setup
@@ -426,7 +426,7 @@ class TestSeerApiKeyAuth:
 
         open_mock.assert_not_called()
 
-    @mock.patch.dict('os.environ', { 'SDK_API_BASE_URL': 'https://random-sdk.url' })
+    @mock.patch.dict('os.environ', {'SDK_API_BASE_URL': 'https://random-sdk.url'})
     @mock.patch('jwt.encode', autospec=True, return_value="an_encoded_key".encode('utf-8'))
     def test_api_url_read_from_env_var(self, unused_jwt_encode, mock_glob, open_mock):
         apikey_auth = SeerApiKeyAuth(api_key_id='id', api_key_path=None, api_key='key')

@@ -839,8 +839,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'study_id': study_id,
             'label_group_id': label_group_id,
             'from_time': from_time,
-            'to_time': to_time,
-            'offset': offset
+            'to_time': to_time
         }
         return self.get_paginated_response(graphql.GET_LABELS_PAGED, variable_values, limit,
                                            ['study'], ['labelGroup', 'labels'], max_items=max_items)
@@ -1196,7 +1195,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         result : dict
             Returns a dictionary patient insights.
         """
-        variable_values = {'patient_id': patient_id, 'offset': offset}
+        variable_values = {'patient_id': patient_id}
         return self.get_paginated_response(graphql.GET_DIARY_INSIGHTS_PAGED, variable_values, limit,
                                            ['patient'], ['insights'], max_items=max_items)
 
@@ -1744,8 +1743,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'patient_id': patient_id,
             'label_group_id': label_group_id,
             'from_time': from_time,
-            'to_time': to_time,
-            'offset': offset
+            'to_time': to_time
         }
         return self.get_paginated_response(graphql.GET_LABELS_FOR_DIARY_STUDY_PAGED,
                                            variable_values, limit, ['patient', 'diaryStudy'],
@@ -1895,7 +1893,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'lastSubmittedAt', and 'fields', which indexes to a list of dictionaries with keys
             'key' and 'value'
         """
-        variable_values = {'survey_template_ids': survey_template_ids, 'offset': offset}
+        variable_values = {'survey_template_ids': survey_template_ids}
         return self.get_paginated_response(graphql.GET_MOOD_SURVEY_RESULTS_PAGED, variable_values,
                                            limit, ['surveys'], max_items=max_items)
 
@@ -1942,7 +1940,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_ids : list of str
             Unique IDs, each identifying a study
         """
-        variable_values = {'study_cohort_id': study_cohort_id, 'offset': offset}
+        variable_values = {'study_cohort_id': study_cohort_id}
         results = self.get_paginated_response(graphql.GET_STUDY_IDS_IN_STUDY_COHORT_PAGED,
                                               variable_values, limit, ['studyCohort', 'studies'],
                                               max_items=max_items)
@@ -2032,7 +2030,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         user_ids : list of str
             User IDs that are in the cohort
         """
-        variable_values = {'user_cohort_id': user_cohort_id, 'offset': offset}
+        variable_values = {'user_cohort_id': user_cohort_id}
         results = self.get_paginated_response(graphql.GET_USER_IDS_IN_USER_COHORT_PAGED,
                                               variable_values, limit, ['userCohort', 'users'],
                                               max_items=max_items)

@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
+from seerpy import __version__
 
 setup(
     name='seerpy',
-    version='0.6.1',
+    version=__version__,
     description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',

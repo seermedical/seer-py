@@ -1,9 +1,18 @@
+from pathlib import Path
 from setuptools import setup, find_packages
-from seerpy import __version__
+
+
+def get_version():
+    with open(Path(__file__).parent / 'seerpy/__init__.py') as fhand:
+        for line in fhand.readlines():
+            if line.startswith('__version__'):
+                delimiter = '"' if '"' in line else "'"
+                return line.split(delimiter)[1]
+
 
 setup(
     name='seerpy',
-    version=__version__,
+    version=get_version(),
     description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',

@@ -776,7 +776,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             num_chunks = int(math.ceil(row[1] / chunk_period))
             for i in range(num_chunks):
                 chunk_start = row[2] + chunk_period * i
-                chunk_end = chunk_start + chunk_period
+                chunk_end = min(chunk_start + chunk_period, row[1] + row[2])
                 if chunk_end >= from_time and chunk_start <= to_time:
                     data_chunks.append({'segmentId': row[3], 'chunkIndex': i})
                     chunk_metadata.append({

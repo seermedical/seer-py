@@ -1,8 +1,9 @@
+from pathlib import Path
 from setuptools import setup, find_packages
 
 setup(
     name='seerpy',
-    version='0.6.1',
+    version='0.6.2',
     description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',

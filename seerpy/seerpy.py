@@ -43,7 +43,10 @@ from copy import deepcopy
 from gql import gql, Client as GQLClient
 from gql.transport.requests import RequestsHTTPTransport
 import pandas as pd
-from pandas.io.json import json_normalize
+try:
+    from pandas import json_normalize
+except ImportError:
+    from pandas.io.json import json_normalize  # Deprecated in 1.0.0
 import requests
 
 from . import auth

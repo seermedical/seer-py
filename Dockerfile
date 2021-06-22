@@ -5,7 +5,6 @@ WORKDIR /app
 COPY requirements.txt /app
 COPY setup.py /app
 COPY README.md /app
-COPY seerpy/__init__.py seerpy/
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY requirements_test.txt /app

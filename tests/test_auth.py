@@ -76,7 +76,8 @@ class TestGetAuth:
 
         # check result
         assert isinstance(result, SeerApiKeyAuth)
-        seer_key_auth_init.assert_called_once_with(mock.ANY, None, None, None, None, timeout=None)
+        seer_key_auth_init.assert_called_once_with(mock.ANY, None, None, None, api_url=None,
+                                                   timeout=None)
 
     def test_email_false(self, mock_glob):
         # setup

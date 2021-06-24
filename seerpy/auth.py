@@ -75,7 +75,7 @@ def get_auth(api_key_id=None, api_key_path=None, region=None, api_url=None, seer
                 (email or password or not (api_key_id or api_key_path or pem_files)))):
         return SeerAuth(api_url, email, password, timeout=timeout)
 
-    return SeerApiKeyAuth(api_key_id, api_key_path, region, api_url, timeout=timeout)
+    return SeerApiKeyAuth(api_key_id, api_key_path, region, api_url=api_url, timeout=timeout)
 
 
 # pylint: disable=no-self-use

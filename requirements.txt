@@ -6,4 +6,5 @@ pandas
 # revisit in the future, we may be able to remove the restriction
 graphql-core<3.0.0
 pyjwt[crypto]
+tqdm
 -e .

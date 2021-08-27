@@ -11,7 +11,7 @@ from urllib3.exceptions import ReadTimeoutError
 from downloader.utils import read_json, write_json
 
 
-def get_download_status_file(client):
+def get_download_status_file():
     """Retrieves JSON of download status for all study IDs."""
     studies_file = join(dirname(__file__), 'studies.json')
     if not isfile(studies_file):
@@ -43,7 +43,7 @@ def run(client, path_out):
     if not isdir(output_dir):
         mkdir(output_dir)
 
-    download_status_file = get_download_status_file(client)
+    download_status_file = get_download_status_file()
     download_status = read_json(download_status_file)
     study_ids = [study_id for study_id in download_status if download_status[study_id] == 0]
 

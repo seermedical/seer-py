@@ -1,11 +1,10 @@
-from os import mkdir, makedirs, remove
+from os import mkdir
 from os.path import dirname, isdir, isfile, join
 import pandas as pd
 
-import seerpy
 from tqdm import tqdm
 
-from downloader.utils import write_json, add_to_csv
+from downloader.utils import add_to_csv
 
 
 def get_download_log_file():
@@ -37,24 +36,21 @@ class DataDownloader:
     def get_label_groups(self):
         return self.client.get_label_groups_for_studies([self.study_id])
 
-    def get_channels(self):
-        channels = self.study_metadata[['channelGroups.name', 'channels.name']].drop_duplicates()
-        return ([channel_group, channel] for channel_group, channel in zip(
-            channels['channelGroups.name'].tolist(), channels['channels.name'].tolist()))
-
     def get_segment_data(self, folder_out, channel_group, channels, channel_group_metadata,
                          segment_ids):
         for index, segment_id in enumerate(tqdm(segment_ids)):
             segment_metadata = channel_group_metadata[channel_group_metadata['segments.id'] ==
                                                       segment_id]
-            segment_files_list = []
-            for channel in channels:
-                segment_files_list.append(
-                    join(folder_out,
-                         f'{self.study_name}_{channel_group}_{channel}_segment_{index}.parquet'))
+
+            segment_files_list = [
+                join(folder_out,
+                     f'{self.study_name}_{channel_group}_{channel}_segment_{index}.parquet')
+                for channel in channels
+            ]
 
             if all([isfile(segment_file) for segment_file in segment_files_list]):
                 continue
+
             try:
                 segment_data = self.client.get_channel_data(segment_metadata)
             except ValueError:
@@ -63,13 +59,10 @@ class DataDownloader:
                 add_to_csv(log_file, segment_metadata)
                 continue
 
-            raw_data_list = []
-            for channel in channels:
-                raw_data_list.append(
-                    pd.DataFrame({
-                        'time': segment_data['time'].tolist(),
-                        'data': segment_data[channel].tolist()
-                    }))
+            raw_data_list = [
+                segment_data[['time', f'{channel}']].rename(columns={f'{channel}': 'data'})
+                for channel in channels
+            ]
 
             yield raw_data_list, segment_files_list
 
@@ -77,7 +70,7 @@ class DataDownloader:
         print(f'Downloading channel data for {self.study_name}...')
         for channel_group in self.study_metadata['channelGroups.name'].unique():
             if self.channel_group_to_download is not None:
-                if not channel_group == self.channel_group_to_download:
+                if channel_group != self.channel_group_to_download:
                     continue
             print(channel_group, 'is in list to download.')
             # Create folder
@@ -93,9 +86,8 @@ class DataDownloader:
             # Save channel metadata
             for channel in channels:
                 # Get channel group metadata
-                channel_metadata = self.study_metadata[
-                    (self.study_metadata['channelGroups.name'] == channel_group)
-                    & (self.study_metadata['channels.name'] == channel)]
+                channel_metadata = channel_group_metadata[channel_group_metadata['channels.name'] ==
+                                                          channel]
                 channel_metadata_file = join(
                     self.folder_out, f'{self.study_name}_{channel_group}_{channel}_metadata.csv')
                 # Save channel metadata

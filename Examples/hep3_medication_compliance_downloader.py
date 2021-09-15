@@ -78,7 +78,7 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
         data.rename(columns={'drugName': user_name, 'status': user_name}, inplace=True)
         all_data = pd.merge(all_data, data, on='date', how='left') if not all_data.empty else data
     # Save all data
-    all_data.to_csv(f'{date_range_str}-all.csv')
+    all_data.to_csv(f'{date_range_str}_all.csv')
     print('Done.')
     return
 

@@ -24,7 +24,7 @@ import os
 import argparse
 import pandas as pd
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from seerpy import SeerConnect
 
 # TODO: Add organisation ID support
@@ -32,15 +32,13 @@ from seerpy import SeerConnect
 # no data will be displayed for that date range.
 
 
-def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, out_path=''):
+def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, out_dir=''):
 
     if not end_date:
         end_date = datetime.now().strftime("%Y-%m-%d")
+    if not start_date:
+        start_date = (datetime.now() - timedelta(hours=24 * 7)).strftime("%Y-%m-%d")
     date_range_str = f'{start_date}_{end_date}'
-
-    # Make directories if they do not exist
-    if out_path:
-        os.makedirs(out_path, exist_ok=True)
 
     # Get list of patient IDs and user information
     patients_list = client.execute_query(GET_PATIENTS_QUERY, party_id=organisation_id)['patients']
@@ -61,24 +59,28 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
             'medicationAdherences']
         if not medication_adherence_data:
             continue
-
+        # Check if data exists
         data = pd.DataFrame(medication_adherence_data).explode('medications', ignore_index=True)
         data.dropna(subset=['medications'], inplace=True)
         if data['medications'].isnull().all():
             print(f'No data for {user_name} in date range {start_date} to {end_date}')
             continue
+        # Make directory for each patient with data
+        patient_dir = os.path.join(out_dir, user_name)
+        os.makedirs(patient_dir)
+        # Format data
         medication_data = pd.json_normalize(data['medications'])
         # Select just dates
         data = data[['date']].reset_index(drop=True)
         # Merge dates, medication, and medication adherence into pd.DataFrame
         data = pd.merge(data, medication_data, left_index=True, right_index=True)
         # Save individual data
-        data.to_csv(os.path.join(out_path, f'{date_range_str}-{user_name}.csv'))
+        data.to_csv(os.path.join(patient_dir, f'{date_range_str}.csv'))
         # Add individual data to all data
         data.rename(columns={'drugName': user_name, 'status': user_name}, inplace=True)
         all_data = pd.merge(all_data, data, on='date', how='left') if not all_data.empty else data
     # Save all data
-    all_data.to_csv(f'{date_range_str}_all.csv')
+    all_data.to_csv(os.path.join(out_dir, f'{date_range_str}_all.csv'))
     print('Done.')
     return
 
@@ -119,15 +121,12 @@ if __name__ == "__main__":
 
     parser.add_argument("-i", "--organisation-id", help="Organisation ID.")
     parser.add_argument(
-        "-s", "--startdate", default='2021-01-01', help=
-        "The start date to retrieve medication compliance. Format: YYYY-MM-DD. Default = 2020-01-01"
-    )
-    parser.add_argument(
-        "-e", "--enddate", default='', help=
-        "The end date to retrieve medication compliance. Format: YYYY-MM-DD. Default = Today's Date."
-    )
+        "-s", "--startdate", default='',
+        help="The start date to retrieve medication compliance. Format: YYYY-MM-DD.")
+    parser.add_argument("-e", "--enddate", default='',
+                        help="The end date to retrieve medication compliance. Format: YYYY-MM-DD.")
     parser.add_argument("-o", "--outpath", default='',
                         help="The path to where data is to be saved.")
     args = parser.parse_args()
 
-    run(start_date=args.startdate, end_date=args.enddate, out_path=args.outpath)
+    run(start_date=args.startdate, end_date=args.enddate, out_dir=args.outpath)

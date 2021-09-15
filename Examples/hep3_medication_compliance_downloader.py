@@ -36,7 +36,7 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
 
     if not end_date:
         end_date = datetime.now().strftime("%Y-%m-%d")
-    date_range_str = f'{start_date}-{end_date}'
+    date_range_str = f'{start_date}_{end_date}'
 
     # Make directories if they do not exist
     if out_path:

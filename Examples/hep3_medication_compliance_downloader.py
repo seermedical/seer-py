@@ -87,7 +87,7 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
 
 GET_PATIENTS_QUERY = """
 {
-    patients (limit: 200) {
+    patients {
         id
         user {
             fullName

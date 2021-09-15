@@ -34,16 +34,22 @@ from seerpy import SeerConnect
 
 def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, out_dir=''):
 
+    # Get date range
+    now = datetime.now()
     if not end_date:
-        end_date = datetime.now().strftime("%Y-%m-%d")
+        end_date = now.strftime("%Y-%m-%d")
+        end_date_text = ''.join(s for s in end_date.split('-'))
     if not start_date:
-        start_date = (datetime.now() - timedelta(hours=24 * 7)).strftime("%Y-%m-%d")
-    date_range_str = f'{start_date}_{end_date}'
+        start_date = (now - timedelta(hours=24 * 7)).strftime("%Y-%m-%d")
+        start_date_text = ''.join(s for s in end_date.split('-'))
+
+    date_range = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
+    date_range_text = f'{start_date_text}-{end_date_text}'
 
     # Get list of patient IDs and user information
     patients_list = client.execute_query(GET_PATIENTS_QUERY, party_id=organisation_id)['patients']
 
-    all_data = pd.DataFrame()
+    all_data = pd.DataFrame(date_range, columns=['date'])
     for patient in patients_list:
         user_name = patient['user']['fullName']
         medication_adherence_response = client.execute_query(
@@ -52,35 +58,45 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
                 'startDate': start_date,
                 'endDate': end_date
             })
-
+        # Check if data exists
         if not medication_adherence_response['patient']['diary']:
             print(f'No data in this date range for {user_name}')
         medication_adherence_data = medication_adherence_response['patient']['diary'][
             'medicationAdherences']
         if not medication_adherence_data:
             continue
-        # Check if data exists
         data = pd.DataFrame(medication_adherence_data).explode('medications', ignore_index=True)
         data.dropna(subset=['medications'], inplace=True)
         if data['medications'].isnull().all():
             print(f'No data for {user_name} in date range {start_date} to {end_date}')
             continue
+
         # Make directory for each patient with data
         patient_dir = os.path.join(out_dir, user_name)
-        os.makedirs(patient_dir)
+        os.makedirs(patient_dir, exist_ok=True)
+
         # Format data
         medication_data = pd.json_normalize(data['medications'])
+
         # Select just dates
         data = data[['date']].reset_index(drop=True)
         # Merge dates, medication, and medication adherence into pd.DataFrame
         data = pd.merge(data, medication_data, left_index=True, right_index=True)
         # Save individual data
-        data.to_csv(os.path.join(patient_dir, f'{date_range_str}.csv'))
-        # Add individual data to all data
-        data.rename(columns={'drugName': user_name, 'status': user_name}, inplace=True)
-        all_data = pd.merge(all_data, data, on='date', how='left') if not all_data.empty else data
+        data.to_csv(os.path.join(patient_dir, f'{date_range_text}.csv'))
+
+        for date in data['date'].unique():
+            statuses = data[data['date'] == date]['status'].unique().tolist()
+            if all(status in ['not_logged'] for status in statuses):
+                status_category = 'Not logged'
+            elif all(status in ['taken_as_scheduled', 'taken_as_needed'] for status in statuses):
+                status_category = 'Taken'
+            else:
+                status_category = 'Partial'
+            all_data.loc[(all_data['date'] == date), [user_name]] = status_category
+
     # Save all data
-    all_data.to_csv(os.path.join(out_dir, f'{date_range_str}_all.csv'))
+    all_data.to_csv(os.path.join(out_dir, f'{date_range_text}_all.csv'))
     print('Done.')
     return
 

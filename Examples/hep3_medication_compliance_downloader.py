@@ -27,6 +27,10 @@ import pandas as pd
 from datetime import datetime
 from seerpy import SeerConnect
 
+# TODO: Add organisation ID support
+# N.b. If no users have medication alerts set up for a portion of the date range,
+# no data will be displayed for that date range.
+
 
 def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, out_path=''):
 

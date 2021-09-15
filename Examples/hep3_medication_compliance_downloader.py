@@ -65,7 +65,7 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
         data = pd.DataFrame(medication_adherence_data).explode('medications', ignore_index=True)
         data.dropna(subset=['medications'], inplace=True)
         if data['medications'].isnull().all():
-            print(f'No data for {user_name} in date range {start_date} - {end_date}')
+            print(f'No data for {user_name} in date range {start_date} to {end_date}')
             continue
         medication_data = pd.json_normalize(data['medications'])
         # Select just dates
@@ -85,7 +85,7 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
 
 GET_PATIENTS_QUERY = """
 {
-    patients {
+    patients (limit: 200) {
         id
         user {
             fullName

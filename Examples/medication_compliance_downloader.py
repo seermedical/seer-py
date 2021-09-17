@@ -35,8 +35,8 @@ from seerpy import SeerConnect
 # Pagination for the purpose of running on large numbers of patients has not been implemented.
 
 
-def run(client=SeerConnect(), start_date='', end_date='', pagination_limit=200,
-        organisation_id=None, out_dir=''):
+def run(client=SeerConnect(), start_date='', end_date='', max_items=None, organisation_id=None,
+        out_dir=''):
 
     # Get date range
     now = datetime.now()
@@ -51,9 +51,7 @@ def run(client=SeerConnect(), start_date='', end_date='', pagination_limit=200,
     date_range_text = f'{start_date_text}-{end_date_text}'
 
     # Get list of patient IDs and user information
-    patients_list = client.execute_query(query_string=GET_PATIENTS_QUERY,
-                                         variable_values={'pagionationLimit': pagination_limit},
-                                         party_id=organisation_id)['patients']
+    patients_list = client.get_patients(party_id=organisation_id, limit=200, max_items=max_items)
 
     # Make directory and subdirectory for output CSVs
     out_subdir = os.path.join(out_dir, 'Medication Adherence Per Patient')
@@ -106,19 +104,6 @@ def run(client=SeerConnect(), start_date='', end_date='', pagination_limit=200,
     print('Done.')
     return
 
-
-GET_PATIENTS_QUERY = """query getPatients(
-    $paginationLimit: PaginationAmount 
-)
-{
-    patients (limit: $paginationLimit) {
-        id
-        user {
-            fullName
-        }
-    } 
-    }
-"""
 
 GET_MEDICATION_ADHERENCE_QUERY = """query getMedicationCompliance(
         $patientId: String!,

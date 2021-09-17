@@ -40,7 +40,7 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
         end_date = now.strftime("%Y-%m-%d")
         end_date_text = ''.join(s for s in end_date.split('-'))
     if not start_date:
-        start_date = (now - timedelta(hours=24 * 7)).strftime("%Y-%m-%d")
+        start_date = (now - timedelta(hours=24 * 77)).strftime("%Y-%m-%d")
         start_date_text = ''.join(s for s in end_date.split('-'))
 
     date_range = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
@@ -50,7 +50,7 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
     patients_list = client.execute_query(GET_PATIENTS_QUERY, party_id=organisation_id)['patients']
 
     # Make directory and subdirectory for output CSVs
-    out_subdir = os.path.join(out_dir, 'results')
+    out_subdir = os.path.join(out_dir, 'Medication Adherence Per Patient')
     os.makedirs(out_subdir, exist_ok=True)
 
     all_data = pd.DataFrame(date_range, columns=['date'])
@@ -95,8 +95,8 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
                 status_category = 'Partial'
             all_data.loc[(all_data['date'] == date), [user_name]] = status_category
 
-    # Save all data
-    all_data.to_csv(os.path.join(out_dir, f'{date_range_text}_all.csv'))
+        # Save all data
+        all_data.to_csv(os.path.join(out_dir, f'{date_range_text}_all.csv'))
     print('Done.')
     return
 

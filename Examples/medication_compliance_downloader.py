@@ -19,6 +19,8 @@ If you wish to specify a path to save the date, you can run, e.g.
 ```
 python medication_compliance_downloader.py -s 2021-05-05 -e 2021-05-10 -o '/path/to/directory'
 ```
+
+N.b. This script is set to retrieving 200 patients by default.
 """
 import os
 import argparse
@@ -30,9 +32,11 @@ from seerpy import SeerConnect
 # TODO: Add organisation ID support
 # N.b. If no users have medication alerts set up for a portion of the date range,
 # no data will be displayed for that date range.
+# Pagination for the purpose of running on large numbers of patients has not been implemented.
 
 
-def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, out_dir=''):
+def run(client=SeerConnect(), start_date='', end_date='', pagination_limit=200,
+        organisation_id=None, out_dir=''):
 
     # Get date range
     now = datetime.now()
@@ -47,7 +51,9 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
     date_range_text = f'{start_date_text}-{end_date_text}'
 
     # Get list of patient IDs and user information
-    patients_list = client.execute_query(GET_PATIENTS_QUERY, party_id=organisation_id)['patients']
+    patients_list = client.execute_query(query_string=GET_PATIENTS_QUERY,
+                                         variable_values={'pagionationLimit': pagination_limit},
+                                         party_id=organisation_id)['patients']
 
     # Make directory and subdirectory for output CSVs
     out_subdir = os.path.join(out_dir, 'Medication Adherence Per Patient')
@@ -101,9 +107,11 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
     return
 
 
-GET_PATIENTS_QUERY = """
+GET_PATIENTS_QUERY = """query getPatients(
+    $paginationLimit: PaginationAmount 
+)
 {
-    patients (limit: 200) {
+    patients (limit: $paginationLimit) {
         id
         user {
             fullName

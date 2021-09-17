@@ -22,9 +22,9 @@ python medication_compliance_downloader.py -s 2021-05-05 -e 2021-05-10 -o '/path
 """
 import os
 import argparse
+from datetime import datetime, timedelta
 import pandas as pd
 
-from datetime import datetime, timedelta
 from seerpy import SeerConnect
 
 # TODO: Add organisation ID support
@@ -38,10 +38,10 @@ def run(client=SeerConnect(), start_date='', end_date='', organisation_id=None, 
     now = datetime.now()
     if not end_date:
         end_date = now.strftime("%Y-%m-%d")
-        end_date_text = ''.join(s for s in end_date.split('-'))
     if not start_date:
         start_date = (now - timedelta(hours=24 * 77)).strftime("%Y-%m-%d")
-        start_date_text = ''.join(s for s in end_date.split('-'))
+    end_date_text = ''.join(s for s in end_date.split('-'))
+    start_date_text = ''.join(s for s in start_date.split('-'))
 
     date_range = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
     date_range_text = f'{start_date_text}-{end_date_text}'

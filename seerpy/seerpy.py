@@ -934,8 +934,90 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 'labelString.s': 'labels.startTime'
             })
         return label_group
+    
+    def get_study_label_groups(self, study_id, limit=50):
+        """Given a study_id, it returns all the labelgroups.
 
-    def get_label_groups_for_studies(self, study_ids, limit=50):
+        Parameters
+        ----------
+        study_id : str
+        limit : int, optional
+            Batch size for repeated API calls
+
+        Returns
+        -------
+        label_groups : dict
+            Keys included: 'id', 'labelGroups' and 'name'
+        """
+        results = self.get_paginated_response(graphql.GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED,
+                                              variable_values=dict(study_id=study_id),
+                                              limit=limit,
+                                              object_path=["study"],
+                                              iteration_path=["labelGroups"],
+                                              )
+        return results
+
+    def get_label_groups_for_studies(self, study_ids, limit=50, labelgroup_limit=50):
+        """Get label group information for all provided study IDs.
+ 
+        Parameters
+        ----------
+        study_ids : str or list of str
+            One or more unique IDs, each identifying a study
+        limit : int, optional
+            Batch size for repeated API calls
+        labelgroup_limit: int, optional
+            Batch size for paginating at the label groups level.
+
+        Returns
+        -------
+        label_groups : list of dict
+            Keys included: 'id', 'labelGroups' and 'name'
+
+        """
+        if isinstance(study_ids, str):
+            study_ids = [study_ids]
+        results = []
+        for study_id in study_ids: 
+            _results = self.get_study_label_groups(study_id, limit=labelgroup_limit)
+            results.append(_results)
+        return results
+    
+    def get_label_groups_for_studies_dataframe(self, study_ids, labelgroup_limit=100, limit=50):
+        """Get label group information for all provided study IDs as a DataFrame. 
+        See `get_label_groups_for_studies()` for details.
+        
+        Parameters
+        ----------
+        study_ids : str or list of str
+            One or more unique IDs, each identifying a study
+        limit : int, optional
+            Batch size for repeated API calls
+        labelgroup_limit: int, optional
+            Batch size for paginating at the label groups level.
+
+        Returns
+        -------
+        label_groups_df : pd.DataFrame
+            Columns with details on name, id, type, number of labels, study ID and name
+        """
+        label_groups = []
+        for study in self.get_label_groups_for_studies(study_ids, 
+                                                       limit=limit,
+                                                       labelgroup_limit=labelgroup_limit):
+            for label_group in study['labelGroups']:
+                label_group['labelGroup.id'] = label_group.pop('id')
+                label_group['labelGroup.name'] = label_group.pop('name')
+                label_group['labelGroup.description'] = label_group.pop('description')
+                label_group['labelGroup.labelType'] = label_group.pop('labelType')
+                label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
+                label_group['id'] = study['id']
+                label_group['name'] = study['name']
+                label_groups.append(label_group)
+        return pd.DataFrame(label_groups)
+
+
+    def get_label_groups_for_studies_old(self, study_ids, limit=50):
         """
         Get label group information for all provided study IDs.
 
@@ -958,29 +1040,31 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         return self.get_paginated_response(graphql.GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED,
                                            variable_values, limit, ['studies'])
 
-    def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
-        """
-        Get label group information for all provided study IDs as a DataFrame. See
-        `get_label_groups_for_studies()` for details.
+    # def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
+    #     """
+    #     Get label group information for all provided study IDs as a DataFrame. See
+    #     `get_label_groups_for_studies()` for details.
 
-        Returns
-        -------
-        label_groups_df : pd.DataFrame
-            Columns with details on name, id, type, number of labels, study ID and name
-        """
-        # TODO: can we use json_normalize or pandas_flatten for this?
-        label_groups = []
-        for study in self.get_label_groups_for_studies(study_ids, limit):
-            for label_group in study['labelGroups']:
-                label_group['labelGroup.id'] = label_group.pop('id')
-                label_group['labelGroup.name'] = label_group.pop('name')
-                label_group['labelGroup.description'] = label_group.pop('description')
-                label_group['labelGroup.labelType'] = label_group.pop('labelType')
-                label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
-                label_group['id'] = study['id']
-                label_group['name'] = study['name']
-                label_groups.append(label_group)
-        return pd.DataFrame(label_groups)
+    #     Returns
+    #     -------
+    #     label_groups_df : pd.DataFrame
+    #         Columns with details on name, id, type, number of labels, study ID and name
+    #     limit : int, optional
+    #         Batch size for repeated API calls
+    #     """
+    #     # TODO: can we use json_normalize or pandas_flatten for this?
+    #     label_groups = []
+    #     for study in self.get_label_groups_for_studies(study_ids, limit):
+    #         for label_group in study['labelGroups']:
+    #             label_group['labelGroup.id'] = label_group.pop('id')
+    #             label_group['labelGroup.name'] = label_group.pop('name')
+    #             label_group['labelGroup.description'] = label_group.pop('description')
+    #             label_group['labelGroup.labelType'] = label_group.pop('labelType')
+    #             label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
+    #             label_group['id'] = study['id']
+    #             label_group['name'] = study['name']
+    #             label_groups.append(label_group)
+    #     return pd.DataFrame(label_groups)
 
     def get_viewed_times_dataframe(self, study_id, limit=250, offset=0):
         """

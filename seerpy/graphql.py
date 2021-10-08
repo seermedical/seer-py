@@ -210,6 +210,46 @@ GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
         }
     }"""
 
+# GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
+#     query studies($study_ids: [String],
+#                   $limit: PaginationAmount,
+#                   $offset: Int,
+#                   $max_labelgroups: PaginationAmount = 100,
+#                   ) {
+#         studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
+#             id
+#             name
+#             labelGroups(limit: $max_labelgroups) {
+#                 id
+#                 name
+#                 description
+#                 labelType
+#                 numberOfLabels
+#             }
+#         }
+#     }"""
+
+
+GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED = """
+    query getStudyLabelGroups(
+    $study_id: String!,
+    $limit: PaginationAmount,
+    $offset: Int
+    ) {
+        study(id: $study_id) {
+        id
+        name
+        labelGroups(limit: $limit, offset: $offset) {
+        id
+        name
+        description
+        labelType
+        numberOfLabels
+        }
+    }
+    }"""
+
+
 
 def get_channel_groups_query_string(study_id):
     return """

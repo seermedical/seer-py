@@ -935,7 +935,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             })
         return label_group
     
-    def get_study_label_groups(self, study_id, limit=50):
+    def get_label_groups_for_study(self, study_id, limit=50):
         """Given a study_id, it returns all the labelgroups.
 
         Parameters
@@ -979,7 +979,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             study_ids = [study_ids]
         results = []
         for study_id in study_ids: 
-            _results = self.get_study_label_groups(study_id, limit=labelgroup_limit)
+            _results = self.get_label_groups_for_study(study_id, limit=labelgroup_limit)
             results.append(_results)
         return results
     

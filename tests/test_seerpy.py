@@ -74,7 +74,7 @@ class TestPassingQueryVariables:
 class TestPaginatedQuery:
     @classmethod
     def check_paginated_query(cls, seer_connect, function_to_test, function_args=None,
-                              function_kwargs=None, expected_result=None, query_response=None, iteration_path=None):
+                              function_kwargs=None, expected_result=None, query_response=None):
         """Generic function to test a function which calls Seer_connect.get_paginated_response()."""
         # run test
         with mock.patch.object(SeerConnect, 'get_paginated_response',
@@ -104,10 +104,9 @@ class TestPaginatedQuery:
         assert not missing_path_items, (
             f'object path item(s) {missing_path_items} not found in query string {query_string}')
 
-        iteration_path = iteration_path
+        iteration_path = None
         if len(paginate.call_args[0]) > 4:
             iteration_path = paginate.call_args[0][4]
-            print(f"iteration path: {iteration_path}")
             missing_path_items = [
                 path_item for path_item in iteration_path if path_item not in query_string
             ]

@@ -1,7 +1,13 @@
+"""
+Data for mocking intermediate function calls, as well as expected return values 
+when testing the following functions: 
+- client.get_label_groups_for_studies()
+- client.get_label_groups_for_studies_dataframe()
+"""
 import io
 import pandas as pd
 
-# INDIVIDUAL RESPONSES IT GETS FROM CALLING client.get_label_groups_for_study()
+# Individual responses it gets from calling client.get_label_groups_for_study()
 individual_study_responses = [
     {
         "id": "study1_id",
@@ -45,6 +51,7 @@ individual_study_responses = [
     },
 ]
 
+# The expected result from client.get_label_groups_for_studies()
 expected_seerpy_response = [
     {
         "id": "study1_id",
@@ -96,4 +103,5 @@ study2_labelgroup1_id,study2_labelgroup1_name,study2_labelgroup1_description,def
 study2_labelgroup2_id,study2_labelgroup2_name,study2_labelgroup2_description,default,202,study2_id,study2_name
 """
 
+# The expected result from client.get_label_groups_for_studies_dataframe()
 expected_seerpy_df = pd.read_csv(io.StringIO(csv))

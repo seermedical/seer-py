@@ -193,42 +193,6 @@ GET_LABELS_STRING = """
         }
     }"""
 
-GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
-    query studies($study_ids: [String],
-                  $limit: PaginationAmount,
-                  $offset: Int) {
-        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
-            id
-            name
-            labelGroups {
-                id
-                name
-                description
-                labelType
-                numberOfLabels
-            }
-        }
-    }"""
-
-# GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
-#     query studies($study_ids: [String],
-#                   $limit: PaginationAmount,
-#                   $offset: Int,
-#                   $max_labelgroups: PaginationAmount = 100,
-#                   ) {
-#         studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
-#             id
-#             name
-#             labelGroups(limit: $max_labelgroups) {
-#                 id
-#                 name
-#                 description
-#                 labelType
-#                 numberOfLabels
-#             }
-#         }
-#     }"""
-
 
 GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED = """
     query getStudyLabelGroups(

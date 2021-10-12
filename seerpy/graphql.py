@@ -214,7 +214,6 @@ GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED = """
     }"""
 
 
-
 def get_channel_groups_query_string(study_id):
     return """
         query {

@@ -11,8 +11,7 @@ from seerpy import auth
 from seerpy.seerpy import SeerConnect
 import seerpy.graphql as graphql
 
-from tests.test_data import label_groups_for_study
-from tests.test_data import label_groups_for_studies
+from tests.test_data import label_groups_for_study, label_groups_for_studies
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
 # pylint complains that the methods could be a function. this disables that warning.
@@ -871,4 +870,3 @@ class TestLabelGroups:
             mock_stdy_labelgroups.side_effect = label_groups_for_studies.individual_study_responses
             response = seer_connect.get_label_groups_for_studies_dataframe(["study1","study2"])
         assert label_groups_for_studies.expected_seerpy_df.equals(response)
-        print(response)

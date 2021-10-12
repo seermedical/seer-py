@@ -957,7 +957,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                                               )
         return results
 
-    def get_label_groups_for_studies(self, study_ids, limit=50, labelgroup_limit=50):
+    def get_label_groups_for_studies(self, study_ids, limit=50):
         """Get label group information for all provided study IDs.
  
         Parameters
@@ -965,8 +965,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_ids : str or list of str
             One or more unique IDs, each identifying a study
         limit : int, optional
-            Batch size for repeated API calls
-        labelgroup_limit: int, optional
             Batch size for paginating at the label groups level.
 
         Returns
@@ -979,11 +977,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             study_ids = [study_ids]
         results = []
         for study_id in study_ids: 
-            _results = self.get_label_groups_for_study(study_id, limit=labelgroup_limit)
+            _results = self.get_label_groups_for_study(study_id, limit=limit)
             results.append(_results)
         return results
     
-    def get_label_groups_for_studies_dataframe(self, study_ids, labelgroup_limit=100, limit=50):
+    def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
         """Get label group information for all provided study IDs as a DataFrame. 
         See `get_label_groups_for_studies()` for details.
         
@@ -992,8 +990,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         study_ids : str or list of str
             One or more unique IDs, each identifying a study
         limit : int, optional
-            Batch size for repeated API calls
-        labelgroup_limit: int, optional
             Batch size for paginating at the label groups level.
 
         Returns
@@ -1002,9 +998,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             Columns with details on name, id, type, number of labels, study ID and name
         """
         label_groups = []
-        for study in self.get_label_groups_for_studies(study_ids, 
-                                                       limit=limit,
-                                                       labelgroup_limit=labelgroup_limit):
+        for study in self.get_label_groups_for_studies(study_ids, limit=limit):
             for label_group in study['labelGroups']:
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')

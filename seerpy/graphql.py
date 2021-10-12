@@ -196,19 +196,19 @@ GET_LABELS_STRING = """
 
 GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED = """
     query getStudyLabelGroups(
-    $study_id: String!,
-    $limit: PaginationAmount,
-    $offset: Int
+        $study_id: String!,
+        $limit: PaginationAmount,
+        $offset: Int
     ) {
         study(id: $study_id) {
-        id
-        name
-        labelGroups(limit: $limit, offset: $offset) {
-        id
-        name
-        description
-        labelType
-        numberOfLabels
+            id
+            name
+            labelGroups(limit: $limit, offset: $offset) {
+            id
+            name
+            description
+            labelType
+            numberOfLabels
         }
     }
     }"""

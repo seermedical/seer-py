@@ -11,7 +11,13 @@ from seerpy import auth
 from seerpy.seerpy import SeerConnect
 import seerpy.graphql as graphql
 
-from tests.test_data import label_groups_for_study, label_groups_for_studies
+from tests.test_data import (
+    label_groups_for_study, 
+    label_groups_for_studies,
+    no_label_groups_for_study, 
+    no_label_groups_for_studies,
+    )
+
 
 # having a class is useful to allow patches to be shared across mutliple test functions, but then
 # pylint complains that the methods could be a function. this disables that warning.
@@ -852,21 +858,43 @@ class TestGetTagIds:
 @mock.patch('seerpy.seerpy.GQLClient', autospec=True)
 class TestLabelGroups:
     def test_get_label_groups_for_study(self, gql_client, unused_sleep, seer_connect):
+        # TEST WHEN STUDY CONTAINS TWO PAGES OF LABELGROUPS
         raw_paginated_responses = label_groups_for_study.raw_paginated_responses
         expected_seerpy_response = label_groups_for_study.expected_seerpy_response
+        gql_client.return_value.execute.side_effect = raw_paginated_responses
+        response = seer_connect.get_label_groups_for_study("study1")
+        assert response == expected_seerpy_response
 
+        # TEST WHEN STUDY CONTAINS NO LABELGROUPS
+        raw_paginated_responses = no_label_groups_for_study.raw_paginated_responses
+        expected_seerpy_response = no_label_groups_for_study.expected_seerpy_response
         gql_client.return_value.execute.side_effect = raw_paginated_responses
         response = seer_connect.get_label_groups_for_study("study1")
         assert response == expected_seerpy_response
 
     def test_get_label_groups_for_studies(self, gql_client, unused_sleep, seer_connect):
         with mock.patch.object(seer_connect, "get_label_groups_for_study") as mock_stdy_labelgroups:
+            # TEST WHEN STUDIES CONTAIN LABELGROUPS
             mock_stdy_labelgroups.side_effect = label_groups_for_studies.individual_study_responses
             response = seer_connect.get_label_groups_for_studies(["study1","study2"])
-        assert label_groups_for_studies.expected_seerpy_response == response
+            assert label_groups_for_studies.expected_seerpy_response == response
+
+            # TEST WHEN STUDIES CONTAIN NO LABELGROUPS
+            side_effects = no_label_groups_for_studies.individual_study_responses
+            mock_stdy_labelgroups.side_effect = side_effects
+            response = seer_connect.get_label_groups_for_studies(["study1","study2"])
+            assert no_label_groups_for_studies.expected_seerpy_response == response
+
 
     def test_get_label_groups_for_studies_dataframe(self, gql_client, unused_sleep, seer_connect):
         with mock.patch.object(seer_connect, "get_label_groups_for_study") as mock_stdy_labelgroups:
+            # TEST WHEN STUDIES CONTAIN LABELGROUPS
             mock_stdy_labelgroups.side_effect = label_groups_for_studies.individual_study_responses
             response = seer_connect.get_label_groups_for_studies_dataframe(["study1","study2"])
-        assert label_groups_for_studies.expected_seerpy_df.equals(response)
+            assert label_groups_for_studies.expected_seerpy_df.equals(response)
+
+            # TEST WHEN STUDIES CONTAIN NO LABELGROUPS
+            side_effects = no_label_groups_for_studies.individual_study_responses
+            mock_stdy_labelgroups.side_effect = side_effects
+            response = seer_connect.get_label_groups_for_studies_dataframe(["study1","study2"])
+            assert no_label_groups_for_studies.expected_seerpy_df.equals(response)

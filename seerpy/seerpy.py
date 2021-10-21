@@ -217,6 +217,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         result = []
         total_items_returned = 0
 
+        is_first_iteration = True
         while True:
             # Update the number of items remaining
             # And set the limit for the final batch if needed
@@ -234,6 +235,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             # select the part of the response we are interested in
             response = utils.get_nested_dict_item(response, object_path)
 
+            # If first iteration, then assign the entire top level response to results 
+            if is_first_iteration:
+                result = response
+
             # select the part of the response which can vary. if iteration_path is None this will be
             # the same as the part of the response we are interested in
             response_increment = response
@@ -244,11 +249,10 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 break
 
             # Update the number of items received
-            total_items_returned += len(response)
+            total_items_returned += len(response_increment)
 
-            if not result:
-                # if this is the first response, save it
-                result = response
+            if is_first_iteration:
+                is_first_iteration = False
             else:
                 # otherwise add the response increment to the existing result at the correct level
                 values_container = result

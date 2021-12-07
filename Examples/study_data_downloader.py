@@ -47,9 +47,7 @@ def run(client, path_out):
                     if label_group['name'] == 'Abnormal / Epileptiform':
                         label_group['name'] = 'Abnormal Epileptiform'
 
-                    label_group_dir = join(output_dir, study_id, label_group['name'])
                     # check for folder with name of label group
-                    makedirs(label_group_dir, exist_ok=True)
 
                     print(f"Downloading EEG chunks for {label_group['name']}")
                     for label in tqdm(label_group['labels']):

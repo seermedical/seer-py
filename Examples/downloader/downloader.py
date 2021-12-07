@@ -1,8 +1,6 @@
-from os import mkdir
+from os import makedirs
 from os.path import dirname, isdir, isfile, join
 import pandas as pd
-
-from tqdm import tqdm
 
 from downloader.utils import add_to_csv
 
@@ -17,7 +15,7 @@ def get_download_log_file():
 
 
 class DataDownloader:
-    def __init__(self, client, study_id, path_out, channel_group_to_download=None):
+    def __init__(self, client, study_id, path_out, channel_group_to_download='EEG'):
         self.client = client
         self.study_id = study_id
         self.label_groups = self.get_label_groups()
@@ -26,83 +24,62 @@ class DataDownloader:
 
         self.study_name = self.study_metadata['name'][0]
         self.folder_out = join(path_out, self.study_name)
-        if not isdir(self.folder_out):
-            mkdir(self.folder_out)
+
+        makedirs(self.folder_out, exist_ok=True)
 
     def get_channel_groups_metadata(self):
         channel_groups = self.client.get_all_study_metadata_dataframe_by_ids([self.study_id])
         return channel_groups
 
     def get_label_groups(self):
-        return self.client.get_label_groups_for_studies([self.study_id])
+        return self.client.get_label_groups_for_studies([self.study_id], limit=200)
 
-    def get_segment_data(self, folder_out, channel_group, channels, channel_group_metadata,
-                         segment_ids):
-        for index, segment_id in enumerate(tqdm(segment_ids)):
+    def get_segment_data(self, channel_group_metadata, segment_ids):
+        for index, segment_id in enumerate(segment_ids):
             segment_metadata = channel_group_metadata[channel_group_metadata['segments.id'] ==
                                                       segment_id]
-
-            segment_files_list = [
-                join(folder_out,
-                     f'{self.study_name}_{channel_group}_{channel}_segment_{index}.parquet')
-                for channel in channels
-            ]
-
-            if all([isfile(segment_file) for segment_file in segment_files_list]):
-                continue
-
             try:
                 segment_data = self.client.get_channel_data(segment_metadata)
+                yield index, segment_data
             except ValueError:
                 print('WARNING: Skipping file...')
                 log_file = get_download_log_file()
                 add_to_csv(log_file, segment_metadata)
                 continue
 
-            raw_data_list = [
-                segment_data[['time', f'{channel}']].rename(columns={f'{channel}': 'data'})
-                for channel in channels
-            ]
-
-            yield raw_data_list, segment_files_list
-
-    def download_channel_data(self):
-        print(f'Downloading channel data for {self.study_name}...')
+    def download_channel_data(self, from_time, to_time, label_id=None,
+                              label_group_name=None):  # label_group_id for Jodie
+        # print(f'Downloading channel data for {self.study_name}...')
         for channel_group in self.study_metadata['channelGroups.name'].unique():
             if self.channel_group_to_download is not None:
                 if channel_group != self.channel_group_to_download:
                     continue
-            print(channel_group, 'is in list to download.')
             # Create folder
-            folder_out = join(self.folder_out, channel_group)
-            if not isdir(folder_out):
-                mkdir(folder_out)
+            folder_out = join(self.folder_out, label_group_name, channel_group)
+            makedirs(folder_out, exist_ok=True)
 
             channel_group_metadata = self.study_metadata[(
                 self.study_metadata['channelGroups.name'] == channel_group)]
-
-            # Get channels
-            channels = channel_group_metadata['channels.name'].unique()
-            # Save channel metadata
-            for channel in channels:
-                # Get channel group metadata
-                channel_metadata = channel_group_metadata[channel_group_metadata['channels.name'] ==
-                                                          channel]
-                channel_metadata_file = join(
-                    self.folder_out, f'{self.study_name}_{channel_group}_{channel}_metadata.csv')
-                # Save channel metadata
-                channel_metadata.to_csv(channel_metadata_file)
+            # Filter segment data to from_time and to_time
+            # Due to the way the data is structured and stored, cannot retrieve specific time frame.
+            # So just take next chunk.
+            # If label exists over a chunk, this could result in data not being retrieved in the 2nd chunk
+            # (as I haven't put implentation in for this)
+            segment_metadata = channel_group_metadata[
+                channel_group_metadata['segments.startTime'] >= from_time].iloc[[0]]
 
             # Get segment IDs
-            segment_ids = channel_group_metadata['segments.id'].unique()
-            print(f'Progress for channel group: {channel_group} with channels: {channels}')
+            segment_ids = segment_metadata['segments.id'].unique()
             # Get segment data
-            for segment_data_list, segment_file_list in self.get_segment_data(
-                    folder_out, channel_group, channels, channel_group_metadata, segment_ids):
-                for segment_data, segment_file in zip(segment_data_list, segment_file_list):
-                    # Save segment data to JSON
-                    segment_data.to_parquet(segment_file)
-        print('Done.')
+            segment_file_path = join(folder_out, f'{channel_group}_{label_id}.csv')
+            if isfile(segment_file_path):
+                continue
+            for segment_index, segment_data in self.get_segment_data(channel_group_metadata,
+                                                                     segment_ids):
+                # Uncomment here to slice the data
+                # sliced_segment_data = segment_data[(segment_data['time'] >= from_time)
+                #                                    & (segment_data['time'] < to_time)]
+                segment_data.to_csv(segment_file_path)
 
     def download_label_data(self):
         print(f'Downloading label data for {self.study_name}...')
@@ -121,4 +98,3 @@ class DataDownloader:
         ])
         # Save labels to CSV
         labels.to_csv(join(labels_file))
-        print('Done.')

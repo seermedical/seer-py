@@ -206,6 +206,11 @@ GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
                 description
                 labelType
                 numberOfLabels
+                labels(ranges: [{from: 0, to: 9e12}]) {
+                    id
+                    startTime
+                    duration
+                }
             }
         }
     }"""
@@ -440,7 +445,6 @@ GET_PATIENTS = """
         }
     }"""
 
-
 GET_PATIENTS_PAGED = """
     query patientsPaged(
                   $limit: PaginationAmount,
@@ -459,7 +463,6 @@ GET_PATIENTS_PAGED = """
         }
     }
     """
-
 
 GET_DIARY_INSIGHTS_PAGED = """
     query patient($patient_id: String!,

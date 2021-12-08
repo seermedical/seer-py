@@ -1,5 +1,5 @@
 from os import makedirs
-from os.path import dirname, isdir, isfile, join
+from os.path import dirname, isfile, join
 import pandas as pd
 
 from downloader.utils import add_to_csv
@@ -15,7 +15,7 @@ def get_download_log_file():
 
 
 class DataDownloader:
-    def __init__(self, client, study_id, path_out, channel_group_to_download='EEG'):
+    def __init__(self, client, study_id, output_dir, channel_group_to_download='EEG'):
         self.client = client
         self.study_id = study_id
         self.label_groups = self.get_label_groups()
@@ -23,7 +23,8 @@ class DataDownloader:
         self.channel_group_to_download = channel_group_to_download
 
         self.study_name = self.study_metadata['name'][0]
-        self.folder_out = join(path_out, self.study_name)
+        # Define folder out w/ study_id
+        self.folder_out = join(output_dir, self.study_id)
 
         makedirs(self.folder_out, exist_ok=True)
 
@@ -47,9 +48,9 @@ class DataDownloader:
                 add_to_csv(log_file, segment_metadata)
                 continue
 
-    def download_channel_data(self, from_time, to_time, label_id=None,
-                              label_group_name=None):  # label_group_id for Jodie
-        # print(f'Downloading channel data for {self.study_name}...')
+    def download_channel_data(
+            self, from_time, to_time, label_id=None,
+            label_group_name=None):  # label_group_id and label_group_name for Jodie
         for channel_group in self.study_metadata['channelGroups.name'].unique():
             if self.channel_group_to_download is not None:
                 if channel_group != self.channel_group_to_download:
@@ -76,9 +77,9 @@ class DataDownloader:
                 continue
             for segment_index, segment_data in self.get_segment_data(channel_group_metadata,
                                                                      segment_ids):
-                # Uncomment here to slice the data
-                # sliced_segment_data = segment_data[(segment_data['time'] >= from_time)
-                #                                    & (segment_data['time'] < to_time)]
+                # Un/comment here to slice the data
+                sliced_segment_data = segment_data[(segment_data['time'] >= from_time)
+                                                   & (segment_data['time'] < to_time)]
                 segment_data.to_csv(segment_file_path)
 
     def download_label_data(self):

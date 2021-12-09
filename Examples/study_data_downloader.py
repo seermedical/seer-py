@@ -4,27 +4,16 @@ import time
 import argparse
 
 from tqdm import tqdm
-from os import makedirs
-from os.path import dirname, isdir, join
 from seerpy import SeerConnect
 from downloader.downloader import DataDownloader
 from urllib3.exceptions import ReadTimeoutError
 
-STUDY_IDS = ['4ddade20-51c3-4d8c-8a21-6c4dec6dd5b3']
+STUDY_IDS = ['03eb4c39-fed3-491b-9df2-cd3351011060', '3a39f279-4f0f-41e1-beb0-a1f0bd006058']
 OFFSET = 2000
 
 
-def run(client, path_out):
+def run(client, output_dir):
     """Downloads all data available on Seer's public API."""
-
-    if path_out:
-        if not isdir(path_out):
-            print('Please specify a path that exists.')
-            return
-        output_dir = join(path_out, 'data')
-    else:
-        output_dir = join(dirname(__file__), 'data')
-    makedirs(output_dir, exist_ok=True)
 
     attempts = 0
     while True:
@@ -39,9 +28,10 @@ def run(client, path_out):
                 for label_group in downloader.label_groups[0]['labelGroups']:
                     # filter to label groups of interest
                     if not label_group['name'] in [
-                            'Abnormal / Epileptiform', 'Diary labels',
-                            'Diary labels - Timing Adjusted', 'Reported Events', 'Exemplar',
-                            'Unreported Events'
+                            'Abnormal / Epileptiform',
+                            'Diary labels',
+                            # 'Diary labels - Timing Adjusted', 'Reported Events', 'Exemplar',
+                            # 'Unreported Events'
                     ]:
                         continue
                     if label_group['name'] == 'Abnormal / Epileptiform':
@@ -85,7 +75,8 @@ def run(client, path_out):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--outpath", help="Path for data to be saved (optional).")
+    parser.add_argument("-o", "--outpath", default='/Users/dominique',
+                        help="Path for data to be saved (optional).")
     args = parser.parse_args()
 
-    run(SeerConnect(), args.outpath)
+    run(client=SeerConnect(), output_dir=args.outpath)

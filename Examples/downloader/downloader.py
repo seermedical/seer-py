@@ -67,7 +67,9 @@ class DataDownloader:
             # If label exists over a chunk, this could result in data not being retrieved in the 2nd chunk
             # (as I haven't put implentation in for this)
             segment_metadata = channel_group_metadata[
-                channel_group_metadata['segments.startTime'] >= from_time].iloc[[0]]
+                channel_group_metadata['segments.startTime'] <= from_time]
+            # Take chunk closest to from_time
+            segment_metadata = segment_metadata.iloc[[len(segment_metadata) - 1]]
 
             # Get segment IDs
             segment_ids = segment_metadata['segments.id'].unique()
@@ -80,7 +82,7 @@ class DataDownloader:
                 # Un/comment here to slice the data
                 sliced_segment_data = segment_data[(segment_data['time'] >= from_time)
                                                    & (segment_data['time'] < to_time)]
-                segment_data.to_csv(segment_file_path)
+                sliced_segment_data.to_csv(segment_file_path)
 
     def download_label_data(self):
         print(f'Downloading label data for {self.study_name}...')

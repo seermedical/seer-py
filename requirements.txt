@@ -2,6 +2,7 @@ gql==3.0.0
 requests==2.27.1
 numpy==1.22.1
 pandas==1.4.0
+argparse==1.4.0
 graphql-core==3.2.0
 requests-toolbelt==0.9.1
 pyjwt[crypto]==2.3.0

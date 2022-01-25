@@ -13,7 +13,7 @@ def test_graphql_query_string():
     gql(graphql.GET_STUDY_WITH_DATA)
     gql(graphql.GET_LABELS_PAGED)
     gql(graphql.GET_LABELS_STRING)
-    gql(graphql.GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED)
+    gql(graphql.GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED)
     gql(graphql.GET_STUDIES_BY_SEARCH_TERM_PAGED)
     gql(graphql.GET_STUDIES_BY_STUDY_ID_PAGED)
     gql(graphql.ADD_LABELS)

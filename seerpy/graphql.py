@@ -193,21 +193,24 @@ GET_LABELS_STRING = """
         }
     }"""
 
-GET_LABEL_GROUPS_FOR_STUDY_IDS_PAGED = """
-    query studies($study_ids: [String],
-                  $limit: PaginationAmount,
-                  $offset: Int) {
-        studies (studyIds: $study_ids, limit: $limit, offset: $offset) {
+
+GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED = """
+    query getStudyLabelGroups(
+        $study_id: String!,
+        $limit: PaginationAmount,
+        $offset: Int
+    ) {
+        study(id: $study_id) {
             id
             name
-            labelGroups {
-                id
-                name
-                description
-                labelType
-                numberOfLabels
-            }
+            labelGroups(limit: $limit, offset: $offset) {
+            id
+            name
+            description
+            labelType
+            numberOfLabels
         }
+    }
     }"""
 
 

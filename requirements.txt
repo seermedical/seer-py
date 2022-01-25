@@ -1,11 +1,10 @@
-gql
+gql==3.0.0
 requests
 numpy
 pandas
 argparse
-# TODO: graphql-core 3.0.0 has a problem as at 02/12/2019
-# revisit in the future, we may be able to remove the restriction
-graphql-core<3.0.0
+requests-toolbelt==0.9.1
+graphql-core==3.2.0
 pyjwt[crypto]
 tqdm
 -e .

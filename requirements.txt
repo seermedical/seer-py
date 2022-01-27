@@ -1,10 +1,7 @@
-gql==3.0.0
-requests
+gql[requests]==3.0.0
+graphql-core==3.2.0
 numpy
 pandas
-argparse
-requests-toolbelt==0.9.1
-graphql-core==3.2.0
 pyjwt[crypto]
 tqdm
 -e .

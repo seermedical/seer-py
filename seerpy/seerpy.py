@@ -54,6 +54,8 @@ from . import utils
 from . import graphql
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+# Suppress indecently chatty gql transport logs
+logging.getLogger('gql.transport.requests').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
@@ -235,7 +237,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             # select the part of the response we are interested in
             response = utils.get_nested_dict_item(response, object_path)
 
-            # If first iteration, then assign the entire top level response to results 
+            # If first iteration, then assign the entire top level response to results
             if is_first_iteration:
                 result = response
 
@@ -938,7 +940,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 'labelString.s': 'labels.startTime'
             })
         return label_group
-    
+
     def get_label_groups_for_study(self, study_id, limit=50):
         """Given a study_id, it returns all the labelgroups.
 
@@ -953,12 +955,13 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         label_groups : dict
             Keys included: 'id', 'labelGroups' and 'name'
         """
-        results = self.get_paginated_response(graphql.GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED,
-                                              variable_values=dict(study_id=study_id),
-                                              limit=limit,
-                                              object_path=["study"],
-                                              iteration_path=["labelGroups"],
-                                              )
+        results = self.get_paginated_response(
+            graphql.GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED,
+            variable_values=dict(study_id=study_id),
+            limit=limit,
+            object_path=["study"],
+            iteration_path=["labelGroups"],
+        )
         return results
 
     def get_label_groups_for_studies(self, study_ids, limit=50):
@@ -980,11 +983,11 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         if isinstance(study_ids, str):
             study_ids = [study_ids]
         results = []
-        for study_id in study_ids: 
+        for study_id in study_ids:
             _results = self.get_label_groups_for_study(study_id, limit=limit)
             results.append(_results)
         return results
-    
+
     def get_label_groups_for_studies_dataframe(self, study_ids, limit=50):
         """Get label group information for all provided study IDs as a DataFrame. 
         See `get_label_groups_for_studies()` for details.
@@ -1670,9 +1673,8 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             'referral', 'equipmentItems', and 'location'
         """
         # TODO: paginate using the new resource schema
-        assert (start_time
-                is not None) and (end_time
-                                  is not None), "start_time and end_time should not be None"
+        assert (start_time is not None) and (end_time is
+                                             not None), "start_time and end_time should not be None"
         query_string = graphql.ORGANIZATION_BOOKINGS
         vars = dict(organization_id=organisation_id, startTime=start_time, endTime=end_time,
                     includeCancelled=include_cancelled)

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='seerpy',
-    version='0.6.4',
+    version='0.6.5',
     description='Seer Platform SDK for Python',
     long_description=open('README.md').read(),
     url='https://github.com/seermedical/seer-py',
@@ -19,7 +19,7 @@ setup(
     ],
     keywords='api seer eeg ecg client',
     packages=find_packages(include=["seerpy*"]),
-    install_requires=['gql', 'requests', 'numpy', 'pandas', 'pyjwt[crypto]', 'requests-toolbelt'],
+    install_requires=['gql[requests]', 'numpy', 'pandas', 'pyjwt[crypto]'],
     extras_require={'viz': ['matplotlib']},
     tests_require=['pytest'],
 )

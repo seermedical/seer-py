@@ -1,4 +1,3 @@
-from os import makedirs
 from os.path import dirname, isfile, join
 import pandas as pd
 
@@ -15,18 +14,14 @@ def get_download_log_file():
 
 
 class DataDownloader:
-    def __init__(self, client, study_id, output_dir, channel_group_to_download='EEG'):
+    def __init__(self, client, study_id, channel_groups_to_download=[]):
         self.client = client
         self.study_id = study_id
         self.label_groups = self.get_label_groups()
         self.study_metadata = self.get_channel_groups_metadata()
-        self.channel_group_to_download = channel_group_to_download
+        self.channel_groups_to_download = channel_groups_to_download
 
         self.study_name = self.study_metadata['name'][0]
-        # Define folder out w/ study_id
-        self.folder_out = join(output_dir, self.study_id)
-
-        makedirs(self.folder_out, exist_ok=True)
 
     def get_channel_groups_metadata(self):
         channel_groups = self.client.get_all_study_metadata_dataframe_by_ids([self.study_id])
@@ -48,19 +43,20 @@ class DataDownloader:
                 add_to_csv(log_file, segment_metadata)
                 continue
 
-    def download_channel_data(
-            self, from_time, to_time, label_id=None,
-            label_group_name=None):  # label_group_id and label_group_name for Jodie
-        for channel_group in self.study_metadata['channelGroups.name'].unique():
-            if self.channel_group_to_download is not None:
-                if channel_group != self.channel_group_to_download:
-                    continue
-            # Create folder
-            folder_out = join(self.folder_out, label_group_name, channel_group)
-            makedirs(folder_out, exist_ok=True)
+    def download_channel_data(self, from_time, to_time, label_id,
+                              path_to_save_channel_group_metadata, path_to_save_segments):
 
+        for channel_group in self.study_metadata['channelGroups.name'].unique():
+            if self.channel_groups_to_download is not None:
+                if channel_group not in self.channel_groups_to_download:
+                    continue
+            # Get channel group metadata
             channel_group_metadata = self.study_metadata[(
                 self.study_metadata['channelGroups.name'] == channel_group)]
+            # Save channel group metadata if doesn't already exist
+            channel_group_metadata_file = join(path_to_save_channel_group_metadata, 'metadata.csv')
+            if not isfile(channel_group_metadata_file):
+                channel_group_metadata.to_csv(channel_group_metadata_file)
             # Filter segment data to from_time and to_time
             # Due to the way the data is structured and stored, cannot retrieve specific time frame.
             # So just take next chunk.
@@ -74,7 +70,7 @@ class DataDownloader:
             # Get segment IDs
             segment_ids = segment_metadata['segments.id'].unique()
             # Get segment data
-            segment_file_path = join(folder_out, f'{channel_group}_{label_id}.csv')
+            segment_file_path = join(path_to_save_segments, f'{label_id}.csv')
             if isfile(segment_file_path):
                 continue
             for segment_index, segment_data in self.get_segment_data(channel_group_metadata,
@@ -83,21 +79,3 @@ class DataDownloader:
                 sliced_segment_data = segment_data[(segment_data['time'] >= from_time)
                                                    & (segment_data['time'] < to_time)]
                 sliced_segment_data.to_csv(segment_file_path)
-
-    def download_label_data(self):
-        print(f'Downloading label data for {self.study_name}...')
-        labels_file = join(self.folder_out, f'{self.study_name}_labels.csv')
-        if isfile(labels_file):
-            return
-        label_group_ids = [x['id'] for x in self.label_groups[0]['labelGroups']]
-        labels = pd.concat([
-            self.client.get_labels_dataframe(self.study_id, label_group_id)
-            for label_group_id in label_group_ids
-        ])
-        labels = labels.drop(columns=[
-            'labelGroup.description', 'labelGroup.name', 'labelGroup.labelType',
-            'labelGroup.numberOfLabels', 'labels.createdAt', 'labels.createdBy.fullName',
-            'labels.confidence', 'labels.timezone', 'labels.updatedAt', 'tags.id'
-        ])
-        # Save labels to CSV
-        labels.to_csv(join(labels_file))

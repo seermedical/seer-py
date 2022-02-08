@@ -45,7 +45,7 @@ def run(client, study_ids, channel_groups, output_dir):
                 client = SeerConnect()
 
             for study_id in study_ids:
-
+                print(f"Checking for study Id: {study_id}")
                 downloader = DataDownloader(client, study_id,
                                             channel_groups_to_download=channel_groups)
 

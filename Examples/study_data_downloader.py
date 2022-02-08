@@ -25,12 +25,14 @@ def json_to_csv(labels):
     return pd.json_normalize(labels)
 
 
-def run(client, channel_groups, output_dir):
+def run(client, study_ids, channel_groups, output_dir):
     """Downloads all data available on Seer's public API."""
 
     if not isinstance(channel_groups, list):
         raise Exception('Input argument channel groups must be a list.')
-
+    if not study_ids:
+        print('Please specify study Ids to download.'
+              )  # TODO: expand to enable all studies to be downloaded if none specified
     if not channel_groups:
         print('Please specify channel groups to download.'
               )  # TODO: expand to enable all channel groups to be downloaded if none specified
@@ -42,7 +44,7 @@ def run(client, channel_groups, output_dir):
                 time.sleep(3)
                 client = SeerConnect()
 
-            for study_id in STUDY_IDS:
+            for study_id in study_ids:
 
                 downloader = DataDownloader(client, study_id,
                                             channel_groups_to_download=channel_groups)
@@ -122,4 +124,5 @@ if __name__ == '__main__':
                         help="List of channel groups to be downloaded, e.g. EEG, ECG")
     args = parser.parse_args()
 
-    run(client=SeerConnect(), channel_groups=args.channelgroups, output_dir=args.outpath)
+    run(client=SeerConnect(), study_ids=args.studyids, channel_groups=args.channelgroups,
+        output_dir=args.outpath)

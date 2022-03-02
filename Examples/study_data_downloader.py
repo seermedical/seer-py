@@ -25,17 +25,32 @@ def json_to_csv(labels):
     return pd.json_normalize(labels)
 
 
-def run(client, study_ids, channel_groups, output_dir):
+def get_study_ids_from_party_id(client, party_id):
+    """Gets study IDs from a specific organisation using a party ID."""
+    # N.b. This queries a list of patient IDs first because study IDs have
+    # not been added to the BMTH organisation. Therefore, we cannot query
+    # study IDs directly, or map patient IDs to study IDs directly. So, this
+    # is a two-step process.
+
+    patient_ids = [patient['id'] for patient in client.get_patients(party_id=party_id)]
+    study_ids = []
+    for patient_id in patient_ids:
+        patient_study_ids = client.get_study_id_from_patient(patient_id=patient_id)
+        study_ids.extend(patient_study_ids)
+    return study_ids
+
+
+def run(client, study_ids, party_id, channel_groups, output_dir):
     """Downloads all data available on Seer's public API."""
 
     if not isinstance(channel_groups, list):
         raise Exception('Input argument channel groups must be a list.')
+    if not party_id or not study_ids:
+        raise Exception('Please specify party ID or study IDs.'
+                        )  # TODO: expand to enable all studies to be downloaded if none specified
+
     if not study_ids:
-        print('Please specify study Ids to download.'
-              )  # TODO: expand to enable all studies to be downloaded if none specified
-    if not channel_groups:
-        print('Please specify channel groups to download.'
-              )  # TODO: expand to enable all channel groups to be downloaded if none specified
+        study_ids = []
 
     attempts = 0
     while True:
@@ -43,6 +58,9 @@ def run(client, study_ids, channel_groups, output_dir):
             if attempts != 0:
                 time.sleep(3)
                 client = SeerConnect()
+
+            if party_id:
+                study_ids.extend(get_study_ids_from_party_id(client=client, party_id=party_id))
 
             for study_id in study_ids:
                 print(f"Checking for study Id: {study_id}")
@@ -119,10 +137,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-o", "--outpath", default='', help="Path for data to be saved (optional).")
     parser.add_argument("-ids", "--studyids", nargs="*", type=str,
-                        help="List of study Ids to download")
+                        help="List of study IDs to download data from.")
+    parser.add_argument("-partyid", "--partyid", type=str,
+                        help="Party ID of organisation to download study data from.")
     parser.add_argument("-cg", "--channelgroups", nargs="*", type=str, default=['EEG'],
                         help="List of channel groups to be downloaded, e.g. EEG, ECG")
     args = parser.parse_args()
 
-    run(client=SeerConnect(), study_ids=args.studyids, channel_groups=args.channelgroups,
-        output_dir=args.outpath)
+    run(
+        client=SeerConnect(), study_ids=[
+            "62209d81-cd5e-42e1-b493-12280b601f36", "8d9d2c13-bea6-4850-b873-bc428bc1e909",
+            "3a39f279-4f0f-41e1-beb0-a1f0bd006058", "03eb4c39-fed3-491b-9df2-cd3351011060"
+        ], party_id='35dcfd7c-08c4-4e9b-83a4-199d678c9ff9', channel_groups=args.channelgroups,
+        output_dir='/Users/dominique/data')

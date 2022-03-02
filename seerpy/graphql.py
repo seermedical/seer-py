@@ -414,11 +414,29 @@ GET_ORGANISATIONS = """
     }"""
 
 
+def get_study_id_from_patient_query_string(patient_id):
+    return """
+        query {
+            patient (id: "%s") {
+                id
+                user {
+                    fullName
+                }
+                studies {
+                    id
+                }
+            }
+        }""" % patient_id
+
+
 def get_user_from_patient_query_string(patient_id):
     return """
         query {
             patient (id: "%s") {
                 id
+                studies {
+                    id
+                }
                 user {
                     id
                     fullName

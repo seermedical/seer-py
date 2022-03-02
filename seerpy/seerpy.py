@@ -1050,6 +1050,24 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
             return orgs
         return pd.DataFrame(orgs)
 
+    def get_study_id_from_patient(self, patient_id):
+        """
+        Get user ID and info from patient ID.
+
+        Parameters
+        ----------
+        patient_id : str
+            The patient ID
+
+        Returns
+        -------
+        patient : dict
+            Patient details, with keys 'id' and 'user'
+        """
+        query_string = graphql.get_study_id_from_patient_query_string(patient_id)
+        response = self.execute_query(query_string)
+        return [study['id'] for study in response['patient']['studies']]
+
     def get_user_from_patient(self, patient_id):
         """
         Get user ID and info from patient ID.

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from os import makedirs
-from os.path import join
+from os.path import abspath, dirname, join
 import sys
 import time
 import argparse
@@ -40,9 +40,9 @@ def get_study_ids_from_party_id(client, party_id):
     return study_ids
 
 
-def run(client, study_ids, party_id, channel_groups, output_dir):
+def run(client, party_id, study_ids, channel_groups, label_groups, output_dir):
     """Downloads all data available on Seer's public API."""
-
+    breakpoint()
     if not isinstance(channel_groups, list):
         raise Exception('Input argument channel groups must be a list.')
     if not party_id or not study_ids:
@@ -75,11 +75,7 @@ def run(client, study_ids, party_id, channel_groups, output_dir):
 
                     for label_group in downloader.label_groups[0]['labelGroups']:
                         # filter to label groups of interest
-                        if not label_group['name'] in [
-                                'Abnormal / Epileptiform', 'Diary labels',
-                                'Diary labels - Timing Adjusted', 'Reported Events',
-                                'Unreported Events', 'Normal / Routine', 'Suspect High'
-                        ]:
+                        if not label_group['name'] in label_groups:
                             continue
                         if not label_group['labels']:
                             continue
@@ -134,19 +130,8 @@ def run(client, study_ids, party_id, channel_groups, output_dir):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--outpath", default='', help="Path for data to be saved (optional).")
-    parser.add_argument("-ids", "--studyids", nargs="*", type=str,
-                        help="List of study IDs to download data from.")
-    parser.add_argument("-partyid", "--partyid", type=str,
-                        help="Party ID of organisation to download study data from.")
-    parser.add_argument("-cg", "--channelgroups", nargs="*", type=str, default=['EEG'],
-                        help="List of channel groups to be downloaded, e.g. EEG, ECG")
-    args = parser.parse_args()
-
     run(
-        client=SeerConnect(), study_ids=[
-            "62209d81-cd5e-42e1-b493-12280b601f36", "8d9d2c13-bea6-4850-b873-bc428bc1e909",
-            "3a39f279-4f0f-41e1-beb0-a1f0bd006058", "03eb4c39-fed3-491b-9df2-cd3351011060"
-        ], party_id='35dcfd7c-08c4-4e9b-83a4-199d678c9ff9', channel_groups=args.channelgroups,
-        output_dir='/Users/dominique/data')
+        client=SeerConnect(), party_id='', study_ids=[], channel_groups=['EEG'], label_groups=[
+            'Abnormal / Epileptiform', 'Diary labels', 'Diary labels - Timing Adjusted',
+            'Reported Events', 'Unreported Events', 'Normal / Routine', 'Suspect High'
+        ], output_dir=join(dirname(dirname(abspath(__file__))), 'data'))

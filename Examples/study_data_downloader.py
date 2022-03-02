@@ -42,7 +42,6 @@ def get_study_ids_from_party_id(client, party_id):
 
 def run(client, party_id, study_ids, channel_groups, label_groups, output_dir):
     """Downloads all data available on Seer's public API."""
-    breakpoint()
     if not isinstance(channel_groups, list):
         raise Exception('Input argument channel groups must be a list.')
     if not party_id or not study_ids:

@@ -1,6 +1,7 @@
 gql[requests]==3.0.0
 graphql-core==3.2.0
 numpy
+brotli
 pandas
 pyjwt[crypto]
 tqdm

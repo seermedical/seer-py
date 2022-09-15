@@ -5,6 +5,7 @@ Copyright 2017 Seer Medical Pty Ltd, Inc. or its affiliates. All Rights Reserved
 """
 import functools
 import gzip
+import brotli
 import logging
 import time
 from multiprocessing import Pool
@@ -227,6 +228,8 @@ def _get_data_chunk(study_id, meta_data, download_function):
     try:
         if meta_data['channelGroups.compression'] == 'gzip':
             data = gzip.decompress(data)
+        elif meta_data['channelGroups.compression'] == 'br':
+            data = brotli.decompress(data)
     except OSError:
         pass
 

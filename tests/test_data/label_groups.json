@@ -6,14 +6,12 @@
                 {
                     "description": "description",
                     "id": "label-group-1-id",
-                    "labelType": "default",
                     "numberOfLabels": 2,
                     "name": "LabelGroup 1"
                 },
                 {
                     "description": "description",
                     "id": "label-group-2-id",
-                    "labelType": "default",
                     "numberOfLabels": 0,
                     "name": "LabelGroup 2"
                 }
@@ -26,7 +24,6 @@
                 {
                     "description": "description",
                     "id": "label-group-3-id",
-                    "labelType": "default",
                     "numberOfLabels": 2,
                     "name": "LabelGroup 3"
                 }

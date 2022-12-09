@@ -4,7 +4,6 @@
         "labelGroup": {
             "description": "description",
             "id": "label-group-1-id",
-            "labelType": "default",
             "labels": [
                 {
                     "createdAt": "2018-08-29 05:49:29",

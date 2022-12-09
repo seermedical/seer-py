@@ -115,7 +115,7 @@ class DataDownloader:
             for label_group_id in label_group_ids
         ])
         labels = labels.drop(columns=[
-            'labelGroup.description', 'labelGroup.name', 'labelGroup.labelType',
+            'labelGroup.description', 'labelGroup.name',
             'labelGroup.numberOfLabels', 'labels.createdAt', 'labels.createdBy.fullName',
             'labels.confidence', 'labels.timezone', 'labels.updatedAt', 'tags.id'
         ])

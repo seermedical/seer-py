@@ -17,7 +17,6 @@ raw_paginated_responses = [
                     "name": "labelgroup1_name",
                     "description": "labelgroup1_description",
                     "id": "labelgroup1_id",
-                    "labelType": "default",
                     "numberOfLabels": 2,
                 },
             ]
@@ -32,7 +31,6 @@ raw_paginated_responses = [
                     "name": "labelgroup2_name",
                     "description": "labelgroup2_description",
                     "id": "labelgroup2_id",
-                    "labelType": "default",
                     "numberOfLabels": 5,
                 }
             ]
@@ -56,14 +54,12 @@ expected_seerpy_response = {
             "name": "labelgroup1_name",
             "description": "labelgroup1_description",
             "id": "labelgroup1_id",
-            "labelType": "default",
             "numberOfLabels": 2,
         },
         {
             "name": "labelgroup2_name",
             "description": "labelgroup2_description",
             "id": "labelgroup2_id",
-            "labelType": "default",
             "numberOfLabels": 5,
         }
     ]

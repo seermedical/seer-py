@@ -142,7 +142,6 @@ GET_LABELS_PAGED = """
             labelGroup (labelGroupId: $label_group_id) {
                 id
                 name
-                labelType
                 description
                 numberOfLabels
                 labels (limit: $limit, offset: $offset, fromTime: $from_time, toTime: $to_time) {
@@ -185,7 +184,6 @@ GET_LABELS_STRING = """
             labelGroup (labelGroupId: $label_group_id) {
                 id
                 name
-                labelType
                 description
                 numberOfLabels
                 labelString (fromTime: $from_time, toTime: $to_time)
@@ -207,7 +205,6 @@ GET_ALL_LABEL_GROUPS_FOR_STUDY_ID_PAGED = """
             id
             name
             description
-            labelType
             numberOfLabels
         }
     }

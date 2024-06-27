@@ -1010,7 +1010,6 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
                 label_group['labelGroup.id'] = label_group.pop('id')
                 label_group['labelGroup.name'] = label_group.pop('name')
                 label_group['labelGroup.description'] = label_group.pop('description')
-                label_group['labelGroup.labelType'] = label_group.pop('labelType')
                 label_group['labelGroup.numberOfLabels'] = label_group.pop('numberOfLabels')
                 label_group['id'] = study['id']
                 label_group['name'] = study['name']
@@ -1276,7 +1275,7 @@ class SeerConnect:  # pylint: disable=too-many-public-methods
         -------
         label_results : dict
             Returns a dictionary with a 'labelGroups' key that indexes to a list
-            of dictionaries including keys 'labelType', 'name', 'labels', 'numberOfLabels' etc.
+            of dictionaries including keys 'name', 'labels', 'numberOfLabels' etc.
         """
         # TODO: perhaps migrate to use `get_paginated_response()`
         label_results = {}

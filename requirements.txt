@@ -1,6 +1,6 @@
 gql[requests]==3.0.0
-urllib3==1.26.19
-graphql-core==3.2.0
+urllib3==1.26.11
+graphql-core==3.2.1 
 numpy==1.23.2
 pandas==1.4.3
 pyjwt[crypto]==2.8.0
